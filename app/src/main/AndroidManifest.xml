@@ -12,6 +12,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.ParentDashboardActivity"
+            android:exported="false"
+            android:label="@string/title_activity_parent_dashboard"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.SplashScreen"
             android:exported="true"
             android:label="@string/title_activity_splash_screen"
