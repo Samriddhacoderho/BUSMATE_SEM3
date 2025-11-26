@@ -240,13 +240,10 @@ fun Requirement(text: String, passed: Boolean) {
         )
     }
 }
-//
-//@Preview
-//@Composable
-//fun PreviewAdminChangeUI() {
-//    AdminChangeUI()
-//}
-//
-//
-//
-//
+
+@Preview
+@Composable
+fun PreviewAdminChangeUI() {
+    AdminChangeUI()
+}
+
