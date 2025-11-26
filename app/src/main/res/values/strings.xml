@@ -4,4 +4,5 @@
     <string name="title_activity_parent_dashboard">ParentDashboardActivity</string>
     <string name="title_activity_parent_change_password">ParentChangePasswordActivity</string>
     <string name="title_activity_driver_change_password">DriverChangePasswordActivity</string>
+    <string name="title_activity_admin_change_password">AdminChangePasswordActivity</string>
 </resources>
