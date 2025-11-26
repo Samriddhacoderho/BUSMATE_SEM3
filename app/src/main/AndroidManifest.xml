@@ -12,12 +12,35 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.AdminChangePassword"
+            android:exported="true"
+            android:label="@string/title_activity_admin_change_password"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.DriverChangePassword"
+            android:exported="true"
+            android:label="@string/title_activity_driver_change_password"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.LoginScreen"
             android:exported="true"
             android:label="@string/title_activity_login_screen"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

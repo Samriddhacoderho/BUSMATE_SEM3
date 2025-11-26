@@ -5,4 +5,6 @@
     <string name="title_activity_parent_change_password">ParentChangePasswordActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
     <string name="title_activity_login_screen">LoginScreen</string>
+    <string name="title_activity_driver_change_password">DriverChangePassword</string>
+    <string name="title_activity_admin_change_password">AdminChangePassword</string>
 </resources>
