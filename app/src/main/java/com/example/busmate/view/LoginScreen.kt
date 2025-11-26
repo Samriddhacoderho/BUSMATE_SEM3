@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource // New Import
 import androidx.compose.foundation.interaction.collectIsFocusedAsState // New Import
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,7 +71,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.40f)
+                .fillMaxHeight(0.60f)
                 .background(DarkBlueBackground),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
@@ -78,21 +80,13 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
 
             // Bus Logo
             Image(
-                painter = painterResource(id = android.R.drawable.ic_menu_search),
+                painter = painterResource(com.example.busmate.R.drawable.logo),
                 contentDescription = "Bus Mate Logo",
                 colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier.size(200.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
 
-            // Bus Mate Title
-            Text(
-                text = "Bus Mate",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+
 
             // Log in title
             Text(
@@ -104,7 +98,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // Subtitle
             Text(
@@ -123,7 +117,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
                 .align(Alignment.BottomCenter)
                 .offset(y = (-32).dp), // Negative offset to make it overlap the blue section
             // Custom shape for rounded top corners
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
