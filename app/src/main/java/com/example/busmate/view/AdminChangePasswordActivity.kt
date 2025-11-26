@@ -199,24 +199,24 @@ fun AdminChangeUI() {
         }
     }
 }
-//
 
-//@Composable
-//fun PasswordIndicators(password: String) {
-//    val requirements = listOf(
-//        "Minimum 12 characters" to { it: String -> it.length >= 12 },
-//        "One uppercase character" to { it: String -> it.any { c -> c.isUpperCase() } },
-//        "One lowercase character" to { it: String -> it.any { c -> c.isLowerCase() } },
-//        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-//        "One number" to { it: String -> it.any { c -> c.isDigit() } }
-//    )
-//
+
+@Composable
+fun PasswordIndicators(password: String) {
+    val requirements = listOf(
+        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "One uppercase character" to { it: String -> it.any { c -> c.isUpperCase() } },
+        "One lowercase character" to { it: String -> it.any { c -> c.isLowerCase() } },
+        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
+        "One number" to { it: String -> it.any { c -> c.isDigit() } }
+    )
+
 //    Column {
 //        requirements.forEach { (text, rule) ->
 //            Requirement(text = text, passed = rule(password))
 //        }
 //    }
-//}
+}
 //
 //@Composable
 //fun Requirement(text: String, passed: Boolean) {
