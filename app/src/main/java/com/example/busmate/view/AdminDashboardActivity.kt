@@ -57,7 +57,6 @@ import com.example.busmate.ui.theme.BackgroundLightGray
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
-import com.example.busmate.view.ui.theme.BUSMATETheme
 
 class AdminDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
