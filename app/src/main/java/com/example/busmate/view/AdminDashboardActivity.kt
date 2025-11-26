@@ -82,8 +82,8 @@ fun AdminDashboardScreen() {
                 TopDashboardBarAdmin()
                 WelcomeCardAdmin(adminName)
                 ViewBusHeader()
-                ViewBusCard(childName = "Swikrit Ghimire", statusText = "Reached School", subText = "Bus No: 1511\n9812668800", statusColor = BusMateGreen, imageResource = R.drawable.boy, mapImageResource = R.drawable.school)
-                ViewBusCard(childName = "Ramesh Pathak", statusText = "Driving", subText = "Bus No: 1533\n9800112236", statusColor = BusMateOrange, imageResource = R.drawable.boy, mapImageResource = R.drawable.map)
+                ViewBusCard(childName = "Harwinder Singh", statusText = "Reached School", subText = "Bus No: 1511\n9812668800", statusColor = BusMateGreen, imageResource = R.drawable.driver, mapImageResource = R.drawable.school)
+                ViewBusCard(childName = "Ramesh Pathak", statusText = "Driving", subText = "Bus No: 1533\n9800112236", statusColor = BusMateOrange, imageResource = R.drawable.driver, mapImageResource = R.drawable.map)
                 NotificationsAlertHeaderAdmin()
             }
         }
