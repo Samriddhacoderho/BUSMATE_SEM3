@@ -211,35 +211,35 @@ fun PasswordIndicators(password: String) {
         "One number" to { it: String -> it.any { c -> c.isDigit() } }
     )
 
-//    Column {
-//        requirements.forEach { (text, rule) ->
-//            Requirement(text = text, passed = rule(password))
-//        }
-//    }
+    Column {
+        requirements.forEach { (text, rule) ->
+            Requirement(text = text, passed = rule(password))
+        }
+    }
 }
 //
-//@Composable
-//fun Requirement(text: String, passed: Boolean) {
-//    Row(
-//        verticalAlignment = Alignment.CenterVertically,
-//        horizontalArrangement = Arrangement.Start,
-//        modifier = Modifier.padding(vertical = 4.dp)
-//    ) {
-//        Icon(
-//            painter = painterResource(R.drawable.baseline_check_circle_24),
-//            contentDescription = null,
-//            tint = if (passed) Color.Gray else Color.Red,
-//            modifier = Modifier
-//                .padding(end = 8.dp)
-//                .height(16.dp)
-//        )
-//        Text(
-//            text = text,
-//            color = if (passed) Color.Gray else Color.Red,
-//            fontSize = 14.sp
-//        )
-//    }
-//}
+@Composable
+fun Requirement(text: String, passed: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.baseline_check_circle_24),
+            contentDescription = null,
+            tint = if (passed) Color.Gray else Color.Red,
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .height(16.dp)
+        )
+        Text(
+            text = text,
+            color = if (passed) Color.Gray else Color.Red,
+            fontSize = 14.sp
+        )
+    }
+}
 //
 //@Preview
 //@Composable
