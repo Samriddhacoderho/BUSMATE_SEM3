@@ -12,6 +12,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.AdminDashboardActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_dashboard"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.ParentChangePasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_parent_change_password"
