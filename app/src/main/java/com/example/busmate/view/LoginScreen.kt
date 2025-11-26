@@ -32,11 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.ui.theme.BUSMATETheme
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
-private val DarkBlueBackground = Color(0xFF2854D8) // A slightly darker shade for the top background
 private val PlaceholderBusColor = Color(0xFFFFB74D) // The orange/yellow color for the bus logo
 
 class LoginScreen : ComponentActivity() {
@@ -72,7 +72,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.60f)
-                .background(DarkBlueBackground),
+                .background(BusMateBlue),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
