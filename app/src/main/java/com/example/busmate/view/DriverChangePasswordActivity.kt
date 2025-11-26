@@ -141,7 +141,7 @@ fun DriverChangeUI() {
             Spacer(modifier = Modifier.height(10.dp))
 
             // Dynamic Password Requirement Indicators
-//            PasswordRequirement(password = newPass)
+            PasswordRequirement(password = newPass)
 
             Spacer(modifier = Modifier.height(25.dp))
 
@@ -202,46 +202,46 @@ fun DriverChangeUI() {
     }
 }
 
-// Password Requirement Indicators
-//@Composable
-//fun PasswordRequirement(password: String) {
-//    val requirements = listOf(
-//        "Minimum 12 characters" to { it: String -> it.length >= 12 },
-//        "One uppercase character" to { it: String -> it.any { c -> c.isUpperCase() } },
-//        "One lowercase character" to { it: String -> it.any { c -> c.isLowerCase() } },
-//        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-//        "One number" to { it: String -> it.any { c -> c.isDigit() } }
-//    )
-//
-//    Column {
-//        requirements.forEach { (text, rule) ->
-//            Password(text = text, passed = rule(password))
-//        }
-//    }
-//}
-//
-//@Composable
-//fun Password(text: String, passed: Boolean) {
-//    Row(
-//        verticalAlignment = Alignment.CenterVertically,
-//        horizontalArrangement = Arrangement.Start,
-//        modifier = Modifier.padding(vertical = 4.dp)
-//    ) {
-//        Icon(
-//            painter = painterResource(R.drawable.baseline_check_circle_24),
-//            contentDescription = null,
-//            tint = if (passed) Color.Gray else Color.Red,
-//            modifier = Modifier
-//                .padding(end = 8.dp)
-//                .height(16.dp)
-//        )
-//        Text(
-//            text = text,
-//            color = if (passed) Color.Gray else Color.Red,
-//            fontSize = 14.sp
-//        )
-//    }
-//}
+
+@Composable
+fun PasswordRequirement(password: String) {
+    val requirements = listOf(
+        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "One uppercase character" to { it: String -> it.any { c -> c.isUpperCase() } },
+        "One lowercase character" to { it: String -> it.any { c -> c.isLowerCase() } },
+        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
+        "One number" to { it: String -> it.any { c -> c.isDigit() } }
+    )
+
+    Column {
+        requirements.forEach { (text, rule) ->
+            Password(text = text, passed = rule(password))
+        }
+    }
+}
+
+@Composable
+fun Password(text: String, passed: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.baseline_check_circle_24),
+            contentDescription = null,
+            tint = if (passed) Color.Gray else Color.Red,
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .height(16.dp)
+        )
+        Text(
+            text = text,
+            color = if (passed) Color.Gray else Color.Red,
+            fontSize = 14.sp
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
