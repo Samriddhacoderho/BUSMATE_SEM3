@@ -1,5 +1,7 @@
 package com.example.busmate.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,6 +74,14 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
     val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
     val confirmPasswordInteractionSource = remember { MutableInteractionSource() }
     val isConfirmPasswordFocused by confirmPasswordInteractionSource.collectIsFocusedAsState()
+    val context= LocalContext.current
+    val activity=context as Activity
+
+
+    fun clickLogin(){
+        val intent= Intent(context, LoginScreen::class.java)
+        context.startActivity(intent)
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -197,7 +208,7 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
                             color = BusMateBlue,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clickable { /* UX: navigate to login */ }
+                            modifier = Modifier.clickable {clickLogin()}
                         )
                     }
                     // --- Input Fields ---
@@ -322,12 +333,12 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
     }
 }
 
-//    // Preview Composable
-//    @Preview(showBackground = true)
-//    @Composable
-//    fun SignUpScreenPreview() {
-//        // Replace BUSMATETheme with your actual theme component
-//        // BUSMATETheme {
-//        SignUpScreenUI()
-//        // }
-//    }
+    // Preview Composable
+    @Preview(showBackground = true)
+    @Composable
+    fun SignUpScreenPreview() {
+        // Replace BUSMATETheme with your actual theme component
+        // BUSMATETheme {
+        SignUpScreenUI()
+        // }
+    }

@@ -44,7 +44,7 @@ fun SplashScreenUI() {
     LaunchedEffect(Unit) {
         delay(2000)
         val intent = Intent(
-            context, ParentDashboardActivity::class.java
+            context, LoginScreen::class.java
         )
         context.startActivity(intent)
         activity.finish()
