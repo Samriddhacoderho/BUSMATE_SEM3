@@ -8,4 +8,6 @@
     <string name="title_activity_driver_change_password">DriverChangePassword</string>
     <string name="title_activity_admin_change_password">AdminChangePassword</string>
     <string name="title_activity_support">SupportActivity</string>
+    <string name="title_activity_support_parent">SupportParentActivity</string>
+    <string name="title_activity_support_driver">SupportDriverActivity</string>
 </resources>

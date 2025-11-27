@@ -238,6 +238,7 @@ fun Password(text: String, passed: Boolean) {
             text = text,
             color = if (passed) Color.Gray else Color.Red,
             fontSize = 14.sp
+//            overall UI testing of driver
         )
     }
 }
