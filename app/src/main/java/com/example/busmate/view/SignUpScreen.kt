@@ -200,6 +200,120 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
                             modifier = Modifier.clickable { /* UX: navigate to login */ }
                         )
                     }
+                    // --- Input Fields ---
+
+                    // First Name / Last Name Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // First Name
+                        OutlinedTextField(
+                            value = firstName,
+                            onValueChange = { firstName = it },
+                            label = { Text("First Name") },
+                            placeholder = { Text("Ram") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        // Last Name
+                        OutlinedTextField(
+                            value = lastName,
+                            onValueChange = { lastName = it },
+                            label = { Text("Last Name") },
+                            placeholder = { Text("Thapa...") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Email Field
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
+                        placeholder = { Text("ramthapa@gmail.com") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // School ID Field
+                    OutlinedTextField(
+                        value = schoolId,
+                        onValueChange = { schoolId = it },
+                        label = { Text("ID provided by school") },
+                        placeholder = { Text("ATX6647") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Phone Number Field
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Phone Number") },
+                        placeholder = { Text("(454) 726-0592") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Set Password Field
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        interactionSource = passwordInteractionSource,
+                        label = {
+                            Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Set Password")
+                        },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = "Toggle password visibility")
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Confirm Password Field
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        interactionSource = confirmPasswordInteractionSource,
+                        label = {
+                            Text(if (confirmPassword.isEmpty() && !isConfirmPasswordFocused) "********" else "Confirm Password")
+                        },
+                        singleLine = true,
+                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = "Toggle confirm password visibility")
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Final Spacer at the bottom of the Card content
+                    Spacer(modifier = Modifier.height(48.dp))
 
                 }
             }
