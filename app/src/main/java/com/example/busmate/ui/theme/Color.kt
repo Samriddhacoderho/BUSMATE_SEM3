@@ -14,3 +14,5 @@ val BusMateBlue = Color(0xFF2854D8) // Deep Blue for main elements
 val BusMateOrange = Color(0xFFFF9800) // Vibrant Orange for tracking/highlights
 val BusMateGreen = Color(0xFF4CAF50) // Green for 'Reached School'
 val BackgroundLightGray = Color(0xFFF5F5F5)
+val PrimaryDarkTeal = Color(0xFF336677) // Color for the SUBMIT button
+val LightGrayBackground = Color(0xFFF7F7F7) // Color for the TextField background
