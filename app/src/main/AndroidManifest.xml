@@ -12,6 +12,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.BusProfileScreen"
+            android:exported="true"
+            android:label="@string/title_activity_bus_profile"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.DriverProfileScreen"
             android:exported="true"
             android:label="@string/title_activity_driver_profile"
