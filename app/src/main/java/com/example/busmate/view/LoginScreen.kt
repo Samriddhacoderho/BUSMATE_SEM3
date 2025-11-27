@@ -1,5 +1,7 @@
 package com.example.busmate.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -53,8 +56,12 @@ class LoginScreen : ComponentActivity() {
     }
 }
 
+
+
 @Composable
 fun LoginScreenUI(modifier: Modifier = Modifier) {
+    val context= LocalContext.current
+    val activity=context as Activity
     // State variables for input fields and checkbox (required for TextField components)
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -64,6 +71,12 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
     // InteractionSource to track focus state of the password field
     val passwordInteractionSource = remember { MutableInteractionSource() }
     val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
+
+
+    fun clickSignup(){
+        val intent= Intent(context, SignUpScreen::class.java)
+        context.startActivity(intent)
+    }
 
     // Main screen structure uses Box for layering the blue background and the white card
     Box(modifier = modifier.fillMaxSize()) {
@@ -239,7 +252,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
                         color = PrimaryBlue,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable { /* UX: navigation to sign up */ }
+                        modifier = Modifier.clickable {clickSignup()}
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
