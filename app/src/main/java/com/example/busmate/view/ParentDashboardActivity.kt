@@ -132,7 +132,7 @@ fun WelcomeCard(parentName: String){
                 Text("School",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
+                    fontSize = 19.sp,
                     )
             }
             Row(Modifier
@@ -146,7 +146,7 @@ fun WelcomeCard(parentName: String){
                 Text("Tracking Live",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     )
             }
         }
