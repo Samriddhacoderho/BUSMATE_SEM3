@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +22,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateOrange
 import kotlinx.coroutines.delay
 
 class SplashScreen : ComponentActivity() {
@@ -49,7 +52,7 @@ fun SplashScreenUI() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = Color(0xff92dea3),
+        containerColor = BusMateBlue,
         contentColor = Color.White
     ) { paddingValues ->
 
@@ -67,7 +70,8 @@ fun SplashScreenUI() {
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth(0.6f) // Logo size adjustment
-                    .height(100.dp)
+                    .height(100.dp),
+                colorFilter = ColorFilter.tint(BusMateOrange)
             )
 
             // "Powered by SSK Tech" text
@@ -76,15 +80,15 @@ fun SplashScreenUI() {
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White
                 )
             )
         }
     }
 }
 
-@Preview(showSystemUi = true, showBackground = true)
+@Preview
 @Composable
-fun SplashScreenPreview() {
-        SplashScreenUI()
+fun PreviewFunc(){
+    SplashScreenUI()
 }
