@@ -89,109 +89,109 @@ fun GrievanceFormUI() {
             )
 
             // --- Title Field ---
-//            Text(
-//                text = "Title",
-//                style = TextStyle(
-//                    fontSize = 18.sp,
-//                    fontWeight = FontWeight.SemiBold,
-//                    color = Color.Black
-//                ),
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(bottom = 8.dp)
-//            )
-//
-//            TextField(
-//                value = titleText,
-//                onValueChange = { titleText = it },
-//                placeholder = { Text("Add you grievance title here") },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(55.dp),
-//                shape = RoundedCornerShape(10.dp),
-//                colors = customTextFieldColors,
-//                singleLine = true
-//            )
-//
-//            Spacer(modifier = Modifier.height(20.dp))
-//
-//            // --- Explain the problem Field ---
-//            Text(
-//                text = "Explain the problem",
-//                style = TextStyle(
-//                    fontSize = 18.sp,
-//                    fontWeight = FontWeight.SemiBold,
-//                    color = Color.Black
-//                ),
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(bottom = 8.dp)
-//            )
-//
-//            TextField(
-//                value = explainText,
-//                onValueChange = { explainText = it },
-//                placeholder = { Text("Type your query here") },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(180.dp), // Height to accommodate multi-line text
-//                shape = RoundedCornerShape(10.dp),
-//                colors = customTextFieldColors,
-//            )
-//
-//            Spacer(modifier = Modifier.height(40.dp))
-//
-//            // --- SUBMIT Button ---
-//            Button(
-//                onClick = { /* Handle submission */ },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(55.dp),
-//                shape = RoundedCornerShape(10.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = BusMateBlue,
-//                    contentColor = Color.White
-//                ),
-//                elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp)
-//            ) {
-//                Text(
-//                    text = "SUBMIT",
-//                    fontSize = 18.sp,
-//                    fontWeight = FontWeight.Bold
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.height(30.dp))
-//
-//            // --- Contact Number ---
-//            Row(
-//                verticalAlignment = Alignment.CenterVertically
-//            ) {
-//                Text(
-//                    text = "You can contact us on this number ",
-//                    style = TextStyle(
-//                        fontSize = 14.sp,
-//                        color = Color.Black.copy(alpha = 0.7f)
-//                    )
-//                )
-//                Text(
-//                    text = "1234567892",
-//                    style = TextStyle(
-//                        fontSize = 14.sp,
-//                        color = Color.Black,
-//                        fontWeight = FontWeight.Bold
-//                    )
-//                )
+            Text(
+                text = "Title",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            TextField(
+                value = titleText,
+                onValueChange = { titleText = it },
+                placeholder = { Text("Add you grievance title here") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = customTextFieldColors,
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // --- Explain the problem Field ---
+            Text(
+                text = "Explain the problem",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            TextField(
+                value = explainText,
+                onValueChange = { explainText = it },
+                placeholder = { Text("Type your query here") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp), // Height to accommodate multi-line text
+                shape = RoundedCornerShape(10.dp),
+                colors = customTextFieldColors,
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // --- SUBMIT Button ---
+            Button(
+                onClick = { /* Handle submission */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BusMateBlue,
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp)
+            ) {
+                Text(
+                    text = "SUBMIT",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // --- Contact Number ---
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "You can contact us on this number ",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.Black.copy(alpha = 0.7f)
+                    )
+                )
+                Text(
+                    text = "1234567892",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
             }
         }
     }
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewGrievanceFormUI() {
-//    GrievanceFormUI()
-//}
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewGrievanceFormUI() {
+    GrievanceFormUI()
+}
 
 
 
