@@ -12,4 +12,5 @@
     <string name="title_activity_support_driver">SupportDriverActivity</string>
     <string name="title_activity_parent_reset_password">ParentResetPasswordActivity</string>
     <string name="title_activity_sign_up_screen">SignUpScreen</string>
+    <string name="title_activity_driver_profile">DriverProfile</string>
 </resources>
