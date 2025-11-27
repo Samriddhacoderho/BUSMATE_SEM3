@@ -7,4 +7,5 @@
     <string name="title_activity_login_screen">LoginScreen</string>
     <string name="title_activity_driver_change_password">DriverChangePassword</string>
     <string name="title_activity_admin_change_password">AdminChangePassword</string>
+    <string name="title_activity_support">SupportActivity</string>
 </resources>
