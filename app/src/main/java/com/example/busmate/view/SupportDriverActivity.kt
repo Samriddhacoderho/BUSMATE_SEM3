@@ -118,6 +118,7 @@ fun DriverFormUI() {
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
             )
+//            testing support driver ui
 
             TextField(
                 value = explainText,
@@ -151,6 +152,7 @@ fun DriverFormUI() {
                     fontWeight = FontWeight.Bold
                 )
             }
+//            testing color of support page in deriver ui
 
             Spacer(modifier = Modifier.height(30.dp))
 

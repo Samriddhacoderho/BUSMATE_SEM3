@@ -34,6 +34,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".view.CreateAccountScreenActivity"
+            android:exported="true"
+            android:label="@string/title_activity_create_account_screen"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.SignUpScreen"
             android:exported="true"
             android:label="@string/title_activity_sign_up_screen"
