@@ -16,3 +16,5 @@ val BusMateGreen = Color(0xFF4CAF50) // Green for 'Reached School'
 val BackgroundLightGray = Color(0xFFF5F5F5)
 val PrimaryDarkTeal = Color(0xFF336677) // Color for the SUBMIT button
 val LightGrayBackground = Color(0xFFF7F7F7) // Color for the TextField background
+val PrimaryBlue = Color(0xFF2567E8)
+val PlaceholderBusColor = Color(0xFFFFB74D)

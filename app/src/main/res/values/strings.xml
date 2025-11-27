@@ -10,5 +10,5 @@
     <string name="title_activity_support">SupportActivity</string>
     <string name="title_activity_support_parent">SupportParentActivity</string>
     <string name="title_activity_support_driver">SupportDriverActivity</string>
-    <string name="title_activity_create_account_screen">CreateAccountScreenActivity</string>
+    <string name="title_activity_parent_reset_password">ParentResetPasswordActivity</string>
 </resources>
