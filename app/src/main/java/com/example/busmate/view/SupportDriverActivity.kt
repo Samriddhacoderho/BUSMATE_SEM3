@@ -1,13 +1,15 @@
 package com.example.busmate.view
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import com.example.busmate.view.ui.theme.BUSMATETheme
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,18 +28,17 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.LightGrayBackground
 import com.example.busmate.ui.theme.PrimaryDarkTeal
 
-class SupportActivity : ComponentActivity() {
+class SupportDriverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            GrievanceFormUI()
-
+            DriverFormUI()
         }
     }
 }
 @Composable
-fun GrievanceFormUI() {
+fun DriverFormUI() {
     var titleText by remember { mutableStateOf("") }
     var explainText by remember { mutableStateOf("") }
 
@@ -180,9 +181,12 @@ fun GrievanceFormUI() {
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewGrievanceFormUI() {
-    GrievanceFormUI()
+fun PreviewDriverFormUI() {
+    DriverFormUI()
 }
+
+
+
 
 
 

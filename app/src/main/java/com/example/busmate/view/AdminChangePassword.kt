@@ -220,6 +220,7 @@ fun PasswordIndicators(password: String) {
         "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
         "One number" to { it: String -> it.any { c -> c.isDigit() } }
     )
+//    testing password specification
 
     Column {
         requirements.forEach { (text, rule) ->
