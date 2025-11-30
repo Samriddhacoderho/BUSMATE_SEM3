@@ -3,6 +3,7 @@ package com.example.busmate.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,8 +41,10 @@ import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.R
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.ui.theme.SignUpTitleColor
+import com.example.busmate.viewmodel.UserViewModel
 
 
 class SignUpScreen : ComponentActivity() {
@@ -50,14 +53,16 @@ class SignUpScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BUSMATETheme {
-                SignUpScreenUI()
+                val repo= UserRepositoryImpl()
+                val viewModel= UserViewModel(repo)
+                SignUpScreenUI(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun SignUpScreenUI(modifier: Modifier = Modifier) {
+fun SignUpScreenUI(viewModel: UserViewModel) {
     // State variables for all input fields
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -76,15 +81,31 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
     val isConfirmPasswordFocused by confirmPasswordInteractionSource.collectIsFocusedAsState()
     val context= LocalContext.current
     val activity=context as Activity
-
+    val message by viewModel.message.collectAsState()
 
     fun clickLogin(){
-        val intent= Intent(context, LoginScreen::class.java)
-        context.startActivity(intent)
+        activity.finish()
+    }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty()) {
+
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+            // If successful, close the activity
+            if (message == "Successful Registration") {
+                activity.finish()
+            }
+        }
+    }
+
+
+    fun registerFunc(){
+        viewModel.register(firstName, lastName,email,schoolId,phone, password)
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             // Floating Register Button
             Row(
@@ -95,7 +116,9 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Button(
-                    onClick = { /* UX: Register logic goes here */ },
+                    onClick = {
+                        registerFunc()
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -333,12 +356,13 @@ fun SignUpScreenUI(modifier: Modifier = Modifier) {
     }
 }
 
-    // Preview Composable
-    @Preview(showBackground = true)
-    @Composable
-    fun SignUpScreenPreview() {
-        // Replace BUSMATETheme with your actual theme component
-        // BUSMATETheme {
-        SignUpScreenUI()
-        // }
-    }
+//
+//    // Preview Composable
+//    @Preview(showBackground = true)
+//    @Composable
+//    fun SignUpScreenPreview() {
+//        // Replace BUSMATETheme with your actual theme component
+//        // BUSMATETheme {
+//        SignUpScreenUI(viewModel = UserViewModel(repository = UserRepositoryImpl()))
+//        // }
+//    }
