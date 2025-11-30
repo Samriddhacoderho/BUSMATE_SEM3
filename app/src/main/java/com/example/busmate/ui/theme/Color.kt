@@ -20,3 +20,5 @@ val PrimaryBlue = Color(0xFF2567E8)
 val PlaceholderBusColor = Color(0xFFFFB74D)
 
 val SignUpTitleColor = Color(0xFF9C27B0)
+
+val BusMateYellow = Color(0xFFFFC107)
