@@ -30,6 +30,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.ColorFilter
+import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.PlaceholderBusColor
+import com.example.busmate.ui.theme.PrimaryBlue
 
 
 class DriverChangePassword : ComponentActivity() {
@@ -41,8 +52,10 @@ class DriverChangePassword : ComponentActivity() {
         }
     }
 }
+
 @Composable
-fun DriverChangeUI() {
+fun  DriverChangeUI() {
+
     var oldPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
@@ -53,177 +66,210 @@ fun DriverChangeUI() {
 
     val scrollState = rememberScrollState()
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.White
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
 
+        // 🔵 BLUE TOP SECTION (same as login screen)
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp, vertical = 10.dp)
+                .fillMaxWidth()
+                .fillMaxHeight(0.45f)
+                .background(BusMateBlue),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            // Title
+
+            Spacer(modifier = Modifier.height(45.dp))
+
+            Image(
+                painter = painterResource(com.example.busmate.R.drawable.logo),
+                contentDescription = "Logo",
+                colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                modifier = Modifier.size(160.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "Change Password",
-                style = TextStyle(
-                    color = Color.Black,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Start
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center
             )
+        }
 
-            Spacer(modifier = Modifier.height(30.dp))
+        // ⚪ WHITE CARD THAT OVERLAPS (same shape as login)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .align(Alignment.BottomCenter)
+                .offset(y = (-30).dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        ) {
 
-            // Old Password
-            Text("Old Password", fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = oldPass,
-                onValueChange = { oldPass = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("********") },
-                trailingIcon = {
-                    IconButton(onClick = { showOld = !showOld }) {
-                        Icon(
-                            painter = painterResource(
-                                if (showOld) com.example.busmate.R.drawable.baseline_visibility_off_24 else com.example.busmate.R.drawable.baseline_visibility_24
-                            ),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (showOld) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFF007BFF),
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // New Password
-            Text("New Password", fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = newPass,
-                onValueChange = { newPass = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Enter new password") },
-                trailingIcon = {
-                    IconButton(onClick = { showNew = !showNew }) {
-                        Icon(
-                            painter = painterResource(
-                                if (showNew) com.example.busmate.R.drawable.baseline_visibility_off_24 else com.example.busmate.R.drawable.baseline_visibility_24
-                            ),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFF007BFF),
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Dynamic Password Requirement Indicators
-            PasswordRequirement(password = newPass)
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            // Confirm Password
-            Text("Confirm New Password", fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = confirmPass,
-                onValueChange = { confirmPass = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Re-enter new password") },
-                trailingIcon = {
-                    IconButton(onClick = { showConfirm = !showConfirm }) {
-                        Icon(
-                            painter = painterResource(
-                                if (showConfirm) com.example.busmate.R.drawable.baseline_visibility_off_24 else com.example.busmate.R.drawable.baseline_visibility_24
-                            ),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFF007BFF),
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Button(
-                onClick = {},
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF007BFF)
-                )
+                    .verticalScroll(scrollState)
+                    .padding(24.dp)
             ) {
-                Text(text = "Change Password", fontSize = 18.sp)
+
+                // 🔹 OLD PASSWORD
+                Text("Old Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = oldPass,
+                    onValueChange = { oldPass = it },
+                    placeholder = { Text("********") },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showOld = !showOld }) {
+                            Icon(
+                                painter = painterResource(
+                                    if (showOld) R.drawable.baseline_visibility_off_24
+                                    else R.drawable.baseline_visibility_24
+                                ),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    visualTransformation = if (showOld) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryBlue,
+                        focusedLabelColor = PrimaryBlue
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 🔹 NEW PASSWORD
+                Text("New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = newPass,
+                    onValueChange = { newPass = it },
+                    placeholder = { Text("Enter new password") },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showNew = !showNew }) {
+                            Icon(
+                                painter = painterResource(
+                                    if (showNew) R.drawable.baseline_visibility_off_24
+                                    else R.drawable.baseline_visibility_24
+                                ),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryBlue,
+                        focusedLabelColor = PrimaryBlue
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 🔸 Password Requirements
+                PasswordDriverIndicators(password = newPass)
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                // 🔹 CONFIRM PASSWORD
+                Text("Confirm New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = confirmPass,
+                    onValueChange = { confirmPass = it },
+                    placeholder = { Text("Re-enter new password") },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showConfirm = !showConfirm }) {
+                            Icon(
+                                painter = painterResource(
+                                    if (showConfirm) R.drawable.baseline_visibility_off_24
+                                    else R.drawable.baseline_visibility_24
+                                ),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryBlue,
+                        focusedLabelColor = PrimaryBlue
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(35.dp))
+
+                // 🔵 BUTTON (same as login page)
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Text(
+                        text = "Change Password",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Forgot Password
+                Text(
+                    text = "Forgot Your Password?",
+                    color = PrimaryBlue,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "Forgot Password?",
-                color = Color(0xFF007BFF),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
-
 @Composable
-fun PasswordRequirement(password: String) {
+fun PasswordDriverIndicators(password: String) {
     val requirements = listOf(
         "Minimum 12 characters" to { it: String -> it.length >= 12 },
-        "One uppercase character" to { it: String -> it.any { c -> c.isUpperCase() } },
-        "One lowercase character" to { it: String -> it.any { c -> c.isLowerCase() } },
+        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
+        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
         "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-        "One number" to { it: String -> it.any { c -> c.isDigit() } }
+        "One number" to { it: String -> it.any(Char::isDigit) }
     )
 
     Column {
         requirements.forEach { (text, rule) ->
-            Password(text = text, passed = rule(password))
+            RequirementDriver(text = text, passed = rule(password))
         }
     }
 }
 
 @Composable
-fun Password(text: String, passed: Boolean) {
+fun RequirementDriver(text: String, passed: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
         Icon(
@@ -232,20 +278,17 @@ fun Password(text: String, passed: Boolean) {
             tint = if (passed) Color.Gray else Color.Red,
             modifier = Modifier
                 .padding(end = 8.dp)
-                .height(16.dp)
+                .size(16.dp)
         )
         Text(
             text = text,
             color = if (passed) Color.Gray else Color.Red,
             fontSize = 14.sp
-//            overall UI testing of driver
         )
     }
 }
-
 @Preview(showBackground = true)
 @Composable
-fun PreviewDriverChangePasswordUI() {
+fun PreviewDriverChangeUI() {
     DriverChangeUI()
 }
-
