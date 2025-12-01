@@ -1,0 +1,29 @@
+ {
+  "project_info": {
+    "project_number": "764197711402",
+    "project_id": "busmate-fedc9",
+    "storage_bucket": "busmate-fedc9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:764197711402:android:75541eb0d13c6e35a41d53",
+        "android_client_info": {
+          "package_name": "com.example.busmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDD68Ct_Wd3LGQtZfHkSFj_d_sEt0Yfn8c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

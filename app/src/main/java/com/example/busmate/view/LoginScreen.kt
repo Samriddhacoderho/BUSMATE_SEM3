@@ -3,6 +3,7 @@ package com.example.busmate.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,8 +36,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.viewmodel.UserViewModel
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
@@ -48,9 +51,9 @@ class LoginScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BUSMATETheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LoginScreenUI(modifier = Modifier.padding(innerPadding))
-                }
+                val repo= UserRepositoryImpl()
+                val viewModel= UserViewModel(repo)
+                    LoginScreenUI(viewModel)
             }
         }
     }
@@ -59,7 +62,7 @@ class LoginScreen : ComponentActivity() {
 
 
 @Composable
-fun LoginScreenUI(modifier: Modifier = Modifier) {
+fun LoginScreenUI(viewModel: UserViewModel) {
     val context= LocalContext.current
     val activity=context as Activity
     // State variables for input fields and checkbox (required for TextField components)
@@ -71,6 +74,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
     // InteractionSource to track focus state of the password field
     val passwordInteractionSource = remember { MutableInteractionSource() }
     val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
+    val message by viewModel.message.collectAsState()
 
 
     fun clickSignup(){
@@ -78,8 +82,26 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
         context.startActivity(intent)
     }
 
+    LaunchedEffect(message) {
+        if (message.isNotEmpty()) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+            if(message=="Successful Login"){
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                val intent= Intent(context, ParentDashboardActivity::class.java)
+                context.startActivity(intent)
+                activity.finish()
+            }
+        }
+    }
+
+
+    fun loginFunc(){
+        viewModel.login(userId,password)
+    }
+
     // Main screen structure uses Box for layering the blue background and the white card
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // 1. Top Blue Background Section
         Column(
             modifier = Modifier
@@ -224,7 +246,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
 
                 // Log In Button
                 Button(
-                    onClick = { /* UX: login logic goes here */ },
+                    onClick = { loginFunc()},
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -260,9 +282,9 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreenUI()
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun LoginScreenPreview() {
+//    LoginScreenUI()
+//}
