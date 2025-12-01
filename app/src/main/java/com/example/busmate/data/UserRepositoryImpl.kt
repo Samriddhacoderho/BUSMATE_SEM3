@@ -1,6 +1,7 @@
 package com.example.busmate.data
 
 import com.example.busmate.model.UserModel
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
@@ -71,6 +72,32 @@ class UserRepositoryImpl : UserRepositoryInterface {
             }
             Result.failure(Exception(message))
         }
+    }
+
+    override suspend fun changePassword(
+        oldPassword: String,
+        newPassword: String
+    ): Result<Unit> {
+        return try {
+            // Get the currently logged-in user
+            val user = auth.currentUser ?: return Result.failure(Exception("No user currently logged in."))
+
+            // Re-authenticate user for security
+            val credential = EmailAuthProvider.getCredential(
+                user.email ?: throw Exception("User email is missing for re-authentication."),
+                oldPassword
+            )
+            user.reauthenticate(credential).await()
+
+            // Update the password
+            user.updatePassword(newPassword).await()
+
+            Result.success(Unit)
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
     }
 
 
