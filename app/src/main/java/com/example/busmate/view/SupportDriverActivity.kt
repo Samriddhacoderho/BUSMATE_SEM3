@@ -182,6 +182,7 @@ fun  DriverFormUI() {
                     shape = RoundedCornerShape(12.dp),
                     colors = customTextFieldColors
                 )
+//                check ui themes of all activity
 
                 Spacer(modifier = Modifier.height(30.dp))
 
