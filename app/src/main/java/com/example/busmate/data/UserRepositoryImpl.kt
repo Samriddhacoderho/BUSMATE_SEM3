@@ -42,9 +42,31 @@ class UserRepositoryImpl : UserRepositoryInterface {
             Result.failure(Exception(message))
         }
     }
+    override suspend fun loginUser(userID: String, password: String): Result<String> {
+        return try {
+            val snapshot = firestore.collection("users")
+                .whereEqualTo("schoolId", userID)
+                .get()
+                .await()
 
-    override suspend fun loginUser(userID: String, password: String): Boolean {
-        //baki cha
-        return true
+            if (snapshot.isEmpty) {
+                return Result.failure(Exception("No such user found"))
+            }
+
+            val email = snapshot.documents.first().getString("email")
+                ?: return Result.failure(Exception("Email not found for this user"))
+
+            val signInResult = auth.signInWithEmailAndPassword(email, password).await()
+            if (signInResult.user == null) {
+                return Result.failure(Exception("Invalid Email ID or Password"))
+            }
+
+            Result.success("Successful Login")
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+
+
 }
