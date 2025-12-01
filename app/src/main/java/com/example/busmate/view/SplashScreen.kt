@@ -1,6 +1,7 @@
 package com.example.busmate.view
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,10 +24,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.LottieComposition
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.busmate.R
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateOrange
 import kotlinx.coroutines.delay
+import android.content.Context.CONNECTIVITY_SERVICE
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.widget.Toast
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 
 class SplashScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,20 +56,43 @@ class SplashScreen : ComponentActivity() {
 fun SplashScreenUI() {
     val context= LocalContext.current
     val activity=context as Activity
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
+    val progress by animateLottieCompositionAsState(composition, iterations = LottieConstants.IterateForever)
+    val isConnected=isInternetAvailable(context)
+    val snackbarHostState= remember{ SnackbarHostState() }
+    val coroutineScope= rememberCoroutineScope ()
+
+
+    if(!isConnected){
+        LaunchedEffect(Unit) {
+            snackbarHostState.showSnackbar("No Internet Connected")
+        }
+    }
 
     LaunchedEffect(Unit) {
-        delay(2000)
-        val intent = Intent(
-            context, LoginScreen::class.java
-        )
-        context.startActivity(intent)
-        activity.finish()
-    }
+        if(isConnected){
+            delay(2000)
+            val intent = Intent(
+                context, LoginScreen::class.java
+            )
+            context.startActivity(intent)
+            activity.finish()
+
+        }
+        }
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = BusMateBlue,
-        contentColor = Color.White
+        contentColor = Color.White,
+        snackbarHost = {SnackbarHost(hostState = snackbarHostState){
+            Snackbar(
+                snackbarData = it,
+                containerColor = Color(0xFFD32F2F),
+                contentColor = Color.White)
+        }
+        }
     ) { paddingValues ->
 
         Column(
@@ -83,6 +122,10 @@ fun SplashScreenUI() {
                     color = Color.White
                 )
             )
+            LottieAnimation(composition,{
+                progress},
+                modifier=Modifier.size(200.dp),
+                )
         }
     }
 }
@@ -91,4 +134,12 @@ fun SplashScreenUI() {
 @Composable
 fun PreviewFunc(){
     SplashScreenUI()
+}
+
+fun isInternetAvailable(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = connectivityManager.activeNetwork
+    val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+    return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 }
