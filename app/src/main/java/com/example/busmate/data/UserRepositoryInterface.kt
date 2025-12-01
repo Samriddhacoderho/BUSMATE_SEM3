@@ -8,10 +8,5 @@ interface UserRepositoryInterface {
         password: String
     ): Result<UserModel>
 
-    suspend fun loginUser(userID:String,password: String): Result<String>
-
-    suspend fun changePassword(
-        oldPassword: String,
-        newPassword: String
-    ): Result<Unit>
+    suspend fun loginUser(userID:String,password: String): Result<UserModel>
 }

@@ -41,6 +41,7 @@ import android.net.NetworkCapabilities
 import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 class SplashScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +66,9 @@ fun SplashScreenUI() {
 
     if(!isConnected){
         LaunchedEffect(Unit) {
-            snackbarHostState.showSnackbar("No Internet Connected")
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("No Internet Connected")
+            }
         }
     }
 
