@@ -14,6 +14,9 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
+    private val _user=MutableStateFlow<UserModel?>(null)
+    val user: StateFlow<UserModel?> = _user
+
     fun register(
         firstName: String,
         lastName: String,
@@ -39,7 +42,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 
                 _message.value =
                     if (result.isSuccess) "Successful Registration"
-                    else "Registration Unsuccessful"
+                    else result.exceptionOrNull()?.message ?: "Unknown Error"
 
             } catch (e: Exception) {
                 _message.value = e.toString()
@@ -52,9 +55,12 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             _message.value="Loading"
             try {
                 val result=repository.loginUser(userID,password)
-                _message.value=if(result.isSuccess) result.getOrDefault("Successful Login")
-                else result.exceptionOrNull()?.message ?: "Unknown Error"
-
+                if (result.isSuccess) {
+                    _message.value = "Successful Login"
+                    _user.value = result.getOrNull() // This updates the user state flow
+                } else {
+                    _message.value = result.exceptionOrNull()?.message ?: "Unknown Error"
+                }
             }catch (e: Exception){
                 _message.value=e.toString()
             }

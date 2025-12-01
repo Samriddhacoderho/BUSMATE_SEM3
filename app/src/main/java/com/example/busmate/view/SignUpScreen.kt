@@ -43,8 +43,10 @@ import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateOrange
+import com.example.busmate.ui.theme.PrimaryBlue
 import com.example.busmate.ui.theme.SignUpTitleColor
 import com.example.busmate.viewmodel.UserViewModel
+import kotlinx.coroutines.launch
 
 
 class SignUpScreen : ComponentActivity() {
@@ -82,18 +84,28 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
     val context= LocalContext.current
     val activity=context as Activity
     val message by viewModel.message.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope ()
 
     fun clickLogin(){
         activity.finish()
     }
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty()) {
+        if (message.isNotEmpty() && message!="Loading") {
 
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = message,
+                )
+            }
             // If successful, close the activity
             if (message == "Successful Registration") {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                    )
+                }
                 activity.finish()
             }
         }
@@ -106,6 +118,14 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState){
+            Snackbar(
+                snackbarData = it,
+                containerColor = if (message.isNotEmpty() && message == "Successful Registration") Color.Green else Color.Red,
+                contentColor = Color.White
+            )
+        } },
         bottomBar = {
             // Floating Register Button
             Row(
@@ -119,14 +139,19 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                     onClick = {
                         registerFunc()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
+                        disabledContainerColor = Color.Gray,
+                        disabledContentColor = Color.White,
+                        contentColor = Color.Black
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = message!="Loading"
                 ) {
                     Text(
-                        text = "Register",
+                        text = if (message!="Loading") "Register" else "Registering In",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -355,14 +380,3 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
 
     }
 }
-
-//
-//    // Preview Composable
-//    @Preview(showBackground = true)
-//    @Composable
-//    fun SignUpScreenPreview() {
-//        // Replace BUSMATETheme with your actual theme component
-//        // BUSMATETheme {
-//        SignUpScreenUI(viewModel = UserViewModel(repository = UserRepositoryImpl()))
-//        // }
-//    }

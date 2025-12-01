@@ -1,5 +1,6 @@
 package com.example.busmate.view
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,7 +57,10 @@ class ParentDashboardActivity : ComponentActivity() {
 
 @Composable
 fun ParentDashboardScreen() {
-    var parentName by remember { mutableStateOf("Samriddha Raj Satyal") }
+    val context= LocalContext.current
+    val activity=context as Activity
+
+    var parentName by remember { mutableStateOf(activity.intent.getStringExtra("name")) }
     Scaffold(containerColor = BackgroundLightGray) { paddingValues ->
         LazyColumn(Modifier
             .fillMaxSize()
@@ -101,7 +106,7 @@ fun TopDashboardBar(){
 }
 
 @Composable
-fun WelcomeCard(parentName: String){
+fun WelcomeCard(parentName: String?){
     Column(Modifier
         .fillMaxWidth()
         .padding(16.dp)

@@ -42,7 +42,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
             Result.failure(Exception(message))
         }
     }
-    override suspend fun loginUser(userID: String, password: String): Result<String> {
+    override suspend fun loginUser(userID: String, password: String): Result<UserModel> {
         return try {
             val snapshot = firestore.collection("users")
                 .whereEqualTo("schoolId", userID)
@@ -60,11 +60,16 @@ class UserRepositoryImpl : UserRepositoryInterface {
             if (signInResult.user == null) {
                 return Result.failure(Exception("Invalid Email ID or Password"))
             }
+            val userModel: UserModel=snapshot.documents.first().toObject(UserModel::class.java)!!
 
-            Result.success("Successful Login")
+            Result.success(userModel)
 
         } catch (e: Exception) {
-            Result.failure(e)
+            val message=when(e){
+                is FirebaseAuthInvalidCredentialsException -> "Invalid Email ID or Password"
+                else -> "Login failed. Please try again."
+            }
+            Result.failure(Exception(message))
         }
     }
 
