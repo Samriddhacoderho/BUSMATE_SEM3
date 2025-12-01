@@ -9,4 +9,9 @@ interface UserRepositoryInterface {
     ): Result<UserModel>
 
     suspend fun loginUser(userID:String,password: String): Result<UserModel>
+
+    suspend fun changePassword(
+        oldPassword: String,
+        newPassword: String
+    ): Result<Unit>
 }
