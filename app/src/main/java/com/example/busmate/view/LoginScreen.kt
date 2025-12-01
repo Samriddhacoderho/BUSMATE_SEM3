@@ -48,9 +48,8 @@ class LoginScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BUSMATETheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LoginScreenUI(modifier = Modifier.padding(innerPadding))
-                }
+
+                    LoginScreenUI()
             }
         }
     }
@@ -59,7 +58,7 @@ class LoginScreen : ComponentActivity() {
 
 
 @Composable
-fun LoginScreenUI(modifier: Modifier = Modifier) {
+fun LoginScreenUI() {
     val context= LocalContext.current
     val activity=context as Activity
     // State variables for input fields and checkbox (required for TextField components)
@@ -78,8 +77,13 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
         context.startActivity(intent)
     }
 
+
+    fun loginFunc(){
+
+    }
+
     // Main screen structure uses Box for layering the blue background and the white card
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // 1. Top Blue Background Section
         Column(
             modifier = Modifier
@@ -224,7 +228,7 @@ fun LoginScreenUI(modifier: Modifier = Modifier) {
 
                 // Log In Button
                 Button(
-                    onClick = { /* UX: login logic goes here */ },
+                    onClick = { loginFunc()},
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     modifier = Modifier
                         .fillMaxWidth()
