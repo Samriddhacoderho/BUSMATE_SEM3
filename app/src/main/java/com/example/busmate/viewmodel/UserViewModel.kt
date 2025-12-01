@@ -60,5 +60,40 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
         }
+
+    fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
+        viewModelScope.launch {
+            _message.value = "Loading"
+
+            // Input Validation (Pass/Confirm match, not blank, length)
+            if (newPass.isBlank() || confirmPass.isBlank() || oldPass.isBlank()) {
+                _message.value = "All password fields must be filled."
+                return@launch
+            }
+            if (newPass != confirmPass) {
+                _message.value = "New password and confirmation password do not match."
+                return@launch
+            }
+            if (newPass.length < 6) {
+                _message.value = "New password is too short (minimum 6 characters)."
+                return@launch
+            }
+
+            try {
+                // Call the Repository
+                val result = repository.changePassword(oldPass, newPass)
+
+                // Update state
+                _message.value =
+                    if (result.isSuccess) "Password successfully changed!"
+                    else result.exceptionOrNull()?.message ?: "Password change failed."
+
+            } catch (e: Exception) {
+                _message.value = e.toString()
+            }
+        }
+    }
 }
+
+
 
