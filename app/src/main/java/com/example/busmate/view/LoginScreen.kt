@@ -35,8 +35,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.viewmodel.UserViewModel
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
@@ -48,8 +50,9 @@ class LoginScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BUSMATETheme {
-
-                    LoginScreenUI()
+                val repo= UserRepositoryImpl()
+                val viewModel= UserViewModel(repo)
+                    LoginScreenUI(viewModel)
             }
         }
     }
@@ -58,7 +61,7 @@ class LoginScreen : ComponentActivity() {
 
 
 @Composable
-fun LoginScreenUI() {
+fun LoginScreenUI(viewModel: UserViewModel) {
     val context= LocalContext.current
     val activity=context as Activity
     // State variables for input fields and checkbox (required for TextField components)
@@ -79,7 +82,7 @@ fun LoginScreenUI() {
 
 
     fun loginFunc(){
-
+        viewModel.login(userId,password)
     }
 
     // Main screen structure uses Box for layering the blue background and the white card

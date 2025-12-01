@@ -46,4 +46,17 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
     }
-}
+
+    fun login(userID: String,password: String){
+        viewModelScope.launch {
+            _message.value="Loading"
+            try {
+                val result=repository.login(userID,password)
+
+            }catch (e: Exception){
+                _message.value=e.toString()
+            }
+        }
+        }
+    }
+

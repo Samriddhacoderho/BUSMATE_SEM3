@@ -7,4 +7,6 @@ interface UserRepositoryInterface {
         user: UserModel,
         password: String
     ): Result<UserModel>
+
+    suspend fun loginUser(userID:String,password: String): Boolean
 }
