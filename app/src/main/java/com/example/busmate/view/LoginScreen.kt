@@ -3,6 +3,7 @@ package com.example.busmate.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -73,11 +74,25 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     // InteractionSource to track focus state of the password field
     val passwordInteractionSource = remember { MutableInteractionSource() }
     val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
+    val message by viewModel.message.collectAsState()
 
 
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
+    }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty()) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+            if(message=="Successful Login"){
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                val intent= Intent(context, ParentDashboardActivity::class.java)
+                context.startActivity(intent)
+                activity.finish()
+            }
+        }
     }
 
 
@@ -267,9 +282,9 @@ fun LoginScreenUI(viewModel: UserViewModel) {
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreenUI()
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun LoginScreenPreview() {
+//    LoginScreenUI()
+//}
