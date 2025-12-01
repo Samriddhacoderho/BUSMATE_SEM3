@@ -51,12 +51,14 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         viewModelScope.launch {
             _message.value="Loading"
             try {
-                val result=repository.login(userID,password)
+                val result=repository.loginUser(userID,password)
+                _message.value=if(result.isSuccess) result.getOrDefault("Successful Login")
+                else result.exceptionOrNull()?.message ?: "Unknown Error"
 
             }catch (e: Exception){
                 _message.value=e.toString()
             }
         }
         }
-    }
+}
 
