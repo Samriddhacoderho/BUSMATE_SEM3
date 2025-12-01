@@ -1,6 +1,7 @@
 package com.example.busmate.view
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,9 +33,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.ui.theme.PrimaryBlue
+import com.example.busmate.viewmodel.UserViewModel
 
 
 class AdminChangePassword : ComponentActivity() {
@@ -41,13 +45,15 @@ class AdminChangePassword : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AdminChangeUI()
+            val repo = UserRepositoryImpl()
+            val viewModel = UserViewModel(repo)
+            AdminChangeUI(viewModel = viewModel)
 
         }
     }
 }
 @Composable
-fun AdminChangeUI() {
+fun AdminChangeUI(viewModel: UserViewModel) {
 
     var oldPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
@@ -59,9 +65,28 @@ fun AdminChangeUI() {
 
     val scrollState = rememberScrollState()
 
+    val context = LocalContext.current
+    val message by viewModel.message.collectAsState()
+
+    fun handleChangePassword() {
+        viewModel.changePassword(oldPass, newPass, confirmPass)
+    }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty() && message != "Loading") {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            // Clear fields on successful password change
+            if (message == "Password successfully changed!") {
+                oldPass = ""
+                newPass = ""
+                confirmPass = ""
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 🔵 BLUE TOP SECTION (same as login screen)
+        //  BLUE TOP SECTION (same as login screen)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,9 +235,9 @@ fun AdminChangeUI() {
 
                 Spacer(modifier = Modifier.height(35.dp))
 
-                // 🔵 BUTTON (same as login page)
+
                 Button(
-                    onClick = {},
+                    onClick = {handleChangePassword()},
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -283,5 +308,6 @@ fun Requirement(text: String, passed: Boolean) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewAdminChangeUI() {
-    AdminChangeUI()
+    AdminChangeUI(viewModel = UserViewModel(repository = UserRepositoryImpl()))
+
 }
