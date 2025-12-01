@@ -42,4 +42,9 @@ class UserRepositoryImpl : UserRepositoryInterface {
             Result.failure(Exception(message))
         }
     }
+
+    override suspend fun loginUser(userID: String, password: String): Boolean {
+        //baki cha
+        return true
+    }
 }
