@@ -43,6 +43,24 @@ class UserRepositoryImpl : UserRepositoryInterface {
             Result.failure(Exception(message))
         }
     }
+
+    //sir ko method
+
+//    override fun login(
+//        email: String,
+//        password: String,
+//        callback: (String, Boolean, UserModel) -> Unit
+//    ) {
+//        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener {
+//            if(it.isSuccessful){
+//                callback("Login Successful",true,UserModel())
+//            }else{
+//                callback("${it.exception?.message}",false, UserModel())
+//                }
+//        }
+//
+//    }
+
     override suspend fun loginUser(userID: String, password: String): Result<UserModel> {
         return try {
             val snapshot = firestore.collection("users")
