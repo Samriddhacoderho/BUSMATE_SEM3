@@ -6,4 +6,14 @@ data class SupportModel(
     val typeofUser:String,
     val title:String,
     val message:String
-)
+) {
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "uid" to uid,
+            "name" to name,
+            "typeofUser" to typeofUser,
+            "title" to title,
+            "message" to message
+        )
+    }
+}
