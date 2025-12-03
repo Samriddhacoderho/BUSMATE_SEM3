@@ -1,5 +1,6 @@
 package com.example.busmate.data
 
+import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -93,6 +94,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
     }
 
     override suspend fun changePassword(
+
         oldPassword: String,
         newPassword: String
     ): Result<Unit> {
@@ -117,6 +119,27 @@ class UserRepositoryImpl : UserRepositoryInterface {
         }
 
     }
+    override suspend fun createAccount(
+        model: CreateAccountModel,
+        callback: (String, Boolean) -> Unit
+    ){
+
+        try {
+            firestore.collection("user")
+                .document(model.schoolId)
+                .set(model.toMap())
+                .await()
+            callback("Created Account Successful", true)
+
+        }catch(e: Exception){
+            callback("Failed to CreateAccount: ${e.message}", false)
+
+        }
+    }
+
+
+
+
 
 
 }

@@ -54,7 +54,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
     val roles = listOf("Parent", "Driver")
 
     val message by viewModel.message.collectAsState()
-    val loading by viewModel.loading.collectAsState()
+
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -187,12 +187,14 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                                 )
                             }
                         },
-                        enabled = !loading,
+                        enabled = message!="Loading",
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
-                        Text(if (loading) "Creating..." else "Create Account")
+                        Text(
+                            text = if (message!="Loading") "Create Account" else "Creating...",
+                        )
                     }
                 }
             }

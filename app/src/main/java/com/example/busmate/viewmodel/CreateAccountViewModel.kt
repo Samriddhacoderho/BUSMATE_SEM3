@@ -3,6 +3,7 @@ package com.example.busmate.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.UserRepositoryInterface
+import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,44 +14,26 @@ class CreateAccountViewModel(private val repository: UserRepositoryInterface) : 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-    private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading
+
 
     fun createAccountWithMinimalData(role: String, schoolId: String) {
 
-        if (role == "Select Role") {
-            _message.value = "Please select a role"
-            return
-        }
-
-        if (schoolId.isBlank()) {
-            _message.value = "User ID cannot be empty"
-            return
-        }
-
         viewModelScope.launch {
-            _loading.value = true
+            _message.value = "Loading"
+            try{
+                val model= CreateAccountModel(
+                    role = role,
+                    schoolId = schoolId
+                )
+                repository.createAccount(model=model) { responseMessage, success ->
+                    _message.value = responseMessage
+                }
 
-            val user = UserModel(
-                role = role,
-                schoolId = schoolId,
-                email = "$schoolId@busmate.com", // dummy auto-email required by Firebase
-                firstName = "",
-                lastName = "",
-                phone = ""
-            )
 
-            val password = "123456" // default password
-
-            val result = repository.registerUser(user, password)
-
-            _message.value = if (result.isSuccess) {
-                "Account Created Successfully"
-            } else {
-                result.exceptionOrNull()?.message ?: "Failed"
+            }catch (e: Exception){
+                _message.value = e.toString()
             }
 
-            _loading.value = false
         }
     }
 }
