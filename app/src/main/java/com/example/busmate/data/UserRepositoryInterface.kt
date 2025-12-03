@@ -1,5 +1,6 @@
 package com.example.busmate.data
 
+import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 
 interface UserRepositoryInterface {
@@ -17,6 +18,10 @@ interface UserRepositoryInterface {
         oldPassword: String,
         newPassword: String
     ): Result<Unit>
+
+    suspend fun createAccount(
+        model: CreateAccountModel,callback:(String,Boolean)->Unit
+    )
 
 
 }
