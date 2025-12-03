@@ -14,7 +14,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-    private val _user=MutableStateFlow<UserModel?>(null)
+    private val _user = MutableStateFlow<UserModel?>(null)
     val user: StateFlow<UserModel?> = _user
 
     fun register(
@@ -23,7 +23,8 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         email: String,
         schoolId: String,
         phone: String,
-        password: String
+        password: String,
+
     ) {
         viewModelScope.launch {
 
@@ -35,7 +36,9 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
                     lastName = lastName,
                     email = email,
                     schoolId = schoolId,
-                    phone = phone
+                    phone = phone,
+
+
                 )
 
                 val result = repository.registerUser(user, password)
@@ -50,22 +53,22 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         }
     }
 
-    fun login(userID: String,password: String){
+    fun login(userID: String, password: String) {
         viewModelScope.launch {
-            _message.value="Loading"
+            _message.value = "Loading"
             try {
-                val result=repository.loginUser(userID,password)
+                val result = repository.loginUser(userID, password)
                 if (result.isSuccess) {
                     _message.value = "Successful Login"
                     _user.value = result.getOrNull() // This updates the user state flow
                 } else {
                     _message.value = result.exceptionOrNull()?.message ?: "Unknown Error"
                 }
-            }catch (e: Exception){
-                _message.value=e.toString()
+            } catch (e: Exception) {
+                _message.value = e.toString()
             }
         }
-        }
+    }
 
     fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
         viewModelScope.launch {
@@ -100,6 +103,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         }
     }
 }
+
 
 
 
