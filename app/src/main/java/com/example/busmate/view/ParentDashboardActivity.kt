@@ -1,6 +1,7 @@
 package com.example.busmate.view
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -38,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BackgroundLightGray
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
@@ -60,7 +62,7 @@ fun ParentDashboardScreen() {
     val context= LocalContext.current
     val activity=context as Activity
 
-    var parentName by remember { mutableStateOf(activity.intent.getStringExtra("name")) }
+    var parentName by remember { mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model")) }
     Scaffold(containerColor = BackgroundLightGray) { paddingValues ->
         LazyColumn(Modifier
             .fillMaxSize()
@@ -68,11 +70,18 @@ fun ParentDashboardScreen() {
             item {
                 //Header
                 TopDashboardBar()
-                WelcomeCard(parentName)
+                WelcomeCard(parentName?.firstName+ " "+parentName?.lastName)
                 MyChildrenHeader()
                 ChildTrackingCard(childName = "Swikrit Ghimire", statusText = "Reached School", subText = "Bus No: 1511\n2 min ago", statusColor = BusMateGreen, imageResource = R.drawable.boy, mapImageResource = R.drawable.school)
                 ChildTrackingCard(childName = "Shahana Katwal", statusText = "In Bus", subText = "Bus No: 1533\n8 min ago", statusColor = BusMateOrange, imageResource = R.drawable.girl, mapImageResource = R.drawable.map)
                 NotificationsAlertHeader()
+                Button(onClick ={
+                    val intent= Intent(context, SupportActivity::class.java)
+                    intent.putExtra("model", parentName)
+                    context.startActivity(intent)
+                }) {
+                    Text("Click to open support page")
+                }
             }
         }
 
