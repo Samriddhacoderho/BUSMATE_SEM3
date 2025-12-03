@@ -7,6 +7,7 @@ data class UserModel(
     val email:String="",
     val schoolId:String="",
     val phone:String="",
+    val role: String = ""
 
 
 ) {
@@ -18,6 +19,7 @@ data class UserModel(
             "email" to email,
             "schoolId" to schoolId,
             "phone" to phone,
+            "role" to role
 
         )
     }
