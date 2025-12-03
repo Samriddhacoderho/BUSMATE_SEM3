@@ -101,7 +101,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         )
                 }
                 val intent= Intent(context, ParentDashboardActivity::class.java)
-                intent.putExtra("name", user?.firstName+" "+user?.lastName)
+                intent.putExtra("model", user)
                 context.startActivity(intent)
                 activity.finish()
             }
