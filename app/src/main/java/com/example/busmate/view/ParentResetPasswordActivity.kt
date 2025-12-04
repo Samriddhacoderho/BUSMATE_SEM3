@@ -40,156 +40,164 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.ui.theme.PrimaryBlue
 import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.viewmodel.ResetPasswordViewModel
 
 class ParentResetPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ParentResetPasswordUI()
+            val viewModel: ResetPasswordViewModel = viewModel()
+            ParentResetPasswordUI(viewModel)
         }
     }
 }
 
 
 @Composable
-fun ParentResetPasswordUI() {
-    // State variables for input fields and checkbox (required for TextField components)
+fun ParentResetPasswordUI(viewModel: ResetPasswordViewModel) {
+
     var userId by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
 
-    // InteractionSource to track focus state of the password field
-    val passwordInteractionSource = remember { MutableInteractionSource() }
-    val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
+    val uiState by viewModel.message.collectAsState()
+    val isLoading = uiState == "Loading"
 
-    // Main screen structure uses Box for layering the blue background and the white card
-    Box(Modifier.fillMaxSize()) {
-        // 1. Top Blue Background Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.60f)
-                .background(BusMateBlue),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            Spacer(modifier = Modifier.height(48.dp)) // Top padding
+    val snackbarHostState = remember { SnackbarHostState() }
 
-            // Bus Logo
-            Image(
-                painter = painterResource(com.example.busmate.R.drawable.logo),
-                contentDescription = "Bus Mate Logo",
-                colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                modifier = Modifier.size(200.dp)
-            )
-
-
-
-            // Log in title
-            Text(
-                text = "Reset\nPassword",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                lineHeight = 40.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp)
-            )
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // Subtitle
-            Text(
-                text = "Enter your recovery Email ID to reset password",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
+    // 🔥 This is the correct place to show snackbar
+    LaunchedEffect(uiState) {
+        if (uiState.isNotBlank() && uiState != "Loading") {
+            snackbarHostState.showSnackbar(uiState)
         }
+    }
 
-        // 2. White Login Card (Overlaps the blue section)
-        Card(
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .align(Alignment.BottomCenter)
-                .height(350.dp)
-                .offset(y = (-100).dp), // Negative offset to make it overlap the blue section
-            // Custom shape for rounded top corners
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
+
+            // ---------- TOP BLUE SECTION ----------
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .fillMaxHeight(0.60f)
+                    .background(BusMateBlue),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                // User ID Field
-                OutlinedTextField(
-                    value = userId,
-                    onValueChange = { userId = it },
-                    label = { Text("Enter email") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        focusedLabelColor = PrimaryBlue
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+
+                Spacer(modifier = Modifier.height(48.dp))
+
+                Image(
+                    painter = painterResource(com.example.busmate.R.drawable.logo),
+                    contentDescription = "Logo",
+                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                    modifier = Modifier.size(200.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Reset\nPassword",
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    lineHeight = 40.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // Remember me & Forgot Password Row
-                // Log In Button
-                Button(
-                    onClick = { /* UX: login logic goes here */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                Text(
+                    text = "Enter your recovery Email ID to reset password",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // ---------- WHITE CARD ----------
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .align(Alignment.BottomCenter)
+                    .height(350.dp)
+                    .offset(y = (-100).dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Send Code",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(24.dp))
 
-                // Sign Up Link
-                Row {
-                    Text(
-                        text = "Don't have an account?",
-                        fontSize = 14.sp,
-                        color = Color.Gray
+                    OutlinedTextField(
+                        value = userId,
+                        onValueChange = { userId = it },
+                        label = { Text("Enter email") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            focusedLabelColor = PrimaryBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Sign Up",
-                        color = PrimaryBlue,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable { /* UX: navigation to sign up */ }
-                    )
+
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    Button(
+                        onClick = {
+                            if (userId.isNotBlank()) {
+                                viewModel.resetPassword(userId.trim())
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
+                    ) {
+
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 3.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Send Reset Link to Email",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewforPassResetParent() {
-    ParentResetPasswordUI()
-}
+
+
+
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewforPassResetParent() {
+//    ParentResetPasswordUI()
+//}
 
