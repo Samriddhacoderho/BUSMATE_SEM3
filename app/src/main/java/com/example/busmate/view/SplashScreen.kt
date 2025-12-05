@@ -84,7 +84,7 @@ fun SplashScreenUI() {
 
             if (userJson != null) {
                 val savedUser = gson.fromJson(userJson, UserModel::class.java)
-                val intent = Intent(context, ParentDashboardActivity::class.java)
+                val intent = Intent(context, com.example.busmate.view.dashboard.ParentDashboardActivity::class.java)
                 intent.putExtra("model", savedUser)
                 context.startActivity(intent)
                 activity.finish()

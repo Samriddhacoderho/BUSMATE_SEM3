@@ -1,9 +1,5 @@
 package com.example.busmate.view
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,7 +21,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebView
 import android.webkit.WebViewClient
 // ----------------------------------------
-import com.example.busmate.view.ui.theme.BUSMATETheme
 
 // --- Colors and Constants ---
 private object LiveLocationColors {
@@ -37,25 +32,6 @@ private object LiveLocationColors {
 }
 
 
-class LiveLocationActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            // Apply the custom theme
-            BUSMATETheme {
-                // A standard Android Surface wrapper for background color
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Call the main LiveLocationScreen composable
-                    LiveLocationScreen()
-                }
-            }
-        }
-    }
-}
 
 /**
  * The main Composable function for the Live Location Tracking UI.
