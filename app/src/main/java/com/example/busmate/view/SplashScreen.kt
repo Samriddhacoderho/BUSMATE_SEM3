@@ -32,6 +32,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.busmate.R
+import com.example.busmate.view.dashboard.ParentDashboardActivity
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateOrange
 import kotlinx.coroutines.delay
@@ -84,7 +85,7 @@ fun SplashScreenUI() {
 
             if (userJson != null) {
                 val savedUser = gson.fromJson(userJson, UserModel::class.java)
-                val intent = Intent(context, com.example.busmate.view.dashboard.ParentDashboardActivity::class.java)
+                val intent = Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", savedUser)
                 context.startActivity(intent)
                 activity.finish()
