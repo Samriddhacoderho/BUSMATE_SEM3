@@ -46,9 +46,6 @@ class ParentDashboardActivity : ComponentActivity() {
 fun ParentDashboardScreen() {
     val context = LocalContext.current
     val activity = context as? Activity
-
-//    val userModel = activity?.intent?.getParcelableExtra<UserModel>("model")
-//    val parentName = userModel?.firstName ?: "Parent"
     val supportViewModel= SupportViewModel(repository = SupportRepositoryImpl())
 
     data class NavItem(val label: String, val icon: Int)

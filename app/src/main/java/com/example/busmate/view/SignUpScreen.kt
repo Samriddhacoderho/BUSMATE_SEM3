@@ -1,6 +1,7 @@
 package com.example.busmate.view
 
 import android.R.attr.password
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -54,6 +55,7 @@ fun isValidEmail(email: String): Boolean {
 }
 
 class SignUpScreen : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
