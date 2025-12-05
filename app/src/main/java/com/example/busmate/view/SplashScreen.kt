@@ -73,15 +73,27 @@ fun SplashScreenUI() {
     }
 
     LaunchedEffect(Unit) {
-        if(isConnected){
-            delay(2000)
-            val intent = Intent(
-                context, LoginScreen::class.java
-            )
-            context.startActivity(intent)
-            activity.finish()
+        if (isConnected) {
 
+            delay(2000)
+
+            val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
+            val savedUserId = sharedPreferences.getString("userId", "") ?: ""
+            val savedPassword = sharedPreferences.getString("password", "") ?: ""
+
+            if (savedUserId.isNotEmpty() && savedPassword.isNotEmpty()) {
+                // User info exists → go to Dashboard
+                val intent = Intent(context, ParentDashboardActivity::class.java)
+                context.startActivity(intent)
+                activity.finish()
+            } else {
+                // No saved login → go to Login
+                val intent = Intent(context, LoginScreen::class.java)
+                context.startActivity(intent)
+                activity.finish()
+            }
         }
+
         }
 
 

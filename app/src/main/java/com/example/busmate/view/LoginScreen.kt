@@ -88,6 +88,12 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val savedUserId = sharedPreferences.getString("userId", "") ?: ""
     val savedPassword = sharedPreferences.getString("password", "") ?: ""
 
+    LaunchedEffect(Unit) {
+        userId = savedUserId
+        password = savedPassword
+        rememberMe = savedUserId.isNotEmpty() && savedPassword.isNotEmpty()
+    }
+
 
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
