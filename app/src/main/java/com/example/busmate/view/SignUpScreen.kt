@@ -558,7 +558,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                             fontSize = 12.sp
                         )
                     }
-
+//testing validation signup
                     // Final Spacer at the bottom of the Card content
                     Spacer(modifier = Modifier.height(48.dp))
 
