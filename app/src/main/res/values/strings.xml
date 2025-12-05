@@ -16,4 +16,6 @@
     <string name="title_activity_bus_profile">BusProfile</string>
     <string name="title_activity_create_account_screen">CreateAccountScreenActivity</string>
     <string name="title_activity_setting">SettingActivity</string>
+<!--    <string name="baato_access_token">bpk.NMWVkzM5kmt_C4mbq0qyXwscw7Gjoy66uLQBpZXKGkjw</string>-->
+    <string name="title_activity_live_location_screen">LiveLocationScreen</string>
 </resources>
