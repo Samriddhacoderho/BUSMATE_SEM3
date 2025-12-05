@@ -69,9 +69,15 @@
         </activity>
         <activity
             android:name=".view.ParentResetPasswordActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_parent_reset_password"
-            android:theme="@style/Theme.BUSMATE" />
+            android:theme="@style/Theme.BUSMATE" >
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        </activity>
         <activity
             android:name=".view.SupportDriverActivity"
             android:exported="true"
