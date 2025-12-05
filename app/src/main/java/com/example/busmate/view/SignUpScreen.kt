@@ -1,5 +1,6 @@
 package com.example.busmate.view
 
+import android.R.attr.password
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
@@ -49,6 +50,9 @@ import com.example.busmate.ui.theme.SignUpTitleColor
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
+fun isValidEmail(email: String): Boolean {
+    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
 
 class SignUpScreen : ComponentActivity() {
     @SuppressLint("ViewModelConstructorInComposable")
@@ -56,11 +60,10 @@ class SignUpScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BUSMATETheme {
-                val repo= UserRepositoryImpl()
-                val viewModel= UserViewModel(repo)
-                SignUpScreenUI(viewModel)
-            }
+            val repo= UserRepositoryImpl()
+            val viewModel= UserViewModel(repo)
+            SignUpScreenUI(viewModel)
+
         }
     }
 }
@@ -77,6 +80,24 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var firstNameError by remember { mutableStateOf<String?>(null) }
+    var lastNameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var schoolIdError by remember { mutableStateOf<String?>(null) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+    val isFormValid =
+        firstName.isNotBlank() &&
+                lastName.isNotBlank() &&
+                email.isNotBlank() &&
+                isValidEmail(email) &&
+                schoolId.isNotBlank() &&
+                phone.length >= 10 &&
+                password.matches(Regex("(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#\$%^&*()]).*")) &&
+                confirmPassword.isNotBlank() &&
+                password == confirmPassword &&
+                password.length >= 6
 
     // InteractionSources to track focus state for conditional labels
     val passwordInteractionSource = remember { MutableInteractionSource() }
@@ -114,20 +135,77 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
     }
 
 
-    fun registerFunc(){
-        viewModel.register(firstName, lastName,email,schoolId,phone, password)
+    fun registerFunc() {
+
+        when {
+            firstName.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("First name cannot be empty")
+                }
+            }
+            lastName.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Last name cannot be empty")
+                }
+            }
+            email.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Email cannot be empty")
+                }
+            }
+            !isValidEmail(email) -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Invalid email format")
+                }
+            }
+            schoolId.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("School ID cannot be empty")
+                }
+            }
+            phone.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Phone number cannot be empty")
+                }
+            }
+            phone.isBlank() || phone.length < 10 -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Phone number must be at least 10 digits")
+                }
+            }
+
+            confirmPassword.isBlank() -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Confirm your password")
+                }
+            }
+            password != confirmPassword -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Passwords do not match")
+                }
+            }
+            password.length < 6 -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Password must be at least 6 characters")
+                }
+            }
+            else -> {
+                viewModel.register(firstName, lastName, email, schoolId, phone, password)
+            }
+        }
     }
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState){
-            Snackbar(
-                snackbarData = it,
-                containerColor = if (message.isNotEmpty() && message == "Successful Registration") Color.Green else Color.Red,
-                contentColor = Color.White
-            )
-        } },
+                Snackbar(
+                    snackbarData = it,
+                    containerColor = if (message.isNotEmpty() && message == "Successful Registration") Color.Green else Color.Red,
+                    contentColor = Color.White
+                )
+            } },
         bottomBar = {
             // Floating Register Button
             Row(
@@ -150,7 +228,8 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = message!="Loading"
+                    enabled = message != "Loading" && isFormValid
+
                 ) {
                     Text(
                         text = if (message!="Loading") "Register" else "Registering In",
@@ -268,34 +347,71 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // First Name
-                        OutlinedTextField(
-                            value = firstName,
-                            onValueChange = { firstName = it },
-                            label = { Text("First Name") },
-                            placeholder = { Text("Ram") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                            modifier = Modifier.weight(1f)
-                        )
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = firstName,
+                                onValueChange = {
+                                    firstName = it
+                                    firstNameError = when {
+                                        it.isBlank() -> "First Name required"
+                                        !it.matches(Regex("^[A-Za-z]+$")) -> "Contain only letters"
+                                        else -> null
+                                    }
+                                },
+                                label = { Text("First Name") },
+                                placeholder = { Text("Ram") },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = BusMateBlue,
+                                    focusedLabelColor = BusMateBlue
+                                ),
+                            )
+                            if (firstNameError != null) {
+                                Text(firstNameError!!, color = Color.Red, fontSize = 12.sp)
+                            }
+                        }
+
                         Spacer(modifier = Modifier.width(16.dp))
-                        // Last Name
-                        OutlinedTextField(
-                            value = lastName,
-                            onValueChange = { lastName = it },
-                            label = { Text("Last Name") },
-                            placeholder = { Text("Thapa...") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                            modifier = Modifier.weight(1f)
-                        )
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = lastName,
+                                onValueChange = {
+                                    lastName = it
+                                    lastNameError = when {
+                                        it.isBlank() -> "Last Name required"
+                                        !it.matches(Regex("^[A-Za-z]+$")) -> "Contain only letters"
+                                        else -> null
+                                    }
+                                },
+                                label = { Text("Last Name") },
+                                placeholder = { Text("Thapa...") },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = BusMateBlue,
+                                    focusedLabelColor = BusMateBlue
+                                ),
+                            )
+                            if (lastNameError != null) {
+                                Text(lastNameError!!, color = Color.Red, fontSize = 12.sp)
+                            }
+                        }
                     }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Email Field
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = {
+                            email = it
+                            emailError = when {
+                                it.isBlank() -> "Email required"
+                                !isValidEmail(it) -> "Invalid email"
+                                else -> null
+                            }
+                        },
                         label = { Text("Email") },
                         placeholder = { Text("ramthapa@gmail.com") },
                         singleLine = true,
@@ -303,24 +419,50 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (emailError != null) {
+                        Text(
+                            text = emailError!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // School ID Field
                     OutlinedTextField(
                         value = schoolId,
-                        onValueChange = { schoolId = it },
+                        onValueChange = {
+                            schoolId = it
+                            schoolIdError = if (it.isBlank()) "School ID required" else null
+                        },
                         label = { Text("ID provided by school") },
                         placeholder = { Text("ATX6647") },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (schoolIdError != null) {
+                        Text(
+                            text = schoolIdError!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Phone Number Field
                     OutlinedTextField(
                         value = phone,
-                        onValueChange = { phone = it },
+                        onValueChange = {
+                            phone = it
+                            phoneError = when {
+                                it.isBlank() -> "Phone number required"
+                                // Check for any non-digit character
+                                it.any { char -> !char.isDigit() } -> "Phone number must contain digits only"
+                                it.length < 10 -> "Phone number must be at least 10 digits"
+                                else -> null
+                            }
+                        },
                         label = { Text("Phone Number") },
                         placeholder = { Text("(454) 726-0592") },
                         singleLine = true,
@@ -328,15 +470,33 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (phoneError != null) {
+                        Text(
+                            text = phoneError!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Set Password Field
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            passwordError = when {
+                                it.isBlank() -> "Password required"
+                                it.length < 6 -> "Password must be at least 6 characters"
+                                !it.matches(Regex(".*[A-Z].*")) -> "Must include 1 uppercase letter"
+                                !it.matches(Regex(".*[a-z].*")) -> "Must include 1 lowercase letter"
+                                !it.matches(Regex(".*\\d.*")) -> "Must include 1 number"
+                                !it.matches(Regex(".*[!@#\$%^&*()].*")) -> "Must include 1 special character"
+                                else -> null
+                            }
+                        },
                         interactionSource = passwordInteractionSource,
                         label = {
-                            Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Set Password")
+                            Text(if (password.isEmpty() && !isPasswordFocused) "Sandip@69" else "Set Password")
                         },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -347,15 +507,34 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                                 Icon(imageVector = image, contentDescription = "Toggle password visibility")
                             }
                         },
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BusMateBlue,
+                            focusedLabelColor = BusMateBlue
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    if (passwordError != null) {
+                        Text(
+                            text = passwordError!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Confirm Password Field
                     OutlinedTextField(
                         value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
+                        onValueChange = {
+                            confirmPassword = it
+                            confirmPasswordError = when {
+                                it.isBlank() -> "Confirm password"
+                                it != password -> "Passwords do not match"
+                                else -> null
+                            }
+                        },
                         interactionSource = confirmPasswordInteractionSource,
                         label = {
                             Text(if (confirmPassword.isEmpty() && !isConfirmPasswordFocused) "********" else "Confirm Password")
@@ -372,7 +551,14 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
                         modifier = Modifier.fillMaxWidth()
                     )
-
+                    if (confirmPasswordError != null) {
+                        Text(
+                            text = confirmPasswordError!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
+//testing validation signup
                     // Final Spacer at the bottom of the Card content
                     Spacer(modifier = Modifier.height(48.dp))
 

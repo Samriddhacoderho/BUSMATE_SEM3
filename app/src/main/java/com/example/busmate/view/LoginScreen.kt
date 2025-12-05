@@ -2,10 +2,8 @@ package com.example.busmate.view
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,7 +21,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,12 +32,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.view.dashboard.ParentDashboardActivity
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
@@ -54,11 +50,10 @@ class LoginScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BUSMATETheme {
+
                 val repo= UserRepositoryImpl()
                 val viewModel= UserViewModel(repo)
-                LoginScreenUI(viewModel)
-            }
+                    LoginScreenUI(viewModel)
         }
     }
 }
@@ -84,23 +79,6 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val coroutineScope=rememberCoroutineScope()
 
 
-    val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
-    val gson = com.google.gson.Gson()
-    val userJson = gson.toJson(user) // user is UserModel from ViewModel
-
-    sharedPreferences.edit().putString("user_model", userJson).apply()
-
-    val savedUserId = sharedPreferences.getString("userId", "") ?: ""
-    val savedPassword = sharedPreferences.getString("password", "") ?: ""
-
-
-    LaunchedEffect(Unit) {
-        userId = savedUserId
-        password = savedPassword
-        rememberMe = savedUserId.isNotEmpty() && savedPassword.isNotEmpty()
-    }
-
-
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
@@ -118,7 +96,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
                         message = message,
-                    )
+                        )
                 }
                 val intent= Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", user)
@@ -141,7 +119,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 contentColor = Color.White
             )
         } }
-    )
+        )
     {paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             // 1. Top Blue Background Section
@@ -288,16 +266,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
                     // Log In Button
                     Button(
-                        onClick = { loginFunc()
-                            if (rememberMe) {
-                                val editor = sharedPreferences.edit()
-                                editor.putString("userId", userId)
-                                editor.putString("password", password)
-                                editor.apply()
-                            } else {
-                                // Added: Clear saved credentials if Remember Me unchecked
-                                sharedPreferences.edit().clear().apply()
-                            }},
+                        onClick = { loginFunc()},
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
                             disabledContainerColor = Color.Gray,
                             disabledContentColor = Color.White,
