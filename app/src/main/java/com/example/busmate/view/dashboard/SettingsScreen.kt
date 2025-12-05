@@ -1,7 +1,6 @@
-package com.example.busmate.view
+package com.example.busmate.view.dashboard
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cookie
@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.busmate.view.SettingsMenuItem
 
 @Composable
 fun SettingScreen() {
@@ -51,90 +52,96 @@ fun SettingScreen() {
         },
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxWidth()
         ) {
-            // 🔔 Notification Toggle Item
-            SettingsMenuItemScreen(
-                title = "Notification",
-                imageVector = Icons.Filled.Notifications,
-                onClick = { isNotificationEnabled = !isNotificationEnabled } // Clicking the row toggles the switch
-            ) {
-                // Trailing content for Notification item is a Switch
-                Switch(
-                    checked = isNotificationEnabled,
-                    onCheckedChange = { isNotificationEnabled = it }
+            item {
+                SettingsMenuItemScreen(
+                    title = "Notification",
+                    imageVector = Icons.Filled.Notifications,
+                    onClick = {
+                        isNotificationEnabled = !isNotificationEnabled
+                    } // Clicking the row toggles the switch
+                ) {
+                    // Trailing content for Notification item is a Switch
+                    Switch(
+                        checked = isNotificationEnabled,
+                        onCheckedChange = { isNotificationEnabled = it }
+                    )
+                }
+
+
+                SettingsMenuItem(
+                    title = "Dark Mode",
+                    imageVector = Icons.Filled.DarkMode,
+                    onClick = { /* TODO: Implement Dark Mode toggle/navigation */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Rate App",
+                    imageVector = Icons.Filled.Star,
+                    onClick = { /* TODO: Implement launching rating prompt */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Share App",
+                    imageVector = Icons.Filled.Share,
+                    onClick = { /* TODO: Implement share intent */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Privacy Policy",
+                    imageVector = Icons.Filled.Lock,
+                    onClick = { /* TODO: Implement navigation to policy screen */ }
+                )
+
+
+
+                SettingsMenuItem(
+                    title = "Terms and Conditions",
+                    imageVector = Icons.Filled.Description,
+                    onClick = { /* TODO: Implement navigation to terms screen */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Cookies Policy",
+                    imageVector = Icons.Filled.Cookie,
+                    onClick = { /* TODO: Implement navigation to cookies policy screen */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Contact",
+                    imageVector = Icons.Filled.Mail,
+                    onClick = { /* TODO: Implement navigation to contact screen */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Feedback",
+                    imageVector = Icons.Filled.Feedback,
+                    onClick = { /* TODO: Implement navigation to feedback screen */ }
+                )
+
+
+                SettingsMenuItem(
+                    title = "Logout",
+                    imageVector = Icons.Filled.Logout,
+                    onClick = { /* TODO: Implement logout logic */ }
                 )
             }
-
-
-            SettingsMenuItem(
-                title = "Dark Mode",
-                imageVector = Icons.Filled.DarkMode,
-                onClick = { /* TODO: Implement Dark Mode toggle/navigation */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Rate App",
-                imageVector = Icons.Filled.Star,
-                onClick = { /* TODO: Implement launching rating prompt */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Share App",
-                imageVector = Icons.Filled.Share,
-                onClick = { /* TODO: Implement share intent */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Privacy Policy",
-                imageVector = Icons.Filled.Lock,
-                onClick = { /* TODO: Implement navigation to policy screen */ }
-            )
-
-
-
-            SettingsMenuItem(
-                title = "Terms and Conditions",
-                imageVector = Icons.Filled.Description,
-                onClick = { /* TODO: Implement navigation to terms screen */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Cookies Policy",
-                imageVector = Icons.Filled.Cookie,
-                onClick = { /* TODO: Implement navigation to cookies policy screen */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Contact",
-                imageVector = Icons.Filled.Mail,
-                onClick = { /* TODO: Implement navigation to contact screen */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Feedback",
-                imageVector = Icons.Filled.Feedback,
-                onClick = { /* TODO: Implement navigation to feedback screen */ }
-            )
-
-
-            SettingsMenuItem(
-                title = "Logout",
-                imageVector = Icons.Filled.Logout,
-                onClick = { /* TODO: Implement logout logic */ }
-            )
         }
     }
 }
+// 🔔 Notification Toggle Item
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsTopBarScreen(onBackClick: () -> Unit) {
