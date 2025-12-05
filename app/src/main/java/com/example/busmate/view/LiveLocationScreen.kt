@@ -117,18 +117,13 @@ fun LiveLocationScreen() {
                     )
                 }
 
-                // Right Card: Placeholder for another person/info
-                item {
-                    ProfileCard(
-                        modifier = Modifier.width(280.dp), // Set to 280.dp to match ETACard
-                        backgroundColor = LiveLocationColors.CardGreen
-                    )
-                }
+
 
                 // Third Card (Placeholder for demonstration of scroll)
                 item {
                     ETACard(
-                        modifier = Modifier.width(280.dp)
+                        modifier = Modifier.width(280.dp),
+                        cardColor = LiveLocationColors.CardGreen
                     )
                 }
             }
@@ -184,10 +179,10 @@ fun MapPrototype(modifier: Modifier = Modifier) {
  * Composable for the ETA and Bus Info card.
  */
 @Composable
-fun ETACard(modifier: Modifier = Modifier) {
+fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors.CardOrange) {
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = LiveLocationColors.CardOrange),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = modifier
             .aspectRatio(2.5f) // Make it wider than tall
@@ -251,35 +246,7 @@ fun ETACard(modifier: Modifier = Modifier) {
 /**
  * Composable for a smaller profile card.
  */
-@Composable
-fun ProfileCard(modifier: Modifier = Modifier, backgroundColor: Color) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier
-            .aspectRatio(2.5f) // CHANGED: Now matches the ETACard aspect ratio (2.5f)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp), // Increased padding for better look in a wider card
-            contentAlignment = Alignment.Center
-        ) {
-            // Profile Image Placeholder (Boy)
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(100))
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                // Placeholder for another profile image
-                Text("🧑‍💻", fontSize = 32.sp)
-            }
-        }
-    }
-}
+
 
 @Preview(showBackground = true)
 @Composable
