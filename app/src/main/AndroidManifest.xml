@@ -150,7 +150,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.ParentDashboardActivity"
+            android:name=".view.dashboard.ParentDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_parent_dashboard"
             android:theme="@style/Theme.BUSMATE">
