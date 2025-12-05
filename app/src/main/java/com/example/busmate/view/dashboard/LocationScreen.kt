@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

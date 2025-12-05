@@ -1,9 +1,9 @@
 package com.example.busmate.view
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,12 +32,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.view.dashboard.ParentDashboardActivity
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
@@ -47,15 +45,15 @@ private val PrimaryBlue = Color(0xFF2567E8)
 private val PlaceholderBusColor = Color(0xFFFFB74D) // The orange/yellow color for the bus logo
 
 class LoginScreen : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BUSMATETheme {
+
                 val repo= UserRepositoryImpl()
                 val viewModel= UserViewModel(repo)
                     LoginScreenUI(viewModel)
-            }
         }
     }
 }

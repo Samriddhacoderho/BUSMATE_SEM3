@@ -54,11 +54,10 @@ class SignUpScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BUSMATETheme {
                 val repo= UserRepositoryImpl()
                 val viewModel= UserViewModel(repo)
                 SignUpScreenUI(viewModel)
-            }
+
         }
     }
 }
