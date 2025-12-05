@@ -54,7 +54,7 @@ class LoginScreen : ComponentActivity() {
             BUSMATETheme {
                 val repo= UserRepositoryImpl()
                 val viewModel= UserViewModel(repo)
-                    LoginScreenUI(viewModel)
+                LoginScreenUI(viewModel)
             }
         }
     }
@@ -81,6 +81,14 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val coroutineScope=rememberCoroutineScope()
 
 
+    // Added: SharedPreferences instance for local storage
+    val sharedPreferences = context.getSharedPreferences("User", android.content.Context.MODE_PRIVATE)
+
+    // Added: Read saved data from SharedPreferences to pre-fill fields
+    val savedUserId = sharedPreferences.getString("userId", "") ?: ""
+    val savedPassword = sharedPreferences.getString("password", "") ?: ""
+
+
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
@@ -98,7 +106,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
                         message = message,
-                        )
+                    )
                 }
                 val intent= Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", user)
@@ -121,7 +129,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 contentColor = Color.White
             )
         } }
-        )
+    )
     {paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             // 1. Top Blue Background Section
@@ -268,7 +276,16 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
                     // Log In Button
                     Button(
-                        onClick = { loginFunc()},
+                        onClick = { loginFunc()
+                            if (rememberMe) {
+                                val editor = sharedPreferences.edit()
+                                editor.putString("userId", userId)
+                                editor.putString("password", password)
+                                editor.apply()
+                            } else {
+                                // Added: Clear saved credentials if Remember Me unchecked
+                                sharedPreferences.edit().clear().apply()
+                            }},
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
                             disabledContainerColor = Color.Gray,
                             disabledContentColor = Color.White,
