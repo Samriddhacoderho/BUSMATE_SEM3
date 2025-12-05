@@ -41,6 +41,7 @@ import android.net.NetworkCapabilities
 import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.busmate.model.UserModel
 import kotlinx.coroutines.launch
 
 class SplashScreen : ComponentActivity() {
@@ -78,20 +79,21 @@ fun SplashScreenUI() {
             delay(2000)
 
             val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
-            val savedUserId = sharedPreferences.getString("userId", "") ?: ""
-            val savedPassword = sharedPreferences.getString("password", "") ?: ""
+            val gson = com.google.gson.Gson()
+            val userJson = sharedPreferences.getString("user_model", null)
 
-            if (savedUserId.isNotEmpty() && savedPassword.isNotEmpty()) {
-                // User info exists → go to Dashboard
+            if (userJson != null) {
+                val savedUser = gson.fromJson(userJson, UserModel::class.java)
                 val intent = Intent(context, ParentDashboardActivity::class.java)
+                intent.putExtra("model", savedUser)
                 context.startActivity(intent)
                 activity.finish()
             } else {
-                // No saved login → go to Login
                 val intent = Intent(context, LoginScreen::class.java)
                 context.startActivity(intent)
                 activity.finish()
             }
+
         }
 
         }

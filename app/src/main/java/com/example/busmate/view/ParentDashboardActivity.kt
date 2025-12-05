@@ -63,6 +63,7 @@ fun ParentDashboardScreen() {
     val activity=context as Activity
 
     var parentName by remember { mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model")) }
+
     Scaffold(containerColor = BackgroundLightGray) { paddingValues ->
         LazyColumn(Modifier
             .fillMaxSize()

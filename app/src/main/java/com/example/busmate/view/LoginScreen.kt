@@ -1,6 +1,8 @@
 package com.example.busmate.view
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -47,6 +49,7 @@ private val PrimaryBlue = Color(0xFF2567E8)
 private val PlaceholderBusColor = Color(0xFFFFB74D) // The orange/yellow color for the bus logo
 
 class LoginScreen : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -81,12 +84,15 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val coroutineScope=rememberCoroutineScope()
 
 
-    // Added: SharedPreferences instance for local storage
-    val sharedPreferences = context.getSharedPreferences("User", android.content.Context.MODE_PRIVATE)
+    val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
+    val gson = com.google.gson.Gson()
+    val userJson = gson.toJson(user) // user is UserModel from ViewModel
 
-    // Added: Read saved data from SharedPreferences to pre-fill fields
+    sharedPreferences.edit().putString("user_model", userJson).apply()
+
     val savedUserId = sharedPreferences.getString("userId", "") ?: ""
     val savedPassword = sharedPreferences.getString("password", "") ?: ""
+
 
     LaunchedEffect(Unit) {
         userId = savedUserId
