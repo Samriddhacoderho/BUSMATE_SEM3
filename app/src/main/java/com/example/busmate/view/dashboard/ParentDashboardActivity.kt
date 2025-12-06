@@ -128,7 +128,7 @@ fun ParentDashboardScreen() {
             when (selectedItem) {
                 0 -> HomeScreen()
                 1 -> SupportScreen(viewModel = supportViewModel)
-                2 -> LocationScreen()
+                2 -> LiveLocationScreen()
                 3 -> SettingScreen()
                 else -> HomeScreen()
             }
