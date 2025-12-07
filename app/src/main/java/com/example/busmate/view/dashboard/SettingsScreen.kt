@@ -45,6 +45,7 @@ import com.example.busmate.view.SettingsMenuItem
 fun SettingScreen() {
     // State to manage the Notification Switch position
     var isNotificationEnabled by remember { mutableStateOf(true) }
+    var isDarkModeEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -69,6 +70,16 @@ fun SettingScreen() {
                     Switch(
                         checked = isNotificationEnabled,
                         onCheckedChange = { isNotificationEnabled = it }
+                    )
+                }
+                SettingsMenuItem(
+                    title = "Dark Mode",
+                    imageVector = Icons.Filled.DarkMode,
+                    onClick = { isDarkModeEnabled = !isDarkModeEnabled }
+                ) {
+                    Switch(
+                        checked = isDarkModeEnabled,
+                        onCheckedChange = { isDarkModeEnabled = it }
                     )
                 }
 
