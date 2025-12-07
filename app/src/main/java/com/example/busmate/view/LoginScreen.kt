@@ -51,18 +51,19 @@ class LoginScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
-            val repo = UserRepositoryImpl()
-            val viewModel = UserViewModel(repo)
-            LoginScreenUI(viewModel)
+                val repo= UserRepositoryImpl()
+                val viewModel= UserViewModel(repo)
+                    LoginScreenUI(viewModel)
         }
     }
 }
 
 
+
 @Composable
 fun LoginScreenUI(viewModel: UserViewModel) {
-    val context = LocalContext.current
-    val activity = context as Activity
+    val context= LocalContext.current
+    val activity=context as Activity
     // State variables for input fields and checkbox (required for TextField components)
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -74,17 +75,15 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val isPasswordFocused by passwordInteractionSource.collectIsFocusedAsState()
     val message by viewModel.message.collectAsState()
     val user by viewModel.user.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState=remember { SnackbarHostState() }
+    val coroutineScope=rememberCoroutineScope()
     // Validation error states
     var userIdError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
     val isValid = userId.isNotBlank() && password.isNotBlank()
     val isButtonEnabled = isValid && message != "Loading"
-
-
-    fun clickSignup() {
-        val intent = Intent(context, SignUpScreen::class.java)
+    fun clickSignup(){
+        val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
     }
 
@@ -97,16 +96,24 @@ fun LoginScreenUI(viewModel: UserViewModel) {
             }
 
             if (message == "Successful Login") {
+                //  Show snackbar
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = message,
-                    )
+                    snackbarHostState.showSnackbar(message = message)
                 }
+                // Save user to SharedPreferences
+                val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
+                val editor = sharedPreferences.edit()
+                val gson = com.google.gson.Gson()
+                val json = gson.toJson(user)
+                editor.putString("user_model", json)
+                editor.apply()
+                //  Navigate to dashboard
                 val intent = Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", user)
                 context.startActivity(intent)
                 activity.finish()
             }
+
         }
     }
 
@@ -135,22 +142,17 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     }
 
 
-    Scaffold(
-        Modifier.fillMaxSize(),
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) {
-                Snackbar(
-                    snackbarData = it,
-                    containerColor = if (message.isNotEmpty() && message == "Successful Login") Color.Green else Color.Red,
-                    contentColor = Color.White
-                )
-            }
-        }
-    )
-    { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+    Scaffold(Modifier.fillMaxSize(),
+        snackbarHost = {SnackbarHost(hostState = snackbarHostState){
+            Snackbar(
+                snackbarData = it,
+                containerColor = if (message.isNotEmpty() && message == "Successful Login") Color.Green else Color.Red,
+                contentColor = Color.White
+            )
+        } }
+        )
+    {paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             // 1. Top Blue Background Section
             Column(
                 modifier = Modifier
@@ -169,6 +171,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     colorFilter = ColorFilter.tint(PlaceholderBusColor),
                     modifier = Modifier.size(200.dp)
                 )
+
 
 
                 // Log in title
@@ -200,12 +203,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     .align(Alignment.BottomCenter)
                     .offset(y = (-32).dp), // Negative offset to make it overlap the blue section
                 // Custom shape for rounded top corners
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = 16.dp,
-                    bottomEnd = 16.dp
-                ),
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
@@ -259,13 +257,9 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
-                            val image =
-                                if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = image,
-                                    contentDescription = "Toggle password visibility"
-                                )
+                                Icon(imageVector = image, contentDescription = "Toggle password visibility")
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
@@ -323,9 +317,8 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
                     // Log In Button
                     Button(
-                        onClick = { loginFunc() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PrimaryBlue,
+                        onClick = { loginFunc()},
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
                             disabledContainerColor = Color.Gray,
                             disabledContentColor = Color.White,
                             contentColor = Color.Black
@@ -338,7 +331,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
                     ) {
                         Text(
-                            text = if (message != "Loading") "Log In" else "Logging In",
+                            text = if (message!="Loading") "Log In" else "Logging In",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -358,7 +351,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             color = PrimaryBlue,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clickable { clickSignup() }
+                            modifier = Modifier.clickable {clickSignup()}
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
