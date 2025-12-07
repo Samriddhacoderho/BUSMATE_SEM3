@@ -77,6 +77,13 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val user by viewModel.user.collectAsState()
     val snackbarHostState=remember { SnackbarHostState() }
     val coroutineScope=rememberCoroutineScope()
+    // Validation error states
+    var userIdError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    val isValid = userId.isNotBlank() && password.isNotBlank()
+    val isButtonEnabled = isValid && message != "Loading"
+
+
 
 
     fun clickSignup(){
@@ -107,9 +114,29 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     }
 
 
-    fun loginFunc(){
-        viewModel.login(userId,password)
+    fun loginFunc() {
+
+        // Reset errors
+        userIdError = ""
+        passwordError = ""
+
+        // Validation
+        if (userId.isBlank()) {
+            userIdError = "User ID is required"
+        }
+        if (password.isBlank()) {
+            passwordError = "Password is required"
+        }
+
+        // If there are errors, stop login
+        if (userIdError.isNotEmpty() || passwordError.isNotEmpty()) {
+            return
+        }
+
+        // Original login call
+        viewModel.login(userId, password)
     }
+
 
     Scaffold(Modifier.fillMaxSize(),
         snackbarHost = {SnackbarHost(hostState = snackbarHostState){
@@ -186,48 +213,68 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     // User ID Field
                     OutlinedTextField(
                         value = userId,
-                        onValueChange = { userId = it },
+                        onValueChange = {
+                            userId = it
+                            if (it.isNotBlank()) userIdError = "" // Remove error while typing
+                        },
                         label = { Text("Enter ID here") },
                         singleLine = true,
+                        isError = userIdError.isNotEmpty(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
-                            focusedLabelColor = PrimaryBlue
+                            focusedLabelColor = PrimaryBlue,
+                            errorBorderColor = Color.Red,
+                            errorLabelColor = Color.Red
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    if (userIdError.isNotEmpty()) {
+                        Text(
+                            text = userIdError,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Password Field
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
-                        // Apply InteractionSource to track focus
-                        interactionSource = passwordInteractionSource,
-                        // Conditional label now checks if the field is empty AND NOT focused.
-                        // If focused (or not empty), it shows "Password".
-                        label = {
-                            Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Password")
+                        onValueChange = {
+                            password = it
+                            if (it.isNotBlank()) passwordError = "" // Remove error while typing
                         },
-                        // -----------------------------------------------------
+                        interactionSource = passwordInteractionSource,
+                        label = { Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Password") },
                         singleLine = true,
-                        // Toggle visibility transformation based on state
+                        isError = passwordError.isNotEmpty(),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else Icons.Filled.VisibilityOff
-
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(imageVector = image, contentDescription = "Toggle password visibility")
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
-                            focusedLabelColor = PrimaryBlue
+                            focusedLabelColor = PrimaryBlue,
+                            errorBorderColor = Color.Red,
+                            errorLabelColor = Color.Red
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    if (passwordError.isNotEmpty()) {
+                        Text(
+                            text = passwordError,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Remember me & Forgot Password Row
@@ -276,7 +323,8 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = message!="Loading"
+                        enabled = isButtonEnabled
+
                     ) {
                         Text(
                             text = if (message!="Loading") "Log In" else "Logging In",
