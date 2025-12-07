@@ -101,6 +101,11 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
             if (message == "Successful Login") {
 
+                //  Show snackbar
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(message = message)
+                }
+
                 // Save user to SharedPreferences
                 val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
@@ -109,12 +114,13 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 editor.putString("user_model", json)
                 editor.apply()
 
-                // Navigate to dashboard
+                //  Navigate to dashboard
                 val intent = Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", user)
                 context.startActivity(intent)
                 activity.finish()
             }
+
         }
     }
 
