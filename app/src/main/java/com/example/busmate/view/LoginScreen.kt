@@ -90,6 +90,10 @@ fun LoginScreenUI(viewModel: UserViewModel) {
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
     }
+    fun forgotPassword(){
+        val intent= Intent(context, ResetPasswordActivity::class.java)
+        context.startActivity(intent)
+    }
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
@@ -316,7 +320,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.clickable {
-                                /*logi for navigation to password reset */
+                                forgotPassword()
                             }
                         )
                     }
