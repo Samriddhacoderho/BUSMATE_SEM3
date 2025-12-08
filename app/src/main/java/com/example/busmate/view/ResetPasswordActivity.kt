@@ -1,5 +1,6 @@
 package com.example.busmate.view
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,57 +11,43 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.busmate.view.ui.theme.BUSMATETheme
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource // New Import
-import androidx.compose.foundation.interaction.collectIsFocusedAsState // New Import
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.ui.theme.PrimaryBlue
-import com.example.busmate.view.ui.theme.BUSMATETheme
-import com.example.busmate.viewmodel.ResetPasswordViewModel
+import com.example.busmate.viewmodel.UserViewModel
 
-class ParentResetPasswordActivity : ComponentActivity() {
+class ResetPasswordActivity : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val viewModel: ResetPasswordViewModel = viewModel()
-            ParentResetPasswordUI(viewModel)
+
+            val repo = UserRepositoryImpl()
+            val viewModel = UserViewModel(repo)
+            ResetPasswordUI(viewModel)
         }
     }
 }
 
 
 @Composable
-fun ParentResetPasswordUI(viewModel: ResetPasswordViewModel) {
+fun ResetPasswordUI(viewModel: UserViewModel) {
 
     var userId by remember { mutableStateOf("") }
 
@@ -194,10 +181,4 @@ fun ParentResetPasswordUI(viewModel: ResetPasswordViewModel) {
 
 
 
-
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewforPassResetParent() {
-//    ParentResetPasswordUI()
-//}
 

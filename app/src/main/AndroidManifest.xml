@@ -81,7 +81,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.ParentResetPasswordActivity"
+            android:name=".view.ResetPasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_parent_reset_password"
             android:theme="@style/Theme.BUSMATE">
@@ -93,17 +93,7 @@
         </activity>
 
 
-        <activity
-            android:name=".view.DriverChangePassword"
-            android:exported="true"
-            android:label="@string/title_activity_driver_change_password"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.LoginScreen"
             android:exported="true"
@@ -120,17 +110,6 @@
             android:exported="false"
             android:label="@string/title_activity_admin_dashboard"
             android:theme="@style/Theme.BUSMATE" />
-        <activity
-            android:name=".view.ParentChangePasswordActivity"
-            android:exported="true"
-            android:label="@string/title_activity_parent_change_password"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.dashboard.ParentDashboardActivity"
             android:exported="true"

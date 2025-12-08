@@ -102,6 +102,15 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
     }
+    fun resetPassword(email: String) {
+        viewModelScope.launch {
+            _message.value = "Loading"
+            // The repository is now UserRepositoryInterface, which implements the function
+            repository.sendPasswordResetEmail(email) { msg, success ->
+                _message.value = msg
+            }
+        }
+    }
 }
 
 
