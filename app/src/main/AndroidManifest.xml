@@ -14,16 +14,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
-            android:name=".view.LiveLocationActivity"
+            android:name=".view.ChangePasswordScreen"
             android:exported="true"
-            android:label="@string/title_activity_live_location_screen"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:label="@string/title_activity_change_password"
+            android:theme="@style/Theme.BUSMATE" >
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
         </activity>
+
         <activity
             android:name=".view.SettingActivity"
             android:exported="true"
@@ -80,7 +81,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.ParentResetPasswordActivity"
+            android:name=".view.ResetPasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_parent_reset_password"
             android:theme="@style/Theme.BUSMATE">
@@ -90,50 +91,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".view.SupportDriverActivity"
-            android:exported="true"
-            android:label="@string/title_activity_support_driver"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.SupportActivity"
-            android:exported="true"
-            android:label="@string/title_activity_support"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.AdminChangePassword"
-            android:exported="true"
-            android:label="@string/title_activity_admin_change_password"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.DriverChangePassword"
-            android:exported="true"
-            android:label="@string/title_activity_driver_change_password"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.LoginScreen"
             android:exported="true"
@@ -151,9 +111,9 @@
             android:label="@string/title_activity_admin_dashboard"
             android:theme="@style/Theme.BUSMATE" />
         <activity
-            android:name=".view.ParentChangePasswordActivity"
+            android:name=".view.dashboard.ParentDashboardActivity"
             android:exported="true"
-            android:label="@string/title_activity_parent_change_password"
+            android:label="@string/title_activity_parent_dashboard"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -161,17 +121,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".view.dashboard.ParentDashboardActivity"
-            android:exported="true"
-            android:label="@string/title_activity_parent_dashboard"
-            android:theme="@style/Theme.BUSMATE">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
         <activity
             android:name=".view.SplashScreen"
             android:exported="true"

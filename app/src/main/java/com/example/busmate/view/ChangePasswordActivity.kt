@@ -1,12 +1,15 @@
 package com.example.busmate.view
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,6 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,26 +33,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.ColorFilter
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.ui.theme.PrimaryBlue
+import com.example.busmate.viewmodel.UserViewModel
 
 
-class DriverChangePassword : ComponentActivity() {
+class ChangePasswordScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DriverChangeUI()
+            val repo = UserRepositoryImpl()
+            val viewModel = UserViewModel(repo)
+            ChangePasswordScreen(viewModel = viewModel)
+
         }
     }
 }
-
 @Composable
-fun  DriverChangeUI() {
+fun ChangePasswordScreen(viewModel: UserViewModel) {
 
     var oldPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
@@ -59,9 +65,28 @@ fun  DriverChangeUI() {
 
     val scrollState = rememberScrollState()
 
+    val context = LocalContext.current
+    val message by viewModel.message.collectAsState()
+
+    fun handleChangePassword() {
+        viewModel.changePassword(oldPass, newPass, confirmPass)
+    }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty() && message != "Loading") {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            // Clear fields on successful password change
+            if (message == "Password successfully changed!") {
+                oldPass = ""
+                newPass = ""
+                confirmPass = ""
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 🔵 BLUE TOP SECTION (same as login screen)
+        //  BLUE TOP SECTION (same as login screen)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -174,7 +199,7 @@ fun  DriverChangeUI() {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // 🔸 Password Requirements
-                PasswordDriverIndicators(password = newPass)
+                PasswordIndicators(password = newPass)
 
                 Spacer(modifier = Modifier.height(25.dp))
 
@@ -210,9 +235,9 @@ fun  DriverChangeUI() {
 
                 Spacer(modifier = Modifier.height(35.dp))
 
-                // 🔵 BUTTON (same as login page)
+
                 Button(
-                    onClick = {},
+                    onClick = {handleChangePassword()},
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -243,7 +268,7 @@ fun  DriverChangeUI() {
 }
 
 @Composable
-fun PasswordDriverIndicators(password: String) {
+fun PasswordIndicators(password: String) {
     val requirements = listOf(
         "Minimum 12 characters" to { it: String -> it.length >= 12 },
         "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
@@ -254,13 +279,13 @@ fun PasswordDriverIndicators(password: String) {
 
     Column {
         requirements.forEach { (text, rule) ->
-            RequirementDriver(text = text, passed = rule(password))
+            Requirement(text = text, passed = rule(password))
         }
     }
 }
 
 @Composable
-fun RequirementDriver(text: String, passed: Boolean) {
+fun Requirement(text: String, passed: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 4.dp)
@@ -282,6 +307,7 @@ fun RequirementDriver(text: String, passed: Boolean) {
 }
 @Preview(showBackground = true)
 @Composable
-fun PreviewDriverChangeUI() {
-    DriverChangeUI()
+fun PreviewAdminChangeUI() {
+    ChangePasswordScreen(viewModel = UserViewModel(repository = UserRepositoryImpl()))
+
 }

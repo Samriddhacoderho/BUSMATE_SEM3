@@ -23,6 +23,11 @@ interface UserRepositoryInterface {
         model: CreateAccountModel,callback:(String,Boolean)->Unit
     )
 
+    suspend fun sendPasswordResetEmail(
+        email: String,
+        callback: (String, Boolean) -> Unit
+    )
+
 
 
 

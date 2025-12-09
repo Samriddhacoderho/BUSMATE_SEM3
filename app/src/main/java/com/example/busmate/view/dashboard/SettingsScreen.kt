@@ -1,5 +1,6 @@
 package com.example.busmate.view.dashboard
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer

@@ -5,6 +5,7 @@ import com.example.busmate.model.UserModel
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
@@ -159,6 +160,25 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
         } catch (e: Exception) {
             callback("Failed to Create Account: ${e.message}", false)
+        }
+    }
+
+    override suspend fun sendPasswordResetEmail(
+        email: String,
+        callback: (String, Boolean) -> Unit
+    ) {
+        try {
+            auth.sendPasswordResetEmail(email).await()
+            callback("A reset link has been sent to your email.", true)
+
+        } catch (e: FirebaseAuthInvalidUserException) {
+            callback("No account found with this email.", false)
+
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            callback("Email format is invalid.", false)
+
+        } catch (e: Exception) {
+            callback("Error: ${e.message}", false)
         }
     }
 
