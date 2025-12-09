@@ -36,6 +36,7 @@ class SettingActivity : ComponentActivity() {
 fun SettingsScreen() {
     // State to manage the Notification Switch position
     var isNotificationEnabled by remember { mutableStateOf(true) }
+    var isDarkModeEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -58,6 +59,16 @@ fun SettingsScreen() {
                 Switch(
                     checked = isNotificationEnabled,
                     onCheckedChange = { isNotificationEnabled = it }
+                )
+            }
+            SettingsMenuItem(
+                title = "Dark Mode",
+                imageVector = Icons.Filled.DarkMode,
+                onClick = { isDarkModeEnabled = !isDarkModeEnabled }
+            ) {
+                Switch(
+                    checked = isDarkModeEnabled,
+                    onCheckedChange = { isDarkModeEnabled = it }
                 )
             }
 

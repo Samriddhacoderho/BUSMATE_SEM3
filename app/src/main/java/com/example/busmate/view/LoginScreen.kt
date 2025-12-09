@@ -82,10 +82,6 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     var passwordError by remember { mutableStateOf("") }
     val isValid = userId.isNotBlank() && password.isNotBlank()
     val isButtonEnabled = isValid && message != "Loading"
-
-
-
-
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
@@ -104,12 +100,10 @@ fun LoginScreenUI(viewModel: UserViewModel) {
             }
 
             if (message == "Successful Login") {
-
                 //  Show snackbar
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(message = message)
                 }
-
                 // Save user to SharedPreferences
                 val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
@@ -117,7 +111,6 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 val json = gson.toJson(user)
                 editor.putString("user_model", json)
                 editor.apply()
-
                 //  Navigate to dashboard
                 val intent = Intent(context, ParentDashboardActivity::class.java)
                 intent.putExtra("model", user)
