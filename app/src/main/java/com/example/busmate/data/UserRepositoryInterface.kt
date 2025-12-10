@@ -6,7 +6,7 @@ import com.example.busmate.model.UserModel
 interface UserRepositoryInterface {
     suspend fun registerUser(
         user: UserModel,
-        password: String
+        password: String,
     ): Result<UserModel>
 
 //    fun login(email:String,password: String,callback:(String, Boolean, UserModel)->Unit)

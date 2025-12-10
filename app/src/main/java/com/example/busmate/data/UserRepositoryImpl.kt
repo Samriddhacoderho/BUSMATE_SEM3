@@ -18,7 +18,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
     override suspend fun registerUser(
         user: UserModel,
-        password: String
+        password: String,
     ): Result<UserModel> {
 
         return try {
@@ -56,7 +56,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
             val authResult = auth.createUserWithEmailAndPassword(user.email, password).await()
             val firebaseUser = authResult.user ?: return Result.failure(Exception("User is null"))
 
-            val updatedUser = user.copy(uid = firebaseUser.uid)
+            val updatedUser = user.copy(uid = firebaseUser.uid, typeofUser = adminRole)
 
             // 5️⃣ SAVE USER DATA
             firestore.collection("users")

@@ -20,7 +20,7 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
                 return
             }
 
-            val updatedSupport=model.copy(uid = uid, typeofUser = "parent")
+            val updatedSupport=model.copy(uid = uid)
 
             firestore.collection("support")
                 .document(uid)
