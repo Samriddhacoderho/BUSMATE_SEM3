@@ -30,6 +30,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 
+
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
@@ -47,28 +48,28 @@ fun HomeScreen() {
         ) {
             item {
 
-                WelcomeCardScreen(model?.firstName + " " + model?.lastName,model)
+                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
 
                 MyChildrenHeaderScreen(model)
 
                 ChildTrackingCardScreen(
-                    childName = if(model?.typeofUser=="Parent") "Swikrit Ghimire" else "Bus No: 1522",
-                    statusText = if(model?.typeofUser=="Parent") "Reached School" else "Duty Completed",
-                    subText = if(model?.typeofUser=="Parent") "Bus No: 1511\n2 min ago" else "Helper Name:Sandip",
+                    childName = if(model?.typeofUser=="Parent") "Swikrit Ghimire" else if(model?.typeofUser=="Driver") "Bus No: 1522" else "Harwinder Singh",
+                    statusText = if(model?.typeofUser=="Parent") "Reached School" else if (model?.typeofUser=="Driver") "Duty Completed" else "Reached School",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1511\n2 min ago" else if(model?.typeofUser=="Driver") "Helper Name:Sandip" else "Bus No: 1511\n9812668800",
                     statusColor = BusMateGreen,
-                    imageResource = if(model?.typeofUser=="Parent") R.drawable.boy else R.drawable.schoolbus,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.boy else if(model?.typeofUser=="Driver") R.drawable.schoolbus else R.drawable.driver,
                     mapImageResource = R.drawable.school
                 )
 
                 ChildTrackingCardScreen(
-                    childName = if(model?.typeofUser=="Parent") "Shahana Katwal" else "Bus No: 1543",
-                    statusText = if(model?.typeofUser=="Parent") "In Bus" else "Duty on 2:00 PM",
-                    subText = if(model?.typeofUser=="Parent") "Bus No: 1533\n8 min ago" else "Helper Name:Raju",
+                    childName = if(model?.typeofUser=="Parent") "Shahana Katwal" else if(model?.typeofUser=="Driver")"Bus No: 1543" else "Ramesh Pathak",
+                    statusText = if(model?.typeofUser=="Parent") "In Bus" else if (model?.typeofUser=="Driver") "Duty on 2:00 PM" else "Driving",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1533\n8 min ago" else if (model?.typeofUser=="Driver") "Helper Name:Raju" else "Bus No: 1533\n9800112236",
                     statusColor = BusMateOrange,
-                    imageResource = if(model?.typeofUser=="Parent") R.drawable.girl else R.drawable.schoolbus,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.girl else if (model?.typeofUser=="Driver") R.drawable.schoolbus else R.drawable.driver,
                     mapImageResource = R.drawable.map
                 )
-                NotificationsAlertHeaderScreen()
+                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin()
             }
         }
     }
@@ -139,7 +140,7 @@ fun MyChildrenHeaderScreen(model: UserModel?) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if(model?.typeofUser=="Parent") "My Children" else "My Duties",
+            text = if(model?.typeofUser=="Parent") "My Children" else if(model?.typeofUser=="Driver") "My Duties" else "View Buses",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black.copy(alpha = 0.8f)
@@ -337,4 +338,101 @@ fun NotificationItemScreen(initial: String, message: String, indicatorColor: Col
             )
         }
     }
+}
+
+@Composable
+fun WelcomeCardAdmin(adminName: String){
+    Column(Modifier
+        .fillMaxWidth()
+        .padding(16.dp)
+        .clip(RoundedCornerShape(20.dp))
+        .background(BusMateBlue)
+        .padding(16.dp)) {
+        Text(
+            text = "Welcome, $adminName!",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+        )
+        Row(Modifier
+            .padding(top = 20.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Gray)
+            .height(40.dp)) {
+            Row(Modifier
+                .fillMaxHeight()
+                .weight(0.5f)
+                .background(BusMateOrange),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Filled.Home,contentDescription = null)
+                Spacer(Modifier.width(5.dp))
+                Text("School",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+            }
+            Row(Modifier
+                .fillMaxHeight()
+                .weight(0.5f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Filled.LocationOn,contentDescription = null, tint = Color.Cyan)
+                Spacer(Modifier.width(5.dp))
+                Text("Tracking Live",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationsAlertHeaderAdmin(){
+    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Notifications & Alerts",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black.copy(alpha = 0.8f)
+        )
+        OutlinedButton(
+            onClick = {},
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = BusMateBlue
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(35.dp)
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(16.dp)  // Adjust the size as necessary
+                    .background(Color.Red, shape = CircleShape)  // Use CircleShape for full rounding
+                    .clip(CircleShape)  // Ensures the icon is clipped to a circle
+            )
+
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Create Notification", fontSize = 14.sp)
+        }
+    }
+    Spacer(modifier = Modifier.height(10.dp))
+    NotificationItemScreen(
+        initial = "S",
+        message = "School Closed on Friday",
+        indicatorColor = BusMateOrange
+    )
+
 }
