@@ -12,14 +12,14 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-    fun writeReport(name: String,typeofUser:String,title:String,mess_age:String){
+    fun writeReport(name: String, typeofUser: String?, title: String, mess_age: String){
         viewModelScope.launch {
             _message.value="Loading"
             try {
                 val support= SupportModel(
-                    name=name,
-                    typeofUser=typeofUser,
-                    title=title,
+                    name =name,
+                    typeofUser =typeofUser,
+                    title =title,
                     message = mess_age
                 )
 

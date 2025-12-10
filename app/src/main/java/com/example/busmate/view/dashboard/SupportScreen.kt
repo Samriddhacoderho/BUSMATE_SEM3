@@ -97,7 +97,7 @@ fun SupportScreen(viewModel: SupportViewModel) {
     }
 
     fun onSupportSubmit() {
-        viewModel.writeReport(model?.firstName + model?.lastName, "parent", titleText, explainText)
+        viewModel.writeReport(model?.firstName + model?.lastName, model?.typeofUser, titleText, explainText)
     }
 
     Scaffold(snackbarHost = {

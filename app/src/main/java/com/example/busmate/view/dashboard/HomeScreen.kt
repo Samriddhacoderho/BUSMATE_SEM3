@@ -35,7 +35,7 @@ fun HomeScreen() {
     val context = LocalContext.current
     val activity = context as Activity
 
-    var parentName by remember {
+    var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
@@ -46,76 +46,38 @@ fun HomeScreen() {
                 .padding(paddingValues)
         ) {
             item {
-//                TopDashboardBarScreen()
 
-                WelcomeCardScreen(parentName?.firstName + " " + parentName?.lastName)
+                WelcomeCardScreen(model?.firstName + " " + model?.lastName,model)
 
-                MyChildrenHeaderScreen()
+                MyChildrenHeaderScreen(model)
 
                 ChildTrackingCardScreen(
-                    childName = "Swikrit Ghimire",
-                    statusText = "Reached School",
-                    subText = "Bus No: 1511\n2 min ago",
+                    childName = if(model?.typeofUser=="Parent") "Swikrit Ghimire" else "Bus No: 1522",
+                    statusText = if(model?.typeofUser=="Parent") "Reached School" else "Duty Completed",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1511\n2 min ago" else "Helper Name:Sandip",
                     statusColor = BusMateGreen,
-                    imageResource = R.drawable.boy,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.boy else R.drawable.schoolbus,
                     mapImageResource = R.drawable.school
                 )
 
                 ChildTrackingCardScreen(
-                    childName = "Shahana Katwal",
-                    statusText = "In Bus",
-                    subText = "Bus No: 1533\n8 min ago",
+                    childName = if(model?.typeofUser=="Parent") "Shahana Katwal" else "Bus No: 1543",
+                    statusText = if(model?.typeofUser=="Parent") "In Bus" else "Duty on 2:00 PM",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1533\n8 min ago" else "Helper Name:Raju",
                     statusColor = BusMateOrange,
-                    imageResource = R.drawable.girl,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.girl else R.drawable.schoolbus,
                     mapImageResource = R.drawable.map
                 )
-
-//                NotificationsAlertHeaderScreen()
-//
-//                Button(
-//                    onClick = {
-//                        val intent = Intent(context, SupportActivity::class.java)
-//                        intent.putExtra("model", parentName)
-//                        context.startActivity(intent)
-//                    }
-//                ) {
-//                    Text("Click to open support page")
-//                }
+                NotificationsAlertHeaderScreen()
             }
         }
     }
 }
 
-//@Composable
-//fun TopDashboardBarScreen() {
-//    Row(
-//        modifier = Modifier.fillMaxWidth(),
-//        verticalAlignment = Alignment.CenterVertically,
-//        horizontalArrangement = Arrangement.Center
-//    ) {
-//        Image(
-//            painter = painterResource(R.drawable.logo),
-//            contentDescription = null,
-//            modifier = Modifier.weight(0.5f)
-//        )
-//
-//        Row(
-//            Modifier.weight(0.5f),
-//            horizontalArrangement = Arrangement.End
-//        ) {
-//            IconButton(onClick = {}) {
-//                Icon(Icons.Filled.Person, contentDescription = null, tint = Color.Gray)
-//            }
-//
-//            IconButton(onClick = {}) {
-//                Icon(Icons.Filled.Notifications, contentDescription = null, tint = Color.Red.copy(0.8f))
-//            }
-//        }
-//    }
-//}
+
 
 @Composable
-fun WelcomeCardScreen(parentName: String?) {
+fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -168,7 +130,7 @@ fun WelcomeCardScreen(parentName: String?) {
 }
 
 @Composable
-fun MyChildrenHeaderScreen() {
+fun MyChildrenHeaderScreen(model: UserModel?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -177,13 +139,13 @@ fun MyChildrenHeaderScreen() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "My Children",
+            text = if(model?.typeofUser=="Parent") "My Children" else "My Duties",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black.copy(alpha = 0.8f)
         )
 
-        OutlinedButton(
+        if(model?.typeofUser=="Parent") OutlinedButton(
             onClick = {},
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = BusMateBlue),
