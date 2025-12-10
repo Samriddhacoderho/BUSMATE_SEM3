@@ -1,5 +1,4 @@
 package com.example.busmate.view.dashboard
-
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,9 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
 import com.example.busmate.model.UserModel
+import com.example.busmate.ui.theme.BackgroundLightGray
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
+
 
 @Composable
 fun HomeScreen() {
@@ -39,10 +40,7 @@ fun HomeScreen() {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-
+    Scaffold(containerColor = BackgroundLightGray) { paddingValues ->
         LazyColumn(
             Modifier
                 .fillMaxSize()
@@ -50,49 +48,48 @@ fun HomeScreen() {
         ) {
             item {
 
-                WelcomeCardScreen(model?.firstName + " " + model?.lastName, model)
+                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
 
                 MyChildrenHeaderScreen(model)
 
                 ChildTrackingCardScreen(
-                    childName = if (model?.typeofUser == "Parent") "Swikrit Ghimire" else "Bus No: 1522",
-                    statusText = if (model?.typeofUser == "Parent") "Reached School" else "Duty Completed",
-                    subText = if (model?.typeofUser == "Parent") "Bus No: 1511\n2 min ago" else "Helper Name:Sandip",
+                    childName = if(model?.typeofUser=="Parent") "Swikrit Ghimire" else if(model?.typeofUser=="Driver") "Bus No: 1522" else "Harwinder Singh",
+                    statusText = if(model?.typeofUser=="Parent") "Reached School" else if (model?.typeofUser=="Driver") "Duty Completed" else "Reached School",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1511\n2 min ago" else if(model?.typeofUser=="Driver") "Helper Name:Sandip" else "Bus No: 1511\n9812668800",
                     statusColor = BusMateGreen,
-                    imageResource = if (model?.typeofUser == "Parent") R.drawable.boy else R.drawable.schoolbus,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.boy else if(model?.typeofUser=="Driver") R.drawable.schoolbus else R.drawable.driver,
                     mapImageResource = R.drawable.school
                 )
 
                 ChildTrackingCardScreen(
-                    childName = if (model?.typeofUser == "Parent") "Shahana Katwal" else "Bus No: 1543",
-                    statusText = if (model?.typeofUser == "Parent") "In Bus" else "Duty on 2:00 PM",
-                    subText = if (model?.typeofUser == "Parent") "Bus No: 1533\n8 min ago" else "Helper Name:Raju",
+                    childName = if(model?.typeofUser=="Parent") "Shahana Katwal" else if(model?.typeofUser=="Driver")"Bus No: 1543" else "Ramesh Pathak",
+                    statusText = if(model?.typeofUser=="Parent") "In Bus" else if (model?.typeofUser=="Driver") "Duty on 2:00 PM" else "Driving",
+                    subText = if(model?.typeofUser=="Parent") "Bus No: 1533\n8 min ago" else if (model?.typeofUser=="Driver") "Helper Name:Raju" else "Bus No: 1533\n9800112236",
                     statusColor = BusMateOrange,
-                    imageResource = if (model?.typeofUser == "Parent") R.drawable.girl else R.drawable.schoolbus,
+                    imageResource = if(model?.typeofUser=="Parent") R.drawable.girl else if (model?.typeofUser=="Driver") R.drawable.schoolbus else R.drawable.driver,
                     mapImageResource = R.drawable.map
                 )
-
-                NotificationsAlertHeaderScreen()
+                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin()
             }
         }
     }
 }
 
 
-@Composable
-fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
 
+@Composable
+fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
     Column(
         Modifier
             .fillMaxWidth()
             .padding(16.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary)
+            .background(BusMateBlue)
             .padding(16.dp)
     ) {
         Text(
             text = "Welcome, $parentName!",
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
@@ -102,7 +99,7 @@ fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
                 .padding(top = 20.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(Color.Gray)
                 .height(40.dp)
         ) {
             Row(
@@ -113,18 +110,9 @@ fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.Home,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+                Icon(Icons.Filled.Home, contentDescription = null)
                 Spacer(Modifier.width(5.dp))
-                Text(
-                    "School",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 19.sp
-                )
+                Text("School", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
             }
 
             Row(
@@ -134,27 +122,16 @@ fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                Icon(Icons.Filled.LocationOn, contentDescription = null, tint = Color.Cyan)
                 Spacer(Modifier.width(5.dp))
-                Text(
-                    "Tracking Live",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+                Text("Tracking Live", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         }
     }
 }
 
-
 @Composable
 fun MyChildrenHeaderScreen(model: UserModel?) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,124 +139,105 @@ fun MyChildrenHeaderScreen(model: UserModel?) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Text(
-            text = if (model?.typeofUser == "Parent") "My Children" else "My Duties",
+            text = if(model?.typeofUser=="Parent") "My Children" else if(model?.typeofUser=="Driver") "My Duties" else "View Buses",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = Color.Black.copy(alpha = 0.8f)
         )
 
-        if (model?.typeofUser == "Parent")
-            OutlinedButton(
-                onClick = {},
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                border = ButtonDefaults.outlinedButtonBorder,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(35.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Add Child",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                Text(
-                    "Add Child",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+        if(model?.typeofUser=="Parent") OutlinedButton(
+            onClick = {},
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = BusMateBlue),
+            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(35.dp)
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = "Add Child",
+                modifier = Modifier
+                    .size(16.dp)
+                    .background(Color.Red, shape = CircleShape)
+                    .clip(CircleShape)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Add Child", fontSize = 14.sp)
+        }
     }
 }
-
 
 @Composable
 fun ChildTrackingCardScreen(
     childName: String,
     statusText: String,
     subText: String,
-    statusColor: androidx.compose.ui.graphics.Color,
+    statusColor: Color,
     imageResource: Int,
     mapImageResource: Int
 ) {
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
             .padding(horizontal = 16.dp, vertical = 5.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-
         Row(
             Modifier
                 .fillMaxSize()
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Row(
                 Modifier.weight(0.8f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Image(
                     painter = painterResource(imageResource),
                     contentDescription = null,
                     modifier = Modifier
                         .size(70.dp)
                         .clip(CircleShape)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                            CircleShape
-                        )
+                        .border(1.dp, Color.LightGray, CircleShape)
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
-
                     Text(
                         text = childName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.Black
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Card(
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = statusColor
-                        )
+                        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.8f))
                     ) {
-                        Text(
-                            text = statusText,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        Column(
+                            Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = statusText,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = subText,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.Gray,
                         fontSize = 12.sp,
                         lineHeight = 14.sp
                     )
@@ -300,26 +258,24 @@ fun ChildTrackingCardScreen(
     }
 }
 
-
 @Composable
 fun NotificationsAlertHeaderScreen() {
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = 16.dp, end = 5.dp)
     ) {
-
         Text(
             text = "Notifications & Alerts",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = Color.Black.copy(alpha = 0.8f)
         )
     }
 
     Spacer(modifier = Modifier.height(10.dp))
 
+    // FIXED FUNCTION NAME
     NotificationItemScreen(
         initial = "S",
         message = "School Closed on Friday",
@@ -327,26 +283,17 @@ fun NotificationsAlertHeaderScreen() {
     )
 }
 
-
 @Composable
-fun NotificationItemScreen(
-    initial: String,
-    message: String,
-    indicatorColor: androidx.compose.ui.graphics.Color
-) {
-
+fun NotificationItemScreen(initial: String, message: String, indicatorColor: Color) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 5.dp)
             .height(70.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -354,21 +301,13 @@ fun NotificationItemScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-
             Row(verticalAlignment = Alignment.CenterVertically) {
-
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(
-                            indicatorColor.copy(alpha = 0.1f)
-                        )
-                        .border(
-                            1.dp,
-                            indicatorColor.copy(alpha = 0.4f),
-                            CircleShape
-                        ),
+                        .background(indicatorColor.copy(alpha = 0.1f))
+                        .border(1.dp, indicatorColor.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -381,20 +320,119 @@ fun NotificationItemScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Text(
-                    text = message,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column {
+                    Text(
+                        text = message,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                }
             }
 
             Icon(
                 painter = painterResource(id = R.drawable.outline_arrow_forward_ios_24),
                 contentDescription = "View notification",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = Color.Blue,
                 modifier = Modifier.size(24.dp)
             )
         }
     }
+}
+
+@Composable
+fun WelcomeCardAdmin(adminName: String){
+    Column(Modifier
+        .fillMaxWidth()
+        .padding(16.dp)
+        .clip(RoundedCornerShape(20.dp))
+        .background(BusMateBlue)
+        .padding(16.dp)) {
+        Text(
+            text = "Welcome, $adminName!",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+        )
+        Row(Modifier
+            .padding(top = 20.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Gray)
+            .height(40.dp)) {
+            Row(Modifier
+                .fillMaxHeight()
+                .weight(0.5f)
+                .background(BusMateOrange),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Filled.Home,contentDescription = null)
+                Spacer(Modifier.width(5.dp))
+                Text("School",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+            }
+            Row(Modifier
+                .fillMaxHeight()
+                .weight(0.5f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Filled.LocationOn,contentDescription = null, tint = Color.Cyan)
+                Spacer(Modifier.width(5.dp))
+                Text("Tracking Live",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationsAlertHeaderAdmin(){
+    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Notifications & Alerts",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black.copy(alpha = 0.8f)
+        )
+        OutlinedButton(
+            onClick = {},
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = BusMateBlue
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(35.dp)
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(16.dp)  // Adjust the size as necessary
+                    .background(Color.Red, shape = CircleShape)  // Use CircleShape for full rounding
+                    .clip(CircleShape)  // Ensures the icon is clipped to a circle
+            )
+
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Create Notification", fontSize = 14.sp)
+        }
+    }
+    Spacer(modifier = Modifier.height(10.dp))
+    NotificationItemScreen(
+        initial = "S",
+        message = "School Closed on Friday",
+        indicatorColor = BusMateOrange
+    )
+
 }

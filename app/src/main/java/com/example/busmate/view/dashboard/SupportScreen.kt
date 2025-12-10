@@ -109,7 +109,7 @@ fun SupportScreen(viewModel: SupportViewModel) {
             )
         }
     }) { paddingValues ->
-        LazyColumn(Modifier
+        if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") LazyColumn(Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
             item {
@@ -265,7 +265,13 @@ fun SupportScreen(viewModel: SupportViewModel) {
                 }
             }
 
+        }else LazyColumn(Modifier.fillMaxSize().padding(paddingValues)) {
+            item {
+                Text("Eta Admin le support herne UI garnu")
+            }
         }
 
     }
 }
+
+//hi
