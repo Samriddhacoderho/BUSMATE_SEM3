@@ -14,17 +14,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.AddChildActivity"
+            android:exported="true"
+            android:label="@string/title_activity_add_child"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.ChangePasswordScreen"
             android:exported="true"
             android:label="@string/title_activity_change_password"
-            android:theme="@style/Theme.BUSMATE" >
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
-
         <activity
             android:name=".view.SettingActivity"
             android:exported="true"
@@ -91,9 +101,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-
-
         <activity
             android:name=".view.LoginScreen"
             android:exported="true"
