@@ -29,8 +29,7 @@ import com.example.busmate.ui.theme.BackgroundLightGray
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
-import com.example.busmate.view.AdminDashboardScreen
-import com.example.busmate.view.NotificationItemAdmin
+
 
 @Composable
 fun HomeScreen() {
