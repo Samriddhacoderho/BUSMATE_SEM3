@@ -1,9 +1,5 @@
 package com.example.busmate.view.dashboard
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,66 +13,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// --- WebView Imports for Embedded Map ---
 import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
 
-
-// --- Colors and Constants ---
-private object LiveLocationColors {
-    val BackgroundColor = Color(0xFFF0F6F7)
-    val TitleColor = Color(0xFF333333)
-    val CardOrange = Color(0xFFE4904C)
-    val CardGreen = Color(0xFF67B774)
-    val BusIconColor = Color(0xFFC70039) // Reddish color for the bus icon on map
-}
-
-
-
-/**
- * The main Composable function for the Live Location Tracking UI.
- */
 @Composable
 fun LiveLocationScreen() {
-    // Use constants from the object
+
+    val bg = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val cardOrange = MaterialTheme.colorScheme.primaryContainer
+    val cardGreen = MaterialTheme.colorScheme.secondaryContainer
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = LiveLocationColors.BackgroundColor // Light background color
+        containerColor = bg
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Title
+
+            // Title
             Text(
                 text = "Live Location Tracking",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = LiveLocationColors.TitleColor,
+                color = textColor,
                 modifier = Modifier
                     .padding(top = 24.dp, bottom = 24.dp)
                     .padding(horizontal = 16.dp)
                     .align(Alignment.Start)
             )
 
-            // 2. Map Area (Embedded WebView)
-            MapPrototype(modifier = Modifier.padding(horizontal = 16.dp))
+            // Map
+            MapPrototype(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                cardColor = MaterialTheme.colorScheme.surfaceVariant
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. User Label
+            // Username
             Text(
                 text = "Aliza Regmi",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = LiveLocationColors.TitleColor,
+                color = textColor,
                 modifier = Modifier
                     .align(Alignment.Start)
                     .padding(horizontal = 16.dp)
@@ -84,70 +73,57 @@ fun LiveLocationScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Cards Row - Now horizontally scrollable using LazyRow
+            // Cards Row
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp), // Padding for the edges
-                horizontalArrangement = Arrangement.spacedBy(16.dp), // Spacing between items
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Card: ETA and Bus Info
-                item {
-                    ETACard(
-                        modifier = Modifier.width(280.dp) // Fixed width for scrollability
-                    )
-                }
 
-
-
-                // Third Card (Placeholder for demonstration of scroll)
                 item {
                     ETACard(
                         modifier = Modifier.width(280.dp),
-                        cardColor = LiveLocationColors.CardGreen
+                        cardColor = cardOrange
+                    )
+                }
+
+                item {
+                    ETACard(
+                        modifier = Modifier.width(280.dp),
+                        cardColor = cardGreen
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
-/**
- * Composable for embedding the Google Map prototype using a WebView.
- * This replaces the native GoogleMap composable.
- */
-@Composable
-fun MapPrototype(modifier: Modifier = Modifier) {
-    // Mock data for embedding, maintaining the previous focus area (Kathmandu)
-    val kathmanduLatitude = 27.7013
-    val kathmanduLongitude = 85.3206
-    val zoom = 14
 
-    // Construct a Google Maps Embed URL for a simple view.
-    // This typically works without an API key in the AndroidManifest.
-    val embedUrl = "<iframe>\"https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.3609923548975!2d85.327404275571!3d27.706138376183215!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb190a74aa1f23%3A0x74ebef82ad0e5c15!2sSoftwarica%20College%20of%20IT%20and%20E-Commerce!5e0!3m2!1sen!2snp!4v1764858914671!5m2!1sen!2snp\"</iframe>"
+
+@Composable
+fun MapPrototype(modifier: Modifier = Modifier, cardColor: Color) {
+
+    val embedUrl =
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.3609923548975!2d85.327404275571!3d27.706138376183215!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb190a74aa1f23%3A0x74ebef82ad0e5c15!2sSoftwarica%20College%20of%20IT%20and%20E-Commerce!5e0!3m2!1sen!2snp!4v1764858914671!5m2!1sen!2snp"
 
     Card(
         shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.6f) // Takes up 60% of the remaining vertical space
+            .fillMaxHeight(0.6f)
     ) {
-        // Use AndroidView to host the WebView
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
                 WebView(context).apply {
-                    // Configure the WebView
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
-
-                    // Ensure links open within the WebView, not an external browser
                     webViewClient = WebViewClient()
-
-                    // Load the Google Maps Embed URL
                     loadUrl(embedUrl)
                 }
             }
@@ -156,17 +132,17 @@ fun MapPrototype(modifier: Modifier = Modifier) {
 }
 
 
-/**
- * Composable for the ETA and Bus Info card.
- */
+
 @Composable
-fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors.CardOrange) {
+fun ETACard(modifier: Modifier = Modifier, cardColor: Color) {
+
+    val textWhite = MaterialTheme.colorScheme.onPrimaryContainer
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier
-            .aspectRatio(2.5f) // Make it wider than tall
+        modifier = modifier.aspectRatio(2.5f)
     ) {
         Row(
             modifier = Modifier
@@ -174,7 +150,8 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left: Profile Image Placeholder (Girl)
+
+            // Image Placeholder
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -182,30 +159,29 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                // Placeholder for Aliza's image
                 Text("👩", fontSize = 32.sp)
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Center: ETA and Bus Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // Text info
+            Column(modifier = Modifier.weight(1f)) {
+
                 Text(
                     text = "ETA 15 minutes",
-                    color = Color.White,
+                    color = textWhite,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Text(
                     text = "Bus No: 1533",
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = textWhite.copy(alpha = 0.8f),
                     fontSize = 14.sp
                 )
             }
 
-            // Right: Bus Icon
+            // Bus Icon
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -215,7 +191,7 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors
             ) {
                 Icon(
                     imageVector = Icons.Default.DirectionsBus,
-                    contentDescription = "Bus Icon",
+                    contentDescription = "Bus",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -223,9 +199,3 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color = LiveLocationColors
         }
     }
 }
-
-/**
- * Composable for a smaller profile card.
- */
-
-
