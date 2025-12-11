@@ -12,7 +12,8 @@ data class UserModel(
     val schoolId:String="",
     val phone:String="",
     val typeofUser:String="",
-    val children: Map<String, ChildModel> = emptyMap()
+    val children: Map<String, ChildModel> = emptyMap(),
+    val status:String="active"
 ): Parcelable {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -22,7 +23,8 @@ data class UserModel(
             "email" to email,
             "schoolId" to schoolId,
             "phone" to phone,
-            "typeofUser" to typeofUser
+            "typeofUser" to typeofUser,
+            "status" to status
         )
     }
 }
