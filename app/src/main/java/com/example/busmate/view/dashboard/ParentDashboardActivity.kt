@@ -2,51 +2,59 @@ package com.example.busmate.view.dashboard
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import android.os.Bundle
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.busmate.R
 import com.example.busmate.data.SupportRepositoryImpl
-import com.example.busmate.ui.theme.BackgroundLightGray
+import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.viewmodel.SupportViewModel
-
 
 class ParentDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
-            ParentDashboardScreen()
+            var isDarkModeEnabled by remember { mutableStateOf(false) }
+
+            BusMateTheme(darkTheme = isDarkModeEnabled) {
+                ParentDashboardScreen(
+                    isDarkModeEnabled = isDarkModeEnabled,
+                    onThemeChange = { isDarkModeEnabled = it }
+                )
+            }
         }
     }
 }
 
-
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
-fun ParentDashboardScreen() {
+fun ParentDashboardScreen(
+    isDarkModeEnabled: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
+
     val context = LocalContext.current
     val activity = context as? Activity
-    val supportViewModel= SupportViewModel(repository = SupportRepositoryImpl())
+    val supportViewModel = SupportViewModel(repository = SupportRepositoryImpl())
 
     data class NavItem(val label: String, val icon: Int)
 
@@ -59,15 +67,15 @@ fun ParentDashboardScreen() {
         NavItem("Setting", R.drawable.baseline_settings_24),
     )
 
-
     Scaffold(
-        containerColor = BackgroundLightGray,
+        containerColor = MaterialTheme.colorScheme.background,   // FIX ✔
 
         // ---------------- TOP BAR FIXED ----------------
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)  // FIX ✔
                     .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -75,8 +83,10 @@ fun ParentDashboardScreen() {
                 Image(
                     painter = painterResource(R.drawable.logo),
                     contentDescription = null,
+                    colorFilter = if (isDarkModeEnabled) ColorFilter.tint(PlaceholderBusColor) else null,
                     modifier = Modifier.weight(0.5f)
                 )
+
                 Row(
                     Modifier.weight(0.5f),
                     horizontalArrangement = Arrangement.End
@@ -85,14 +95,14 @@ fun ParentDashboardScreen() {
                         Icon(
                             Icons.Filled.Person,
                             contentDescription = null,
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurface // FIX ✔
                         )
                     }
                     IconButton(onClick = {}) {
                         Icon(
                             Icons.Filled.Notifications,
                             contentDescription = null,
-                            tint = Color.Red.copy(alpha = 0.8f)
+                            tint = MaterialTheme.colorScheme.error      // FIX ✔
                         )
                     }
                 }
@@ -101,7 +111,9 @@ fun ParentDashboardScreen() {
 
         // ---------------- BOTTOM NAVIGATION ----------------
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface   // FIX ✔
+            ) {
                 navList.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedItem == index,
@@ -109,10 +121,22 @@ fun ParentDashboardScreen() {
                         icon = {
                             Icon(
                                 painter = painterResource(item.icon),
-                                contentDescription = item.label
+                                contentDescription = item.label,
+                                tint = if (selectedItem == index)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         },
-                        label = { Text(item.label) }
+                        label = {
+                            Text(
+                                item.label,
+                                color = if (selectedItem == index)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
                     )
                 }
             }
@@ -129,12 +153,12 @@ fun ParentDashboardScreen() {
                 0 -> HomeScreen()
                 1 -> SupportScreen(viewModel = supportViewModel)
                 2 -> LiveLocationScreen()
-                3 -> SettingScreen()
+                3 -> SettingScreen(
+                    isDarkModeEnabled = isDarkModeEnabled,
+                    onThemeChange = onThemeChange
+                )
                 else -> HomeScreen()
             }
         }
     }
 }
-
-
-//Just a single line commit
