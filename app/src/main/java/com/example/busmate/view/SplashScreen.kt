@@ -162,4 +162,4 @@ fun isInternetAvailable(context: Context): Boolean {
     return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 }
 
-//ahsdjha
+//ahsdjhaajshdjag
