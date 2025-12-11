@@ -57,12 +57,13 @@ import com.example.busmate.view.LoginScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun SettingScreen() {
+fun SettingScreen(
+    isDarkModeEnabled: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
     val context = LocalContext.current
     var isNotificationEnabled by remember { mutableStateOf(true) }
-    var isDarkModeEnabled by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             SettingsTopBarScreen(onBackClick = { /* TODO */ })
@@ -89,11 +90,11 @@ fun SettingScreen() {
                 SettingsMenuItem(
                     title = "Dark Mode",
                     imageVector = Icons.Filled.DarkMode,
-                    onClick = { isDarkModeEnabled = !isDarkModeEnabled }
+                    onClick = { onThemeChange(!isDarkModeEnabled) }
                 ) {
                     Switch(
                         checked = isDarkModeEnabled,
-                        onCheckedChange = { isDarkModeEnabled = it }
+                        onCheckedChange = { onThemeChange(it) }
                     )
                 }
 
