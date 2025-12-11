@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.busmate.view.SettingsMenuItem
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -207,6 +208,8 @@ fun SettingScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable {
+                                    val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
+                                    sharedPreferences.edit().clear().apply()
                                     FirebaseAuth.getInstance().signOut()
                                     val intent = Intent(context, LoginScreen::class.java)
                                     intent.flags =
