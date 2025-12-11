@@ -22,22 +22,22 @@ class BusRepositoryImpl : BusRepositoryInterface {
         }
 
         try {
-            val busRef = firestore.collection("schools") // Using string literal
+            // 1. Define the document reference path: schools/{schoolId}/buses/{busNumber}
+            val schoolBusCollectionRef = firestore.collection("schools")
                 .document(schoolId)
-                .collection("buses") // Using string literal
-                .document(busNumber)
+                .collection("buses")
 
-            // 1. Check for existing Bus Number in this school
+            val busRef = schoolBusCollectionRef.document(busNumber)
+
+            // 2. Check for existing Bus Number (unique document ID) in this school
             val existingBus = busRef.get().await()
             if (existingBus.exists()) {
                 callback("Bus Number '$busNumber' already exists for this school. Use a unique Bus Number.", false)
                 return
             }
 
-            // 2. Check for existing License Plate within this school
-            val existingLicense = firestore.collection("schools") // Using string literal
-                .document(schoolId)
-                .collection("buses") // Using string literal
+            // 3. Check for existing License Plate within this school
+            val existingLicense = schoolBusCollectionRef
                 .whereEqualTo("licensePlate", licensePlate)
                 .get()
                 .await()
@@ -48,7 +48,8 @@ class BusRepositoryImpl : BusRepositoryInterface {
             }
 
 
-            // 3. Save the new bus record
+            // 4. Save the new bus record
+            // bus.toMap() handles nesting the DriverModel object correctly.
             busRef.set(bus.toMap()).await()
 
             callback("Bus $busNumber registered successfully!", true)
