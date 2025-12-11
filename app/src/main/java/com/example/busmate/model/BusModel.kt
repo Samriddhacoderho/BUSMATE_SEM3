@@ -8,7 +8,6 @@ data class BusModel(
     val busNumber: String = "", // Internal Bus ID (e.g., "Bus 15")
     val licensePlate: String = "",
 
-    val schoolId: String = "",
     val routeId: String = "",
     val capacity: Int = 0,
     val maintenanceStatus: String = "Good",
@@ -22,7 +21,6 @@ data class BusModel(
         return mapOf(
             "busNumber" to busNumber,
             "licensePlate" to licensePlate,
-            "schoolId" to schoolId,
             "routeId" to routeId,
             "capacity" to capacity,
             "maintenanceStatus" to maintenanceStatus,
