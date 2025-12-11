@@ -19,4 +19,5 @@
     <!--    <string name="baato_access_token">bpk.NMWVkzM5kmt_C4mbq0qyXwscw7Gjoy66uLQBpZXKGkjw</string>-->
     <string name="title_activity_live_location_screen">LiveLocationScreen</string>
     <string name="title_activity_change_password">ChangePasswordActivity</string>
+    <string name="title_activity_add_child">AddChildActivity</string>
 </resources>
