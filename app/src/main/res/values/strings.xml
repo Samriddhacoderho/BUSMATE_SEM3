@@ -21,4 +21,5 @@
     <string name="title_activity_change_password">ChangePasswordActivity</string>
     <string name="title_activity_add_child">AddChildActivity</string>
     <string name="title_activity_admin_deactivates">AdminDeactivatesActivity</string>
+    <string name="title_activity_bus_screen">BusScreen</string>
 </resources>
