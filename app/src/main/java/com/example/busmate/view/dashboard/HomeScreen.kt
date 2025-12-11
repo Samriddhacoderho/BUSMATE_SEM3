@@ -1,5 +1,6 @@
 package com.example.busmate.view.dashboard
 import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,7 @@ import com.example.busmate.ui.theme.BackgroundLightGray
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
+import com.example.busmate.view.AddChildActivity
 
 
 @Composable
@@ -38,6 +40,10 @@ fun HomeScreen() {
 
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
+    }
+    val navigateToAddChild: () -> Unit = {
+        val intent = Intent(context, AddChildActivity::class.java)
+        context.startActivity(intent)
     }
 
     Scaffold(containerColor = BackgroundLightGray) { paddingValues ->
@@ -50,7 +56,7 @@ fun HomeScreen() {
 
                 if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
 
-                MyChildrenHeaderScreen(model)
+                MyChildrenHeaderScreen(model,onAddChildClick = navigateToAddChild)
 
                 ChildTrackingCardScreen(
                     childName = if(model?.typeofUser=="Parent") "Swikrit Ghimire" else if(model?.typeofUser=="Driver") "Bus No: 1522" else "Harwinder Singh",
@@ -131,7 +137,7 @@ fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
 }
 
 @Composable
-fun MyChildrenHeaderScreen(model: UserModel?) {
+fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,7 +153,7 @@ fun MyChildrenHeaderScreen(model: UserModel?) {
         )
 
         if(model?.typeofUser=="Parent") OutlinedButton(
-            onClick = {},
+            onClick = onAddChildClick,
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = BusMateBlue),
             border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
