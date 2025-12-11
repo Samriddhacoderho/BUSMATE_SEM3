@@ -49,6 +49,7 @@ class AdminDeactivatesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            AdminManageAccountScreen()
 
         }
     }

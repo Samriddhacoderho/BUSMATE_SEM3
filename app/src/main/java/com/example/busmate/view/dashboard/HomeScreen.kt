@@ -41,6 +41,7 @@ fun HomeScreen() {
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
+
     val navigateToAddChild: () -> Unit = {
         val intent = Intent(context, AddChildActivity::class.java)
         context.startActivity(intent)
@@ -51,8 +52,10 @@ fun HomeScreen() {
             Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
+        )
+        {
             item {
+
 
                 if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
 
