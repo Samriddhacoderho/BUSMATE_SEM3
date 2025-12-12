@@ -1,9 +1,9 @@
 package com.example.busmate.data
 
+import android.util.Log
 import com.example.busmate.model.BusModel
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-
 
 class BusRepositoryImpl : BusRepositoryInterface {
     private val firestore = FirebaseFirestore.getInstance()
@@ -14,7 +14,6 @@ class BusRepositoryImpl : BusRepositoryInterface {
     ) {
         val busNumber = bus.busNumber.trim()
         val licensePlate = bus.licensePlate.trim()
-        // schoolId is now absent from the bus object
 
         if (busNumber.isBlank() || licensePlate.isBlank()) {
             callback("Missing required fields (Bus Number or License Plate)", false)
@@ -22,10 +21,9 @@ class BusRepositoryImpl : BusRepositoryInterface {
         }
 
         try {
-            // 1. Define the collection reference: TOP-LEVEL 'buses' COLLECTION
             val busCollectionRef = firestore.collection("buses")
 
-            // --- 2. Check for existing Bus Number (UNIQUE GLOBALLY) ---
+            // --- Check unique bus number ---
             val existingBusNumberQuery = busCollectionRef
                 .whereEqualTo("busNumber", busNumber)
                 .get()
@@ -36,7 +34,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 return
             }
 
-            // --- 3. Check for existing License Plate (UNIQUE GLOBALLY) ---
+            // --- Check unique license plate ---
             val existingLicenseQuery = busCollectionRef
                 .whereEqualTo("licensePlate", licensePlate)
                 .get()
@@ -47,9 +45,17 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 return
             }
 
-            // 4. Save the new bus record using Firestore's auto-generated ID (.add())
-            // The document ID will be a simple unique string (e.g., 'u7gHkP2mJ')
-            busCollectionRef.add(bus.toMap()).await()
+            // ----------------------------------------------------
+            // ✅ FIX: Correctly generate and use Firestore document ID
+            // ----------------------------------------------------
+            val newDocRef = busCollectionRef.document()   // Generate the ID FIRST
+
+            val updatedBus = bus.copy(uid = newDocRef.id)
+
+            // Save the bus at EXACTLY that document ID
+            newDocRef.set(updatedBus.toMap()).await()
+
+            Log.d("BusRepo", "Successfully registered bus: ${updatedBus.uid}")
 
             callback("Bus $busNumber registered successfully!", true)
 

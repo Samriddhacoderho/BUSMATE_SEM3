@@ -1,5 +1,6 @@
 package com.example.busmate.data
 
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
 interface AdminActionsInterface {
@@ -7,5 +8,11 @@ interface AdminActionsInterface {
     fun deactivateUser(userID: String,callback:(Boolean, String)-> Unit)
     fun deleteUser(userID: String,callback:(Boolean, String)-> Unit)
     fun reactivateUser(userID: String,callback: (Boolean, String) -> Unit)
+
+    fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit)
+
+    fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit)
+
+    fun assignBusToDriver(busId:String,driverId:String,callback: (Boolean, String) -> Unit)
 
 }

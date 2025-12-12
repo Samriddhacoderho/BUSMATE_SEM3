@@ -1,277 +1,245 @@
 package com.example.busmate.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.R
+import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.ui.theme.BusMateYellow
-
-
-// Placeholder data for the bus profile
-data class BusProfileData(
-    val busName: String = "School Bus ABC",
-    val model: String = "Vehicle Model Name",
-    val year: String = "2020",
-    val licensePlate: String = "Ba 4 Pa 9988",
-    val capacity: Int = 45,
-    val fuelType: String = "Diesel",
-    val maintenanceStatus: String = "Good (Last Service: Jan 2025)",
-    val averageSpeed: String = "35 km/h",
-
-    val driverName: String = "Ram Bahadur Thapa",
-    val assignedRoute: String = "Route 03 - Budhanilkantha",
-)
+import com.example.busmate.viewmodel.AdminActionsViewModel
 
 class BusProfileScreen : ComponentActivity() {
+
+    // Shared variable for passing driver result back to Composables
+    companion object {
+        var onDriverSelectedCallback: ((String, String) -> Unit)? = null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BUSMATETheme {
-                BusProfileScreenUI()
+            BusProfileMainScreen()
+        }
+    }
+
+    // Handle driver selection result
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 1001 && resultCode == Activity.RESULT_OK && data != null) {
+            val driverId = data.getStringExtra("driverId") ?: return
+            val driverName = data.getStringExtra("driverName") ?: return
+
+            // Call Composable callback
+            onDriverSelectedCallback?.invoke(driverId, driverName)
+        }
+    }
+}
+
+@Composable
+fun BusProfileMainScreen() {
+
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val buses = remember { mutableStateListOf<BusModel>() }
+
+    LaunchedEffect(Unit) {
+        viewModel.getAllBus { success, list ->
+            if (success && list != null) buses.addAll(list)
+        }
+    }
+
+    BusProfileScreenUI(buses)
+}
+
+@Composable
+fun BusProfileScreenUI(buses: List<BusModel>) {
+
+    Scaffold { padding ->
+
+        if (buses.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Loading buses...", fontSize = 20.sp)
+            }
+            return@Scaffold
+        }
+
+        val pagerState = rememberPagerState(pageCount = { buses.size })
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) { page ->
+
+            SingleBusProfile(bus = buses[page])
+        }
+    }
+}
+
+@Composable
+fun SingleBusProfile(bus: BusModel) {
+
+    val context = LocalContext.current
+    var currentDriver by remember { mutableStateOf(bus.driver ?: "Not Assigned") }
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+
+    // Register callback for selection result
+    BusProfileScreen.onDriverSelectedCallback = { driverId, driverName ->
+        currentDriver = driverName
+
+        viewModel.assignBusToDriver(bus.uid,driverId){success,message->
+            if (success){
+                Toast.makeText(context,message,Toast.LENGTH_SHORT).show()
+            }else{
+                Toast.makeText(context,message,Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        // 🔵 BLUE AREA
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(BusMateBlue),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(40.dp))
+
+            Text(
+                text = "Bus ${bus.busNumber}",
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Route: ${bus.routeId}",
+                color = Color.White.copy(0.8f),
+                fontSize = 16.sp
+            )
+        }
+
+        // 🔳 WHITE CARD
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .offset(y = (-120).dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(10.dp)
+        ) {
+
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Image(
+                    painter = painterResource(R.drawable.schoolbus),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(140.dp)
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                BusProfileItem(Icons.Default.Badge, "Bus Number: ${bus.busNumber}")
+                BusProfileItem(Icons.Default.People, "Capacity: ${bus.capacity}")
+
+                // 🔥 CLICKABLE DRIVER ROW
+                BusProfileItem(
+                    icon = Icons.Default.Person,
+                    text = "Driver: $currentDriver",
+                    clickable = true
+                ) {
+                    val intent = Intent(context, DriverProfileScreen::class.java)
+                    intent.putExtra("select_mode", true)
+                    (context as Activity).startActivityForResult(intent, 1001)
+                }
+
+                BusProfileItem(Icons.Default.Info, "Maintenance: ${bus.maintenanceStatus}")
+                BusProfileItem(Icons.Default.Route, "Route: ${bus.routeId}")
+                BusProfileItem(Icons.Default.Speed, "Speed: ${bus.speed} km/h")
             }
         }
     }
 }
 
 @Composable
-fun BusProfileScreenUI(modifier: Modifier = Modifier) {
-    val profile = remember { BusProfileData() }
-
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        content = { innerPadding ->
-            // Main screen content (Blue background and White Card)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // 1. Top Blue Background Section
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp)
-                        .background(BusMateBlue)
-                        .padding(top = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    // Back button
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.clickable { /* UX: navigate back */ }
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 32.dp)
-                    ) {
-                        Text(
-                            text = profile.busName,
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-
-
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "(${profile.model})",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                // White Profile Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .offset(y = (-150).dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                            .padding(top = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Bus Photo
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.8f) // Wider for bus image
-                                .height(150.dp)
-                                .shadow(8.dp, RoundedCornerShape(16.dp))
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.LightGray)
-                                .border(4.dp, Color.White, RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-
-                            Image(
-                                painter = painterResource(id = R.drawable.schoolbus),
-                                contentDescription = "Bus Photo",
-
-                                )
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "ABOUT BUS",
-                                color = BusMateBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                        Divider(color = Color.LightGray, thickness = 1.dp)
-
-
-                        // Bus Name
-                        Text(
-                            text = profile.busName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray,
-                            modifier = Modifier.padding(top=16.dp,bottom = 4.dp)
-                        )
-
-                        Text(
-                            text = "${profile.model} (${profile.year})",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .background(
-                                    color = BusMateYellow,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "License Plate: ${profile.licensePlate}",
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Bus-specific items
-                        BusProfileItem(icon = Icons.Default.People, text = "Capacity: ${profile.capacity} Passengers")
-                        BusProfileItem(icon = Icons.Default.LocalGasStation, text = "Fuel Type: ${profile.fuelType}")
-                        BusProfileItem(icon = Icons.Default.Construction, text = "Maint. Status: ${profile.maintenanceStatus}")
-                        BusProfileItem(icon = Icons.Default.Speed, text = "Avg. Speed: ${profile.averageSpeed}")
-                        // Displaying Driver Name instead of Last Checkup
-                        BusProfileItem(icon = Icons.Default.Person, text = "Driver: ${profile.driverName}")
-                        BusProfileItem(icon = Icons.Default.Route, text = "Assigned Route: ${profile.assignedRoute}")
-
-
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
-                }
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    )
-}
-
-@Composable
-fun BusProfileItem(icon: ImageVector, text: String) {
+fun BusProfileItem(
+    icon: ImageVector,
+    text: String,
+    clickable: Boolean = false,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp)
+            .then(
+                if (clickable) Modifier.clickable { onClick() }
+                else Modifier
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = icon,
+            icon,
             contentDescription = null,
-            tint = Color.DarkGray,
-            modifier = Modifier.size(24.dp)
+            tint = if (clickable) BusMateBlue else Color.Gray,
+            modifier = Modifier.size(22.dp)
         )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            color = Color.Black
-        )
-    }
-}
 
-// Preview Composable
-@Preview(showBackground = true)
-@Composable
-fun BusProfileScreenPreview() {
-    BUSMATETheme {
-        BusProfileScreenUI()
+        Spacer(Modifier.width(12.dp))
+
+        Text(
+            text,
+            fontSize = 16.sp,
+            color = if (clickable) BusMateBlue else Color.Black,
+            fontWeight = if (clickable) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
