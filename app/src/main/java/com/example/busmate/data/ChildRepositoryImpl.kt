@@ -18,9 +18,8 @@ class ChildRepositoryImpl : ChildRepositoryInterface{
             return
         }
 
-        // 1. Check for GLOBAL Uniqueness of studentId
+
         try {
-            // Replaced GLOBAL_STUDENT_ID_INDEX with "studentIdIndex"
             val uniqueIndexDoc = firestore.collection("studentIdIndex")
                 .document(model.studentId)
                 .get()
@@ -35,18 +34,15 @@ class ChildRepositoryImpl : ChildRepositoryInterface{
             firestore.runTransaction { transaction ->
 
                 // 2a. Add the child to the Parent's nested map
-                // Replaced PARENT_COLLECTION with "users"
                 val parentRef = firestore.collection("users").document(parentUid)
 
-                // Assuming model.toMap() exists on ChildModel
                 transaction.update(
                     parentRef,
                     "children.${model.studentId}",
                     model.toMap()
                 )
 
-                // 2b. Create the Global Uniqueness Index Record
-                // Replaced GLOBAL_STUDENT_ID_INDEX with "studentIdIndex"
+
                 val indexRef = firestore.collection("studentIdIndex").document(model.studentId)
                 transaction.set(indexRef, mapOf(
                     "parentUid" to parentUid,

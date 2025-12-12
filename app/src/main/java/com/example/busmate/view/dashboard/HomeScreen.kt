@@ -31,6 +31,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
+import com.example.busmate.view.BusScreen
 
 
 @Composable
@@ -41,8 +42,13 @@ fun HomeScreen() {
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
+
     val navigateToAddChild: () -> Unit = {
         val intent = Intent(context, AddChildActivity::class.java)
+        context.startActivity(intent)
+    }
+    val navigateToAddBus: () -> Unit = {
+        val intent = Intent(context, BusScreen::class.java)
         context.startActivity(intent)
     }
 
@@ -51,8 +57,10 @@ fun HomeScreen() {
             Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
+        )
+        {
             item {
+
 
                 if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
 
@@ -75,7 +83,7 @@ fun HomeScreen() {
                     imageResource = if(model?.typeofUser=="Parent") R.drawable.girl else if (model?.typeofUser=="Driver") R.drawable.schoolbus else R.drawable.driver,
                     mapImageResource = R.drawable.map
                 )
-                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin()
+                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
             }
         }
     }
@@ -400,7 +408,7 @@ fun WelcomeCardAdmin(adminName: String){
 }
 
 @Composable
-fun NotificationsAlertHeaderAdmin(){
+fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit){
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -412,7 +420,7 @@ fun NotificationsAlertHeaderAdmin(){
             color = Color.Black.copy(alpha = 0.8f)
         )
         OutlinedButton(
-            onClick = {},
+            onClick = onAddBusClick,
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = BusMateBlue
@@ -431,7 +439,7 @@ fun NotificationsAlertHeaderAdmin(){
             )
 
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Create Notification", fontSize = 14.sp)
+            Text("Add Bus", fontSize = 14.sp)
         }
     }
     Spacer(modifier = Modifier.height(10.dp))
