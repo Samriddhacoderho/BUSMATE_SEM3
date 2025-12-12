@@ -29,7 +29,7 @@ class AdminActionsImpl : AdminActionsInterface {
         firestore.collection("users")
             .whereEqualTo("schoolId", userID)
             .get()
-            .addOnCompleteListener { it ->
+            .addOnCompleteListener {
 
                 if (it.isSuccessful) {
                     val doc = it.result.documents.firstOrNull()
@@ -60,7 +60,26 @@ class AdminActionsImpl : AdminActionsInterface {
         userID: String,
         callback: (Boolean, String) -> Unit
     ) {
-        TODO("Not yet implemented")
+        firestore.collection("users").whereEqualTo("schoolId",userID).get().addOnCompleteListener {
+            if(it.isSuccessful){
+                val doc = it.result.documents.firstOrNull()
+                if(doc!=null){
+                    firestore.collection("users").document(doc.id).delete().addOnCompleteListener {
+                        firestore.collection("user").document(userID).delete().addOnCompleteListener {
+                            if(it.isSuccessful) {
+                                callback(true, "User Deleted")
+                            }else{
+                                callback(false,"User Not Deleted")
+                            }
+                        }
+                    }
+                }else{
+                    callback(false,"User not found")
+                }
+            }else{
+                callback(false,"Error fetching user")
+            }
+        }
     }
 
 }
