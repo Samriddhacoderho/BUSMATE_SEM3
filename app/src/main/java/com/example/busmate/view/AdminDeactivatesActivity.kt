@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
 import androidx.compose.material3.Divider
+import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.model.UserModel
+import com.example.busmate.viewmodel.AdminActionsViewModel
 
 
 class AdminDeactivatesActivity : ComponentActivity() {
@@ -49,6 +52,7 @@ class AdminDeactivatesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            AdminManageAccountScreen()
 
         }
     }
@@ -56,10 +60,12 @@ class AdminDeactivatesActivity : ComponentActivity() {
 
 @Composable
 fun AdminManageAccountScreen() {
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
 
     // -------------------- State Variables --------------------
     var schoolId by remember { mutableStateOf("") }
     var schoolIdError by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf<UserModel?>(null) }
 
     var showUserDetails by remember { mutableStateOf(false) }
 
@@ -83,6 +89,17 @@ fun AdminManageAccountScreen() {
 
     // -------------------- Colors --------------------
     val PrimaryBlue = Color(0xFF2567E8)
+
+    fun onclickSearchButton() {
+        viewModel.getUserbyID(schoolId) { success, models ->
+            if (success) {
+                model=models
+                showUserDetails = true
+            } else {
+                
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
@@ -172,7 +189,7 @@ fun AdminManageAccountScreen() {
                             if (schoolId.isBlank()) {
                                 schoolIdError = "School ID is required"
                             } else {
-                                showUserDetails = true
+                                onclickSearchButton()
                             }
                         },
                         modifier = Modifier
@@ -205,9 +222,11 @@ fun AdminManageAccountScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("User Name: John Doe", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                            Text("Role: Parent", fontSize = 14.sp, color = Color.Gray)
-                            Text("Status: Active", fontSize = 14.sp, color = Color.Gray)
+                            model?.let { user ->
+                                Text("User Name: ${user.firstName+" "+user.lastName}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Role: ${user.typeofUser}", fontSize = 14.sp, color = Color.Gray)
+                                Text("Status: ${user.status}", fontSize = 14.sp, color = Color.Gray)
+                            }
                         }
 
                         Spacer(Modifier.height(24.dp))
@@ -326,6 +345,6 @@ fun AdminManageAccountScreen() {
 
 @Preview(showSystemUi = true, showBackground = true)
 @Composable
-fun previewDeactivate(){
+fun previewDeactivate() {
     AdminManageAccountScreen()
 }
