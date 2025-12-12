@@ -25,4 +25,8 @@ class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
     fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit){
         repo.getAllBus(callback)
     }
+
+    fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit){
+        repo.getAllDrivers(callback)
+    }
 }
