@@ -120,7 +120,9 @@ fun AdminManageAccountScreen() {
                 messageShow=message
             }
         }
-        showUserDetails=false
+        selectedAction = ""
+        selectedReason = ""
+        showUserDetails = false
     }
 
     fun deleteonClick() {
@@ -130,7 +132,9 @@ fun AdminManageAccountScreen() {
                 messageShow = message
             }
         }
-        showUserDetails=false
+        selectedAction = ""
+        selectedReason = ""
+        showUserDetails = false
     }
 
     // ---------------------- UI ----------------------
