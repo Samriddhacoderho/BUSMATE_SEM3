@@ -88,7 +88,15 @@ class UserRepositoryImpl : UserRepositoryInterface {
                 return Result.failure(Exception("No such user found"))
             }
 
-            val email = snapshot.documents.first().getString("email")
+            val document = snapshot.documents.first()
+
+            // Check status field
+            val status = document.getString("status") ?: "deactivated"
+            if (status != "active") {
+                return Result.failure(Exception("Your account is deactivated. Please contact administration."))
+            }
+
+            val email = document.getString("email")
                 ?: return Result.failure(Exception("Email not found for this user"))
 
             val signInResult = auth.signInWithEmailAndPassword(email, password).await()
@@ -96,8 +104,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
                 return Result.failure(Exception("Invalid Email ID or Password"))
             }
 
-            val userModel: UserModel =
-                snapshot.documents.first().toObject(UserModel::class.java)!!
+            val userModel: UserModel = document.toObject(UserModel::class.java)!!
 
             Result.success(userModel)
 
@@ -109,6 +116,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
             Result.failure(Exception(message))
         }
     }
+
 
     override suspend fun changePassword(
         oldPassword: String,

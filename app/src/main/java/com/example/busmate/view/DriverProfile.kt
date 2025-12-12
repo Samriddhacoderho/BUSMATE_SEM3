@@ -1,5 +1,7 @@
 package com.example.busmate.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,22 +11,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ShareLocation
-import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,267 +28,211 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.R
-import com.example.busmate.ui.theme.BusMateYellow
-
-data class DriverProfileData(
-    val vehicleModel: String = "Bus Model ",
-    val driverName: String = "Ram Bahadur Thapa",
-    val rating: Double = 4.9,
-    val licensePlate: String = "Bus No: Ba 4 Pa 9988",
-    val driverLicense: String = "DL8459-0012",
-    val joinedDate: String = "Joined May 2023",
-    val location: String = "From Banepa",
-    val phoneNumber: String = "+977-9845456765",
-    val email: String = "driver@schoolname.com",
-    val currentRoute: String = "Budhanilkantha"
-)
+import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.model.UserModel
+import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.viewmodel.AdminActionsViewModel
 
 class DriverProfileScreen : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val selectMode = intent.getBooleanExtra("select_mode", false)
+
         setContent {
-            BUSMATETheme {
-                DriverProfileScreenUI()
+            DriverProfileMainScreen(selectMode)
+        }
+    }
+}
+
+@Composable
+fun DriverProfileMainScreen(selectMode: Boolean) {
+
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val drivers = remember { mutableStateListOf<UserModel>() }
+
+    LaunchedEffect(Unit) {
+        viewModel.getAllDrivers { success, list ->
+            if (success && list != null) drivers.addAll(list)
+        }
+    }
+
+    DriverProfileScreenUI(drivers, selectMode)
+}
+
+@Composable
+fun DriverProfileScreenUI(
+    drivers: List<UserModel>,
+    selectMode: Boolean
+) {
+
+    Scaffold { padding ->
+
+        if (drivers.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Loading drivers...", fontSize = 20.sp)
+            }
+            return@Scaffold
+        }
+
+        val pagerState = rememberPagerState(pageCount = { drivers.size })
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) { page ->
+            SingleDriverProfile(driver = drivers[page], selectMode = selectMode)
+        }
+    }
+}
+
+@Composable
+fun SingleDriverProfile(
+    driver: UserModel,
+    selectMode: Boolean
+) {
+
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        // 🔵 Blue top header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(BusMateBlue)
+                .padding(top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.clickable { (context as Activity).finish() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "${driver.firstName} ${driver.lastName}",
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "ID: ${driver.schoolId}",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 16.sp
+            )
+        }
+
+        // 🔳 White Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .offset(y = (-130).dp)
+                .then(
+                    if (selectMode) Modifier.clickable {
+                        // Set selected driver result
+                        val result = Intent()
+                        result.putExtra("driverId", driver.schoolId)
+                        result.putExtra("driverName", "${driver.firstName} ${driver.lastName}")
+                        (context as Activity).setResult(Activity.RESULT_OK, result)
+                        context.finish()
+                    }
+                    else Modifier
+                ),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(10.dp)
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                // Profile image
+                Box(
+                    modifier = Modifier
+                        .size(130.dp)
+                        .shadow(8.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .border(4.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.driver),
+                        contentDescription = "Driver Avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = if (selectMode) "TAP TO SELECT THIS DRIVER" else "ABOUT DRIVER",
+                    color = BusMateBlue,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                DriverProfileItem(Icons.Default.Person, "Name: ${driver.firstName} ${driver.lastName}")
+                DriverProfileItem(Icons.Default.Email, "Email: ${driver.email}")
+                DriverProfileItem(Icons.Default.Phone, "Phone: ${driver.phone}")
+                DriverProfileItem(Icons.Default.Badge, "School ID: ${driver.schoolId}")
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
 @Composable
-fun DriverProfileScreenUI(modifier: Modifier = Modifier) {
-    val profile = remember { DriverProfileData() }
-
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        content = { innerPadding ->
-            // Main screen content (Blue background and White Card)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // 1. Top Blue Background Section
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp)
-                        .background(BusMateBlue)
-                        .padding(top = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    // Back button
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.clickable { /* UX: navigate back */ }
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-
-                    }
-
-                    // Driver Info
-                    Column(horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 32.dp)
-                    ) {
-                        Text(
-                            text = profile.driverName,
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Rating",
-                                tint = BusMateYellow,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = profile.rating.toString(),
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "(${profile.vehicleModel})",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                // 2. White Profile Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .offset(y = (-150).dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                            .padding(top = 56.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Driver Avatar
-                        Box(
-                            modifier = Modifier
-                                .size(130.dp)
-                                .shadow(8.dp, CircleShape) // Shadow for depth effect
-                                .clip(CircleShape)
-                                .background(Color.White) // Added white background here
-                                .border(4.dp, Color.White, CircleShape), // White border to frame image
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.driver),
-                                contentDescription = "Driver Avatar",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                                    .clip(CircleShape)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "ABOUT DRIVER",
-                                color = BusMateBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-                        Divider(color = Color.LightGray, thickness = 1.dp)
-
-
-
-                        Text(
-                            text = profile.driverName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray,
-                            modifier = Modifier.padding(top=16.dp,bottom = 4.dp)
-                        )
-
-
-                        Text(
-                            text = profile.vehicleModel,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-
-                        Row(
-                            modifier = Modifier
-                                .background(
-                                    color = BusMateYellow,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = profile.licensePlate,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Existing items
-                        ProfileItem(icon = Icons.Default.CalendarMonth, text = profile.joinedDate)
-                        ProfileItem(icon = Icons.Default.LocationOn, text = profile.location)
-                        // Driver License Number
-                        ProfileItem(icon = Icons.Default.Badge, text = "License: ${profile.driverLicense}")
-
-                        // Other contact items
-                        ProfileItem(icon = Icons.Default.Phone, text = "Phone Number: ${profile.phoneNumber}")
-                        ProfileItem(icon = Icons.Default.Email, text = "Email: ${profile.email}")
-                        ProfileItem(icon = Icons.Default.ShareLocation, text = "Current Route: ${profile.currentRoute}")
-
-
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
-                }
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    )
-}
-
-@Composable
-fun ProfileItem(icon: ImageVector, text: String) {
+fun DriverProfileItem(icon: ImageVector, text: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.DarkGray,
-            modifier = Modifier.size(24.dp)
+            tint = Color.Gray,
+            modifier = Modifier.size(22.dp)
         )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            color = Color.Black
-        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Text(text, fontSize = 16.sp)
     }
-}
-
-// Preview Composable
-@Preview(showBackground = true)
-@Composable
-fun DriverProfileScreenPreview() {
-
-    // BUSMATETheme {
-    DriverProfileScreenUI()
-    // }
 }

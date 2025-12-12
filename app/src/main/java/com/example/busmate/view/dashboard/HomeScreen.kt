@@ -125,7 +125,7 @@ fun HomeScreen() {
 }
 
 @Composable
-fun WelcomeCardScreen(parentName: String?) {
+fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
     Column(
         Modifier
             .fillMaxWidth()

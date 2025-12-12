@@ -2,6 +2,7 @@ package com.example.busmate.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AdminActionsInterface
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
 class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
@@ -9,4 +10,27 @@ class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
         repo.getUserbyID(userID, callback)
     }
 
+    fun deactivateAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.deactivateUser(userID,callback)
+    }
+
+    fun deleteAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.deleteUser(userID,callback)
+    }
+
+    fun reactivateAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.reactivateUser(userID,callback)
+    }
+
+    fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit){
+        repo.getAllBus(callback)
+    }
+
+    fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit){
+        repo.getAllDrivers(callback)
+    }
+
+    fun assignBusToDriver(busId:String,driverId:String,callback: (Boolean, String) -> Unit) {
+        repo.assignBusToDriver(busId, driverId,callback)
+    }
 }

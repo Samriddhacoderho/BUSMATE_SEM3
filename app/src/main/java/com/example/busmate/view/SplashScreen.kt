@@ -100,6 +100,7 @@ fun SplashScreenUI() {
         }
 
 
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = BusMateBlue,
