@@ -42,9 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.viewmodel.AdminActionsViewModel
+import kotlinx.coroutines.launch
 
 
 class AdminDeactivatesActivity : ComponentActivity() {
@@ -52,6 +57,7 @@ class AdminDeactivatesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            AdminManageAccountScreen()
 
         }
     }
@@ -83,6 +89,8 @@ fun AdminManageAccountScreen() {
 
     var selectedReason by remember { mutableStateOf("") }
     var expandedReason by remember { mutableStateOf(false) }
+    val snackbarHostState=remember { SnackbarHostState() }
+    val coroutineScope=rememberCoroutineScope()
 
     val isConfirmEnabled = selectedAction.isNotBlank() && selectedReason.isNotBlank()
 
@@ -95,13 +103,23 @@ fun AdminManageAccountScreen() {
                 model=models
                 showUserDetails = true
             } else {
-                
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "User not found",
+                    )
+                }
+                showUserDetails=false
             }
         }
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = {SnackbarHost(snackbarHostState){
+            Snackbar(snackbarData = it,
+                containerColor = Color.Red,
+                contentColor = Color.White)
+        }}
     ) { padding ->
         Box(
             modifier = Modifier
@@ -314,7 +332,7 @@ fun AdminManageAccountScreen() {
                         // ------------ CONFIRM BUTTON ------------
                         Button(
                             onClick = {
-                                // TODO: Connect to backend deactivate/delete endpoint
+
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

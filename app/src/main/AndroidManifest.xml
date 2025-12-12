@@ -14,9 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
-            android:name=".view.AdminDeactivatesActivity"
+            android:name=".view.dashboard.ParentDashboardActivity"
             android:exported="true"
-            android:label="@string/title_activity_admin_deactivates"
+            android:label="@string/title_activity_parent_dashboard"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,17 +39,6 @@
             android:name=".view.ChangePasswordScreen"
             android:exported="true"
             android:label="@string/title_activity_change_password"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.SettingActivity"
-            android:exported="true"
-            android:label="@string/title_activity_setting"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -124,14 +113,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.AdminDashboardActivity"
-            android:exported="false"
-            android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.BUSMATE" />
-        <activity
-            android:name=".view.dashboard.ParentDashboardActivity"
+            android:name=".view.SplashScreen"
             android:exported="true"
-            android:label="@string/title_activity_parent_dashboard"
+            android:label="@string/title_activity_splash_screen"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -140,9 +124,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.SplashScreen"
+            android:name=".view.AdminDeactivatesActivity"
             android:exported="true"
-            android:label="@string/title_activity_splash_screen"
+            android:label="@string/title_activity_admin_deactivates"
             android:theme="@style/Theme.BUSMATE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

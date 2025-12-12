@@ -46,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.busmate.view.SettingsMenuItem
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.height
@@ -282,6 +281,40 @@ fun SettingsMenuItemScreen(
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )
+        trailingContent()
+    }
+}
+@Composable
+fun SettingsMenuItem(
+    title: String,
+    imageVector: ImageVector,
+    onClick: () -> Unit,
+    trailingContent: @Composable () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Icon(
+            imageVector = imageVector,
+            contentDescription = null, // decorative
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f) // Pushes trailing content to the end
+        )
+
+
         trailingContent()
     }
 }
