@@ -1,5 +1,7 @@
 package com.example.busmate.data
 
+import android.util.Log
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -115,6 +117,37 @@ class AdminActionsImpl : AdminActionsInterface {
                 }
             }
     }
+
+    override fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit) {
+
+        firestore.collection("buses")
+            .get()
+            .addOnCompleteListener { task ->
+
+                if (task.isSuccessful) {
+
+                    // Convert to your model
+                    val buses = task.result?.documents?.mapNotNull { doc ->
+                        doc.toObject(BusModel::class.java)
+                    }
+
+                    // 🟢 Print everything in Logcat
+                    Log.d("BusRepo", "Fetched ${buses?.size ?: 0} buses:")
+                    buses?.forEach { bus ->
+                        Log.d("BusRepo", bus.toString())
+                    }
+
+                    callback(true, buses)
+
+                } else {
+
+                    // 🔴 Print error
+                    Log.e("BusRepo", "Failed to fetch buses", task.exception)
+                    callback(false, null)
+                }
+            }
+    }
+
 
 
 }

@@ -2,6 +2,7 @@ package com.example.busmate.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AdminActionsInterface
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
 class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
@@ -21,4 +22,7 @@ class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
         repo.reactivateUser(userID,callback)
     }
 
+    fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit){
+        repo.getAllBus(callback)
+    }
 }
