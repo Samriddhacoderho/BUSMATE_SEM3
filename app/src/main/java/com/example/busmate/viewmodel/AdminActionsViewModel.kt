@@ -9,4 +9,16 @@ class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
         repo.getUserbyID(userID, callback)
     }
 
+    fun deactivateAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.deactivateUser(userID,callback)
+    }
+
+    fun deleteAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.deleteUser(userID,callback)
+    }
+
+    fun reactivateAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.reactivateUser(userID,callback)
+    }
+
 }
