@@ -162,3 +162,5 @@ fun ParentDashboardScreen(
         }
     }
 }
+
+//small changes in setting ui
