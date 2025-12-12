@@ -285,3 +285,4 @@ fun SettingsMenuItemScreen(
         trailingContent()
     }
 }
+//small changes in setting screen
