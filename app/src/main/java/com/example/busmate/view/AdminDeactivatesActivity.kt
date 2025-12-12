@@ -109,12 +109,18 @@ fun AdminManageAccountScreen() {
     }
 
     fun deactivateonClick() {
-        if (model != null) {
+        if (model != null && model?.status=="active") {
             viewModel.deactivateAccount(schoolId) { success, message ->
                 coroutineScope.launch { snackbarHostState.showSnackbar(message) }
                 messageShow = message
             }
+        }else{
+            viewModel.reactivateAccount(schoolId){success,message->
+                coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                messageShow=message
+            }
         }
+        showUserDetails=false
     }
 
     fun deleteonClick() {
@@ -124,6 +130,7 @@ fun AdminManageAccountScreen() {
                 messageShow = message
             }
         }
+        showUserDetails=false
     }
 
     // ---------------------- UI ----------------------
@@ -135,7 +142,7 @@ fun AdminManageAccountScreen() {
                 Snackbar(
                     snackbarData = it,
                     containerColor =
-                        if (messageShow == "User Deleted" || messageShow == "User Deactivated")
+                        if (messageShow == "User Deleted" || messageShow == "User Deactivated" || messageShow=="User Reactivated")
                             Color.Green else Color.Red,
                     contentColor = Color.White
                 )
@@ -360,7 +367,7 @@ fun AdminManageAccountScreen() {
                                 when (selectedAction) {
                                     "Delete Account" -> showDeleteDialog = true
                                     "Deactivate Account" -> deactivateonClick()
-                                    "Reactivate Account" -> { /* You can add logic later */ }
+                                    "Reactivate Account" -> deactivateonClick()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp),

@@ -82,4 +82,39 @@ class AdminActionsImpl : AdminActionsInterface {
         }
     }
 
+
+    override fun reactivateUser(
+        userID: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        firestore.collection("users")
+            .whereEqualTo("schoolId", userID)
+            .get()
+            .addOnCompleteListener {
+
+                if (it.isSuccessful) {
+                    val doc = it.result.documents.firstOrNull()
+
+                    if (doc != null) {
+                        firestore.collection("users")
+                            .document(doc.id)   // correct Firestore document ID
+                            .update("status", "active")
+                            .addOnCompleteListener { update ->
+                                if (update.isSuccessful) {
+                                    callback(true, "User Reactivated")
+                                } else {
+                                    callback(false, "User Not Reactivated")
+                                }
+                            }
+                    } else {
+                        callback(false, "User not found")
+                    }
+
+                } else {
+                    callback(false, "Error fetching user")
+                }
+            }
+    }
+
+
 }
