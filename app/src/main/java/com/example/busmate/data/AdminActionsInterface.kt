@@ -13,4 +13,6 @@ interface AdminActionsInterface {
 
     fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit)
 
+    fun assignBusToDriver(busId:String,driverId:String,callback: (Boolean, String) -> Unit)
+
 }
