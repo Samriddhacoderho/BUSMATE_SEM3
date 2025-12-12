@@ -148,6 +148,29 @@ class AdminActionsImpl : AdminActionsInterface {
             }
     }
 
+    override fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit) {
+        firestore.collection("users").whereEqualTo("typeofUser","Driver")
+            .get()
+            .addOnCompleteListener { task ->
+
+                if (task.isSuccessful) {
+
+                    // Convert to your model
+                    val users = task.result?.documents?.mapNotNull { doc ->
+                        doc.toObject(UserModel::class.java)
+                    }
+
+                    callback(true, users)
+
+                } else {
+
+                    // 🔴 Print error
+                    Log.e("BusRepo", "Failed to fetch buses", task.exception)
+                    callback(false, null)
+                }
+            }
+    }
+
 
 
 }

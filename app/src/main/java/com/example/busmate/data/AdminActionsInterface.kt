@@ -11,4 +11,6 @@ interface AdminActionsInterface {
 
     fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit)
 
+    fun getAllDrivers(callback: (Boolean, List<UserModel>?) -> Unit)
+
 }
