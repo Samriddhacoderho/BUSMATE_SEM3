@@ -1,5 +1,6 @@
 package com.example.busmate.view
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -41,6 +42,7 @@ import com.example.busmate.viewmodel.UserViewModel
 
 
 class ChangePasswordScreen : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -305,6 +307,7 @@ fun Requirement(text: String, passed: Boolean) {
         )
     }
 }
+@SuppressLint("ViewModelConstructorInComposable")
 @Preview(showBackground = true)
 @Composable
 fun PreviewAdminChangeUI() {
