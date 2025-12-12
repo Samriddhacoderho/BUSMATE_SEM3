@@ -14,6 +14,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BUSMATE">
         <activity
+            android:name=".view.AdminDeactivatesActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_deactivates"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.AddChildActivity"
             android:exported="true"
             android:label="@string/title_activity_add_child"
