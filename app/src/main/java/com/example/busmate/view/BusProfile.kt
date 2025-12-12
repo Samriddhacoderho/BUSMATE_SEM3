@@ -115,7 +115,16 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
 fun SingleBusProfile(bus: BusModel) {
 
     val context = LocalContext.current
-    var currentDriver by remember { mutableStateOf(bus.driver ?: "Not Assigned") }
+    var currentDriver by remember {
+        mutableStateOf(
+            bus.driver?.let {
+                if (it.firstName.isNotBlank() || it.lastName.isNotBlank())
+                    "${it.firstName} ${it.lastName}"
+                else
+                    "Not Assigned"
+            } ?: "Not Assigned"
+        )
+    }
     val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
 
     // Register callback for selection result
