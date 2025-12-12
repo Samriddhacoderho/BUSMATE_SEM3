@@ -27,6 +27,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,16 +45,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.viewmodel.AdminActionsViewModel
 import kotlinx.coroutines.launch
-
 
 class AdminDeactivatesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +57,6 @@ class AdminDeactivatesActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AdminManageAccountScreen()
-
         }
     }
 }
@@ -73,9 +71,10 @@ fun AdminManageAccountScreen() {
     var model by remember { mutableStateOf<UserModel?>(null) }
 
     var showUserDetails by remember { mutableStateOf(false) }
+    var messageShow by remember { mutableStateOf("") }
 
     // ---- Action type ----
-    var selectedAction by remember { mutableStateOf("") } // "Deactivate" or "Delete"
+    var selectedAction by remember { mutableStateOf("") }
     var expandedAction by remember { mutableStateOf(false) }
 
     // ---- Reason for action ----
@@ -89,37 +88,58 @@ fun AdminManageAccountScreen() {
 
     var selectedReason by remember { mutableStateOf("") }
     var expandedReason by remember { mutableStateOf(false) }
-    val snackbarHostState=remember { SnackbarHostState() }
-    val coroutineScope=rememberCoroutineScope()
 
-    val isConfirmEnabled = selectedAction.isNotBlank() && selectedReason.isNotBlank()
+    // Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    // -------------------- Colors --------------------
+    // Confirm button logic
+    val isConfirmEnabled =
+        if (selectedAction == "Reactivate Account") {
+            selectedAction.isNotBlank()
+        } else {
+            selectedAction.isNotBlank() && selectedReason.isNotBlank()
+        }
+
     val PrimaryBlue = Color(0xFF2567E8)
 
     fun onclickSearchButton() {
-        viewModel.getUserbyID(schoolId) { success, models ->
+        viewModel.getUserbyID(schoolId) { success, user ->
             if (success) {
-                model=models
+                model = user
                 showUserDetails = true
             } else {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "User not found",
-                    )
+                    snackbarHostState.showSnackbar("User not found")
                 }
-                showUserDetails=false
+                showUserDetails = false
+            }
+        }
+    }
+
+    fun deactivateonClick() {
+        if (model != null && model?.status == "active") {
+            viewModel.deactivateAccount(schoolId) { success, message ->
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(message)
+                }
+                messageShow = message
             }
         }
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = {SnackbarHost(snackbarHostState){
-            Snackbar(snackbarData = it,
-                containerColor = Color.Red,
-                contentColor = Color.White)
-        }}
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) {
+                Snackbar(
+                    snackbarData = it,
+                    containerColor =
+                        if (messageShow == "User Deactivated") Color.Green else Color.Red,
+                    contentColor = Color.White
+                )
+            }
+        }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -224,33 +244,32 @@ fun AdminManageAccountScreen() {
                     }
 
                     // ----------------------------------------------------
-                    //            USER DETAILS SECTION (SHOWN AFTER SEARCH)
+                    //            USER DETAILS SECTION (after search)
                     // ----------------------------------------------------
                     if (showUserDetails) {
                         Spacer(Modifier.height(24.dp))
-
                         Divider(color = Color.LightGray)
-
                         Spacer(Modifier.height(24.dp))
 
-                        // ------- Dummy User preview UI --------
-                        // Replace with real backend data later
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            model?.let { user ->
-                                Text("User Name: ${user.firstName+" "+user.lastName}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                                Text("Role: ${user.typeofUser}", fontSize = 14.sp, color = Color.Gray)
-                                Text("Status: ${user.status}", fontSize = 14.sp, color = Color.Gray)
+                        model?.let { user ->
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    "User Name: ${user.firstName} ${user.lastName}",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text("Role: ${user.typeofUser}", color = Color.Gray)
+                                Text("Status: ${user.status}", color = Color.Gray)
                             }
                         }
 
                         Spacer(Modifier.height(24.dp))
 
-                        // ------------ ACTION DROPDOWN (Deactivate/Delete) ------------
+                        // ------------ ACTION DROPDOWN ------------
                         Text("Select Action", fontWeight = FontWeight.SemiBold)
-
                         Spacer(Modifier.height(8.dp))
 
                         Box {
@@ -272,18 +291,36 @@ fun AdminManageAccountScreen() {
                                 expanded = expandedAction,
                                 onDismissRequest = { expandedAction = false }
                             ) {
+
+                                // Deactivate OR Reactivate
                                 DropdownMenuItem(
-                                    text = { Text("Deactivate Account") },
+                                    text = {
+                                        Text(
+                                            if (model?.status == "active")
+                                                "Deactivate Account"
+                                            else
+                                                "Reactivate Account"
+                                        )
+                                    },
                                     onClick = {
-                                        selectedAction = "Deactivate Account"
+                                        selectedAction =
+                                            if (model?.status == "active")
+                                                "Deactivate Account"
+                                            else
+                                                "Reactivate Account"
+
                                         expandedAction = false
+                                        selectedReason = "" // reset reason when switching action
                                     }
                                 )
+
+                                // Delete
                                 DropdownMenuItem(
                                     text = { Text("Delete Account") },
                                     onClick = {
                                         selectedAction = "Delete Account"
                                         expandedAction = false
+                                        selectedReason = ""
                                     }
                                 )
                             }
@@ -291,49 +328,50 @@ fun AdminManageAccountScreen() {
 
                         Spacer(Modifier.height(20.dp))
 
-                        // ------------ REASON DROPDOWN ------------
-                        Text("Select Reason", fontWeight = FontWeight.SemiBold)
+                        // ------------ REASON (ONLY WHEN NOT REACTIVATING) ------------
+                        if (selectedAction == "Deactivate Account" ||
+                            selectedAction == "Delete Account"
+                        ) {
+                            Text("Select Reason", fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(8.dp))
 
-                        Spacer(Modifier.height(8.dp))
-
-                        Box {
-                            OutlinedButton(
-                                onClick = { expandedReason = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                border = ButtonDefaults.outlinedButtonBorder,
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
-                            ) {
-                                Text(
-                                    text = if (selectedReason.isEmpty()) "Choose Reason" else selectedReason,
+                            Box {
+                                OutlinedButton(
+                                    onClick = { expandedReason = true },
                                     modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Start
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = expandedReason,
-                                onDismissRequest = { expandedReason = false }
-                            ) {
-                                reasons.forEach { reason ->
-                                    DropdownMenuItem(
-                                        text = { Text(reason) },
-                                        onClick = {
-                                            selectedReason = reason
-                                            expandedReason = false
-                                        }
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = ButtonDefaults.outlinedButtonBorder,
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                                ) {
+                                    Text(
+                                        text = if (selectedReason.isEmpty()) "Choose Reason" else selectedReason,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Start
                                     )
                                 }
-                            }
-                        }
 
-                        Spacer(Modifier.height(30.dp))
+                                DropdownMenu(
+                                    expanded = expandedReason,
+                                    onDismissRequest = { expandedReason = false }
+                                ) {
+                                    reasons.forEach { reason ->
+                                        DropdownMenuItem(
+                                            text = { Text(reason) },
+                                            onClick = {
+                                                selectedReason = reason
+                                                expandedReason = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(30.dp))
+                        }
 
                         // ------------ CONFIRM BUTTON ------------
                         Button(
-                            onClick = {
-
-                            },
+                            onClick = { deactivateonClick() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -345,7 +383,7 @@ fun AdminManageAccountScreen() {
                             )
                         ) {
                             Text(
-                                text = "Confirm",
+                                "Confirm",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -360,8 +398,8 @@ fun AdminManageAccountScreen() {
     }
 }
 
-@Preview(showSystemUi = true, showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun previewDeactivate() {
+fun PreviewDeactivate() {
     AdminManageAccountScreen()
 }

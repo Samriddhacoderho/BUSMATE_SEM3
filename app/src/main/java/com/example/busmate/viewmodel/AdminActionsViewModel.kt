@@ -9,4 +9,8 @@ class AdminActionsViewModel(val repo: AdminActionsInterface) : ViewModel() {
         repo.getUserbyID(userID, callback)
     }
 
+    fun deactivateAccount(userID: String,callback: (Boolean, String) -> Unit){
+        repo.deactivateUser(userID,callback)
+    }
+
 }
