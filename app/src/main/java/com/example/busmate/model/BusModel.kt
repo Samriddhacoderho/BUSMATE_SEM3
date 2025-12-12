@@ -14,7 +14,7 @@ data class BusModel(
     val maintenanceStatus: String = "Good",
     val currentLocation: String = "Depot",
     val speed: Double = 0.0,
-    val driver:DriverModel? = null,
+    val driver: UserModel? = null,
 
 
     ) : Parcelable {

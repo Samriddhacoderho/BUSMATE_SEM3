@@ -1,5 +1,7 @@
 package com.example.busmate.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -25,62 +28,53 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
 import com.example.busmate.data.AdminActionsImpl
-import com.example.busmate.model.DriverModel
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.ui.theme.BusMateYellow
-import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.viewmodel.AdminActionsViewModel
-import com.google.firebase.firestore.auth.User
-
-// ------------------------------------------------------------------------------------------------
-// MAIN ACTIVITY
-// ------------------------------------------------------------------------------------------------
 
 class DriverProfileScreen : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val selectMode = intent.getBooleanExtra("select_mode", false)
+
         setContent {
-            BUSMATETheme {
-                DriverProfileMainScreen()
-            }
+            DriverProfileMainScreen(selectMode)
         }
     }
 }
 
-// ------------------------------------------------------------------------------------------------
-// FETCH DRIVERS + PAGER
-// ------------------------------------------------------------------------------------------------
-
 @Composable
-fun DriverProfileMainScreen() {
-    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+fun DriverProfileMainScreen(selectMode: Boolean) {
 
-    val driversState = remember { mutableStateOf<List<UserModel>>(emptyList()) }
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val drivers = remember { mutableStateListOf<UserModel>() }
 
     LaunchedEffect(Unit) {
-        viewModel.getAllDrivers { success, drivers ->
-            if (success && drivers != null) {
-                driversState.value = drivers
-            }
+        viewModel.getAllDrivers { success, list ->
+            if (success && list != null) drivers.addAll(list)
         }
     }
 
-    DriverProfileScreenUI(driversState.value)
+    DriverProfileScreenUI(drivers, selectMode)
 }
 
 @Composable
-fun DriverProfileScreenUI(drivers: List<UserModel>) {
+fun DriverProfileScreenUI(
+    drivers: List<UserModel>,
+    selectMode: Boolean
+) {
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+    Scaffold { padding ->
 
         if (drivers.isEmpty()) {
             Box(
@@ -98,24 +92,27 @@ fun DriverProfileScreenUI(drivers: List<UserModel>) {
             state = pagerState,
             modifier = Modifier.fillMaxSize().padding(padding)
         ) { page ->
-            SingleDriverProfile(driver = drivers[page])
+            SingleDriverProfile(driver = drivers[page], selectMode = selectMode)
         }
     }
 }
 
-// ------------------------------------------------------------------------------------------------
-// SINGLE DRIVER PAGE (MATCHED WITH BUS STYLE)
-// ------------------------------------------------------------------------------------------------
-
 @Composable
-fun SingleDriverProfile(driver: UserModel) {
+fun SingleDriverProfile(
+    driver: UserModel,
+    selectMode: Boolean
+) {
+
+    val context = LocalContext.current
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // 🔵 Top Blue Area (same as Bus UI style)
+        // 🔵 Blue top header
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -132,42 +129,56 @@ fun SingleDriverProfile(driver: UserModel) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.clickable { (context as Activity).finish() }
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Driver: ${driver.firstName} ${driver.lastName}",
+                text = "${driver.firstName} ${driver.lastName}",
                 color = Color.White,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "School ID: ${driver.schoolId}",
-                color = Color.White.copy(0.8f),
+                text = "ID: ${driver.schoolId}",
+                color = Color.White.copy(alpha = 0.8f),
                 fontSize = 16.sp
             )
         }
 
-        // 🔳 White Info Card
+        // 🔳 White Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .offset(y = (-130).dp),
+                .offset(y = (-130).dp)
+                .then(
+                    if (selectMode) Modifier.clickable {
+                        // Set selected driver result
+                        val result = Intent()
+                        result.putExtra("driverId", driver.schoolId)
+                        result.putExtra("driverName", "${driver.firstName} ${driver.lastName}")
+                        (context as Activity).setResult(Activity.RESULT_OK, result)
+                        context.finish()
+                    }
+                    else Modifier
+                ),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(10.dp)
         ) {
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Driver Avatar
+                // Profile image
                 Box(
                     modifier = Modifier
                         .size(130.dp)
@@ -181,14 +192,14 @@ fun SingleDriverProfile(driver: UserModel) {
                         painter = painterResource(id = R.drawable.driver),
                         contentDescription = "Driver Avatar",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "ABOUT DRIVER",
+                    text = if (selectMode) "TAP TO SELECT THIS DRIVER" else "ABOUT DRIVER",
                     color = BusMateBlue,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -196,22 +207,16 @@ fun SingleDriverProfile(driver: UserModel) {
 
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // ✔ ONLY YOUR REAL FIELDS:
-                DriverProfileItem(Icons.Default.Person, "Full Name: ${driver.firstName} ${driver.lastName}")
+                DriverProfileItem(Icons.Default.Person, "Name: ${driver.firstName} ${driver.lastName}")
                 DriverProfileItem(Icons.Default.Email, "Email: ${driver.email}")
                 DriverProfileItem(Icons.Default.Phone, "Phone: ${driver.phone}")
-                DriverProfileItem(Icons.Default.LocationOn, "School ID: ${driver.schoolId}")
-
+                DriverProfileItem(Icons.Default.Badge, "School ID: ${driver.schoolId}")
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// REUSABLE ROW ITEM
-// ------------------------------------------------------------------------------------------------
 
 @Composable
 fun DriverProfileItem(icon: ImageVector, text: String) {
@@ -228,11 +233,6 @@ fun DriverProfileItem(icon: ImageVector, text: String) {
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            color = Color.Black
-        )
+        Text(text, fontSize = 16.sp)
     }
 }
-

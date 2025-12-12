@@ -171,6 +171,61 @@ class AdminActionsImpl : AdminActionsInterface {
             }
     }
 
+    override fun assignBusToDriver(
+        busId: String,
+        driverId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val driversRef = firestore.collection("users")   // or "drivers"
+        val busesRef = firestore.collection("buses")
+
+        // 1️⃣ Get the driver model
+        driversRef.whereEqualTo("schoolId", driverId)
+            .get()
+            .addOnSuccessListener { driverSnapshot ->
+
+                val driverDoc = driverSnapshot.documents.firstOrNull()
+                if (driverDoc != null) {
+                    val driverModel = driverDoc.data
+
+                    // 2️⃣ Get the bus
+                    busesRef.whereEqualTo("uid", busId)
+                        .get()
+                        .addOnSuccessListener { busSnapshot ->
+
+                            val busDoc = busSnapshot.documents.firstOrNull()
+                            if (busDoc != null) {
+                                // 3️⃣ Update bus.driver with full driver model
+                                busesRef.document(busDoc.id)
+                                    .update("driver", driverModel)
+                                    .addOnSuccessListener {
+                                        callback(true, "Driver Assigned Successfully")
+                                    }
+                                    .addOnFailureListener {
+                                        callback(false, "Failed to assign driver")
+                                    }
+                            } else {
+                                callback(false, "Bus Not Found")
+                            }
+
+                        }
+                        .addOnFailureListener {
+                            callback(false, "Error fetching bus")
+                        }
+
+                } else {
+                    callback(false, "Driver Not Found")
+                }
+
+            }
+            .addOnFailureListener {
+                callback(false, "Error fetching driver")
+            }
+    }
+
+
+
+
 
 
 }
