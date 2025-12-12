@@ -22,13 +22,39 @@ class AdminActionsImpl : AdminActionsInterface {
             }
         }
     }
-
     override fun deactivateUser(
         userID: String,
         callback: (Boolean, String) -> Unit
     ) {
-        TODO("Not yet implemented")
+        firestore.collection("users")
+            .whereEqualTo("schoolId", userID)
+            .get()
+            .addOnCompleteListener { it ->
+
+                if (it.isSuccessful) {
+                    val doc = it.result.documents.firstOrNull()
+
+                    if (doc != null) {
+                        firestore.collection("users")
+                            .document(doc.id)   // correct Firestore document ID
+                            .update("status", "deactivated")
+                            .addOnCompleteListener { update ->
+                                if (update.isSuccessful) {
+                                    callback(true, "User Deactivated")
+                                } else {
+                                    callback(false, "User Not deactivated")
+                                }
+                            }
+                    } else {
+                        callback(false, "User not found")
+                    }
+
+                } else {
+                    callback(false, "Error fetching user")
+                }
+            }
     }
+
 
     override fun deleteUser(
         userID: String,
