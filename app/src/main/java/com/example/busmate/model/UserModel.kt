@@ -6,11 +6,11 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class UserModel(
     val uid:String="",
-    val firstName:String="",
-    val lastName:String="",
+    var firstName:String="",
+    var lastName:String="",
     val email:String="",
     val schoolId:String="",
-    val phone:String="",
+    var phone:String="",
     val typeofUser:String="",
     val children: Map<String, ChildModel> = emptyMap(),
     val status:String="active"

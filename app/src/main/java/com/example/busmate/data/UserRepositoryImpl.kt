@@ -123,7 +123,8 @@ class UserRepositoryImpl : UserRepositoryInterface {
         newPassword: String
     ): Result<Unit> {
         return try {
-            val user = auth.currentUser ?: return Result.failure(Exception("No user currently logged in."))
+            val user =
+                auth.currentUser ?: return Result.failure(Exception("No user currently logged in."))
 
             val credential = EmailAuthProvider.getCredential(
                 user.email ?: throw Exception("User email is missing for re-authentication."),
@@ -189,5 +190,42 @@ class UserRepositoryImpl : UserRepositoryInterface {
             callback("Error: ${e.message}", false)
         }
     }
+    override suspend fun getUserProfile(userId: String): Result<UserModel> {
+        return try {
+            val documentSnapshot = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
 
+            if (!documentSnapshot.exists()) {
+                return Result.failure(Exception("User not found"))
+            }
+
+            // Convert document to UserModel
+            val userModel = documentSnapshot.toObject(UserModel::class.java)
+                ?: return Result.failure(Exception("Error converting document to UserModel"))
+
+            Result.success(userModel)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateUserProfile(userId: String, firstName: String, lastName: String, phone: String): Result<Unit> {
+        return try {
+            // Access the 'users' collection and update the document
+            firestore.collection("users")
+                .document(userId) // Use userId to locate the document
+                .update(
+                    "firstName", firstName,
+                    "lastName", lastName,
+                    "phone", phone
+                )
+                .await() // Await the result of the update operation
+
+            Result.success(Unit) // If update is successful
+        } catch (e: Exception) {
+            Result.failure(e) // If there's an error, return failure
+        }
+    }
 }
