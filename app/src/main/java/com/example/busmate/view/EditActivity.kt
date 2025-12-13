@@ -84,7 +84,6 @@ val IconGray = Color(0xFF4A4A4A)
 class EditActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val isDarkModeEnabled = intent.getBooleanExtra("isDarkModeEnabled", false)
         enableEdgeToEdge()
         setContent {
             ProfileScreen()
@@ -95,8 +94,8 @@ class EditActivity : ComponentActivity() {
 @Composable
 fun ProfileScreen() {
     // This state would typically be managed by a ViewModel
-    var fullName by remember { mutableStateOf("Parves Ahamad") }
-    var username by remember { mutableStateOf("@parvesahamad") }
+    var fullName by remember { mutableStateOf("Sandip") }
+    var lastName by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     Scaffold(
@@ -117,7 +116,7 @@ fun ProfileScreen() {
                 // 2. Profile Info Section
                 ProfileInfoCard(
                     fullName = fullName,
-                    username = username,
+                    lastName = lastName,
                     onEditClick = {   val intent = Intent(context, EditProfileActivity::class.java)
                         context.startActivity(intent) }
                 )
@@ -198,7 +197,7 @@ fun ProfileScreenHeader(title: String) {
 }
 
 @Composable
-fun ProfileInfoCard(fullName: String, username: String, onEditClick: () -> Unit) {
+fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -243,7 +242,7 @@ fun ProfileInfoCard(fullName: String, username: String, onEditClick: () -> Unit)
             color = PrimaryBlack
         )
         Text(
-            text = username,
+            text = lastName,
             fontSize = 14.sp,
             color = TextGray
         )

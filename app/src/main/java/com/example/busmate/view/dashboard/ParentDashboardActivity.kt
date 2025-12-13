@@ -2,6 +2,7 @@ package com.example.busmate.view.dashboard
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +26,7 @@ import com.example.busmate.R
 import com.example.busmate.data.SupportRepositoryImpl
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
+import com.example.busmate.view.EditActivity
 import com.example.busmate.viewmodel.SupportViewModel
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -66,6 +68,10 @@ fun ParentDashboardScreen(
         NavItem("Location", R.drawable.baseline_location_on_24),
         NavItem("Setting", R.drawable.baseline_settings_24),
     )
+    val navigateToEditProfile: () -> Unit = {
+        val intent = Intent(context, EditActivity::class.java)
+        context.startActivity(intent)
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,   // FIX ✔
@@ -91,7 +97,11 @@ fun ParentDashboardScreen(
                     Modifier.weight(0.5f),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = { // Intent to start EditActivity
+                        val intent = Intent(context, EditActivity::class.java)
+                        // Optionally, you can pass the dark mode setting or other data
+//                        intent.putExtra("isDarkModeEnabled", isDarkModeEnabled)
+                        context.startActivity(intent)}) {
                         Icon(
                             Icons.Filled.Person,
                             contentDescription = null,
