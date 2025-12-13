@@ -25,7 +25,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         phone: String,
         password: String,
 
-    ) {
+        ) {
         viewModelScope.launch {
 
             _message.value = "Loading"
@@ -39,7 +39,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
                     phone = phone,
 
 
-                )
+                    )
 
                 val result = repository.registerUser(user, password)
 
@@ -102,12 +102,43 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
     }
+
     fun resetPassword(email: String) {
         viewModelScope.launch {
             _message.value = "Loading"
             // The repository is now UserRepositoryInterface, which implements the function
             repository.sendPasswordResetEmail(email) { msg, success ->
                 _message.value = msg
+            }
+        }
+    }
+    fun loadUserProfile(userId: String) {
+        viewModelScope.launch {
+            _message.value = "Loading Profile..."
+            try {
+                val result = repository.getUserProfile(userId) // Method to load user profile data
+                _user.value = result.getOrNull()
+            } catch (e: Exception) {
+                _message.value = "Failed to load user profile: ${e.message}"
+            }
+        }
+    }
+    fun updateUserProfile(firstName: String, lastName: String, phone: String) {
+        viewModelScope.launch {
+            _message.value = "Updating Profile..."
+
+            // Get the current user (you might need to get this from the auth session)
+            val currentUser = _user.value
+            if (currentUser != null) {
+                val result = repository.updateUserProfile(currentUser.uid, firstName, lastName, phone)
+
+                _message.value = if (result.isSuccess) {
+                    "Profile Updated Successfully!"
+                } else {
+                    result.exceptionOrNull()?.message ?: "Error Updating Profile"
+                }
+            } else {
+                _message.value = "User not found!"
             }
         }
     }

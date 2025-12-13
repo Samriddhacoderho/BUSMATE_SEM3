@@ -27,8 +27,11 @@ interface UserRepositoryInterface {
         email: String,
         callback: (String, Boolean) -> Unit
     )
-
-
-
+    suspend fun updateUserProfile(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        phone: String): Result<Unit>
+    suspend fun getUserProfile(userId: String): Result<UserModel>
 
 }
