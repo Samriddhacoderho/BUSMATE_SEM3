@@ -70,6 +70,8 @@ import com.example.busmate.ui.theme.BusMateTheme
 //import coil.compose.rememberAsyncImagePainter
 import com.example.busmate.viewmodel.UserViewModel
 import androidx.activity.viewModels // Import this for viewModels()
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
@@ -127,7 +129,8 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     }
     LaunchedEffect(message) {
         if (message.isNotEmpty()) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show() // Show success or error message
+            Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                .show() // Show success or error message
         }
     }
 
@@ -145,54 +148,147 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Profile") },
+                title = {
+                    Text(
+                        text = "Edit Profile",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        },
+        containerColor = Color(0xFFF7F7F7)
+    ) { paddingValues ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Profile Image Section
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.boy),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(Color.White, CircleShape)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CameraAlt,
+                            contentDescription = "Change Picture",
+                            tint = Color.Black,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            OutlinedTextField(
-                value = firstName,
-                onValueChange = { firstName = it },
-                label = { Text("First Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            }
 
-            OutlinedTextField(
-                value = lastName,
-                onValueChange = { lastName = it },
-                label = { Text("Last Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text("Phone Number") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+            // Form Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
 
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = { firstName = it },
+                        label = { Text("First Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = { lastName = it },
+                        label = { Text("Last Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Phone Number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Save Button
             Button(
                 onClick = {
-                    viewModel.updateUserProfile(firstName, lastName, phone) // Pass the updated values
+                    viewModel.updateUserProfile(firstName, lastName, phone)
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black
+                )
             ) {
-                Text(text = "Save", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Save",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
-@Composable
+
+    @Composable
 fun ProfileTextField(
     label: String,
     value: String,
