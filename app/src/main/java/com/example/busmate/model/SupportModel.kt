@@ -5,7 +5,8 @@ data class SupportModel(
     val name: String ="",
     val typeofUser: String? ="",
     val title: String ="",
-    val message: String =""
+    val message: String ="",
+    val reply: String = ""
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -13,7 +14,8 @@ data class SupportModel(
             "name" to name,
             "typeofUser" to typeofUser,
             "title" to title,
-            "message" to message
+            "message" to message,
+            "reply" to reply
         ) as Map<String, Any>
     }
 }
