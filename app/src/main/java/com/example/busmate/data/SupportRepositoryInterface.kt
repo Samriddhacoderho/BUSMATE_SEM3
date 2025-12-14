@@ -5,4 +5,9 @@ import javax.security.auth.callback.Callback
 
 interface SupportRepositoryInterface {
     suspend fun writeSupport(model: SupportModel,callback: (String, Boolean) -> Unit)
+    suspend fun fetchSupportMessages(callback: (List<SupportModel>) -> Unit) {
+        // function body
+    }
+
+
 }

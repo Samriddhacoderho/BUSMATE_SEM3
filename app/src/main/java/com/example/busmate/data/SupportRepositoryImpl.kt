@@ -32,4 +32,15 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
             callback("Failed to submit: ${e.message}", false)
         }
     }
+    override suspend fun fetchSupportMessages(callback: (List<SupportModel>) -> Unit) {
+        try {
+            val snapshot = firestore.collection("support").get().await()
+            val list = snapshot.documents.mapNotNull { it.toObject(SupportModel::class.java) }
+            callback(list)
+        } catch (e: Exception) {
+            callback(emptyList())
+        }
+    }
+
+
 }
