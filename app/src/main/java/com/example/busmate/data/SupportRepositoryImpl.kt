@@ -41,6 +41,26 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
             callback(emptyList())
         }
     }
+    override suspend fun replyToSupport(
+        supportId: String,
+        replyMessage: String,
+        callback: (String, Boolean) -> Unit
+    ) {
+        try {
+            firestore.collection("support")
+                .document(supportId)
+                .update("reply", replyMessage)
+                .addOnSuccessListener {
+                    callback("Reply sent successfully", true)
+                }
+                .addOnFailureListener { e ->
+                    callback("Failed to send reply: ${e.message}", false)
+                }
+        } catch (e: Exception) {
+            callback("Error: ${e.message}", false)
+        }
+    }
+
 
 
 }

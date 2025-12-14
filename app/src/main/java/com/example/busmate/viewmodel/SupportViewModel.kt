@@ -42,5 +42,20 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
             }
         }
     }
+    fun replyToSupport(supportId: String, replyMessage: String) {
+        viewModelScope.launch {
+            _message.value = "Sending reply..."
+            try {
+                repository.replyToSupport(supportId, replyMessage) { response, success ->
+                    _message.value = response
+                    if(success){
+                        fetchSupportMessages() // refresh list after reply
+                    }
+                }
+            } catch (e: Exception) {
+                _message.value = e.message ?: "Failed to send reply"
+            }
+        }
+    }
 
 }

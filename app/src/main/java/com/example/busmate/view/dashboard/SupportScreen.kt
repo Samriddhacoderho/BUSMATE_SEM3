@@ -64,6 +64,7 @@ fun SupportScreen(viewModel: SupportViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val supportMessages by viewModel.supportMessages.collectAsState()
+    var replyText by remember { mutableStateOf("") }
     val model = activity.intent.getParcelableExtra<UserModel>("model")
     val customTextFieldColors = TextFieldDefaults.colors(
         focusedIndicatorColor = Color.Transparent,
@@ -290,6 +291,7 @@ fun SupportScreen(viewModel: SupportViewModel) {
                     .padding(paddingValues)
             ) {
                 items(supportMessages) { support ->
+                    var adminReply by remember { mutableStateOf("") }
 
                     Card(
                         modifier = Modifier
@@ -311,11 +313,48 @@ fun SupportScreen(viewModel: SupportViewModel) {
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text("Message: ${support.message ?: "N/A"}")
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Reply input
+                            OutlinedTextField(
+                                value = adminReply,
+                                onValueChange = { adminReply = it },
+                                placeholder = { Text("Type your reply here") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(100.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = customTextFieldColors
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Reply button
+                            Button(
+                                onClick = {
+                                    if (adminReply.isNotEmpty()) {
+                                        viewModel.replyToSupport(support.uid ?: "", adminReply)
+                                        adminReply = "" // clear input after reply
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(45.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "REPLY",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
                         }
                     }
                 }
             }
-
         } else {
             LazyColumn(
                 Modifier
