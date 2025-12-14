@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,6 +63,8 @@ fun SupportScreen(viewModel: SupportViewModel) {
     val activity = context as Activity
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val supportMessages by viewModel.supportMessages.collectAsState()
+    var replyText by remember { mutableStateOf("") }
     val model = activity.intent.getParcelableExtra<UserModel>("model")
     val customTextFieldColors = TextFieldDefaults.colors(
         focusedIndicatorColor = Color.Transparent,
@@ -96,8 +99,19 @@ fun SupportScreen(viewModel: SupportViewModel) {
         }
     }
 
+    LaunchedEffect(model?.typeofUser) {
+        if (model?.typeofUser == "Admin") {
+            viewModel.fetchSupportMessages()
+        }
+    }
+
     fun onSupportSubmit() {
-        viewModel.writeReport(model?.firstName + model?.lastName, model?.typeofUser, titleText, explainText)
+        viewModel.writeReport(
+            model?.firstName + model?.lastName,
+            model?.typeofUser,
+            titleText,
+            explainText
+        )
     }
 
     Scaffold(snackbarHost = {
@@ -109,169 +123,248 @@ fun SupportScreen(viewModel: SupportViewModel) {
             )
         }
     }) { paddingValues ->
-        if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") LazyColumn(Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                ) {
 
-                    // 🔵 TOP BLUE BACKGROUND (updated with logo)
-                    Column(
+        if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
+
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                item {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.40f)
-                            .background(BusMateBlue)
-                            .padding(top = 50.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxSize()
                     ) {
 
-                        // ⭐ Bus Mate Logo (same as Login screen)
-                        Image(
-                            painter = painterResource(R.drawable.logo),
-                            contentDescription = "Bus Mate Logo",
-                            colorFilter = ColorFilter.tint(Color(0xFFFFB74D)),  // same orange-yellow tint
-                            modifier = Modifier.size(140.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Support & Grievance",
-                            color = Color.White,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "If you are experiencing any issues, please\nlet us know. We will try to solve them as\nsoon as possible.",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 14.sp
-                        )
-                    }
-
-
-                    // WHITE CARD (overlapping)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 24.dp)
-                            .offset(y = (-35).dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                    ) {
-
+                        // 🔵 TOP BLUE BACKGROUND (updated with logo)
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp)
+                                .fillMaxHeight(0.40f)
+                                .background(BusMateBlue)
+                                .padding(top = 50.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            // Title Label
+                            // ⭐ Bus Mate Logo (same as Login screen)
+                            Image(
+                                painter = painterResource(R.drawable.logo),
+                                contentDescription = "Bus Mate Logo",
+                                colorFilter = ColorFilter.tint(Color(0xFFFFB74D)),  // same orange-yellow tint
+                                modifier = Modifier.size(140.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             Text(
-                                text = "Title",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = "Support & Grievance",
+                                color = Color.White,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black
                             )
 
-                            // Title Input
-                            OutlinedTextField(
-                                value = titleText,
-                                onValueChange = { titleText = it },
-                                placeholder = { Text("Add your grievance title here") },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(55.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = customTextFieldColors,
-                                singleLine = true
-                            )
+                            Spacer(modifier = Modifier.height(6.dp))
 
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Explain Label
                             Text(
-                                text = "Explain the problem",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = "If you are experiencing any issues, please\nlet us know. We will try to solve them as\nsoon as possible.",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 14.sp
                             )
+                        }
 
-                            // Explain input
-                            OutlinedTextField(
-                                value = explainText,
-                                onValueChange = { explainText = it },
-                                placeholder = { Text("Type your query here") },
+                        // WHITE CARD (overlapping)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .padding(horizontal = 24.dp)
+                                .offset(y = (-35).dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                        ) {
+
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(160.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = customTextFieldColors
-                            )
-
-                            Spacer(modifier = Modifier.height(30.dp))
-
-                            // Button
-                            Button(
-                                onClick = { onSupportSubmit() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(55.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = BusMateBlue
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                                    .padding(24.dp)
                             ) {
+
+                                // Title Label
                                 Text(
-                                    text = "SUBMIT",
+                                    text = "Title",
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            Row(
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "You can contact us at ",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    text = "1234567892",
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = Color.Black,
-                                    fontSize = 14.sp
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                            }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                                // Title Input
+                                OutlinedTextField(
+                                    value = titleText,
+                                    onValueChange = { titleText = it },
+                                    placeholder = { Text("Add your grievance title here") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(55.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = customTextFieldColors,
+                                    singleLine = true
+                                )
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // Explain Label
+                                Text(
+                                    text = "Explain the problem",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+
+                                // Explain input
+                                OutlinedTextField(
+                                    value = explainText,
+                                    onValueChange = { explainText = it },
+                                    placeholder = { Text("Type your query here") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = customTextFieldColors
+                                )
+
+                                Spacer(modifier = Modifier.height(30.dp))
+
+                                // Button
+                                Button(
+                                    onClick = { onSupportSubmit() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(55.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = BusMateBlue
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "SUBMIT",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "You can contact us at ",
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = "1234567892",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Black,
+                                        fontSize = 14.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
                         }
                     }
                 }
             }
+        } else if (model?.typeofUser == "Admin") {
 
-        }else LazyColumn(Modifier.fillMaxSize().padding(paddingValues)) {
-            item {
-                Text("Eta Admin le support herne UI garnu")
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                items(supportMessages) { support ->
+                    var adminReply by remember { mutableStateOf("") }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "User ID: ${support.uid ?: "N/A"}",
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text("Name: ${support.name ?: "N/A"}")
+                            Text("User Type: ${support.typeofUser ?: "N/A"}")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Title: ${support.title ?: "N/A"}",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text("Message: ${support.message ?: "N/A"}")
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Reply input
+                            OutlinedTextField(
+                                value = adminReply,
+                                onValueChange = { adminReply = it },
+                                placeholder = { Text("Type your reply here") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(100.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = customTextFieldColors
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Reply button
+                            Button(
+                                onClick = {
+                                    if (adminReply.isNotEmpty()) {
+                                        viewModel.replyToSupport(support.uid ?: "", adminReply)
+                                        adminReply = "" // clear input after reply
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(45.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "REPLY",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                item {
+                    Text("User type not recognized")
+                }
             }
         }
-
     }
 }
-
-//hi
