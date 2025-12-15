@@ -1,5 +1,9 @@
 package com.example.busmate.view.dashboard
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,6 +22,30 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.data.LocationImpl
+import com.example.busmate.model.UserModel
+import com.example.busmate.viewmodel.AdminActionsViewModel
+import com.example.busmate.viewmodel.LocationViewModel
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.rememberCameraPositionState
 
 
 @Composable
@@ -27,6 +55,13 @@ fun LiveLocationScreen() {
     val textColor = MaterialTheme.colorScheme.onBackground
     val cardOrange = MaterialTheme.colorScheme.primaryContainer
     val cardGreen = MaterialTheme.colorScheme.secondaryContainer
+
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    var model by remember {
+        mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -55,7 +90,9 @@ fun LiveLocationScreen() {
             // Map
             MapPrototype(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                cardColor = MaterialTheme.colorScheme.surfaceVariant
+                cardColor = MaterialTheme.colorScheme.surfaceVariant,
+                model = model,
+                context = context
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -102,12 +139,74 @@ fun LiveLocationScreen() {
 }
 
 
+@Composable
+fun MapPrototype(
+    modifier: Modifier = Modifier,
+    cardColor: Color,
+    model: UserModel?,
+    context: Context
+) {
+    var permissionGranted by remember {
+        mutableStateOf(
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        permissionGranted =
+            (result[Manifest.permission.ACCESS_FINE_LOCATION] == true &&
+                    result[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
+    }
+
+    LaunchedEffect(Unit) {
+        if (model?.typeofUser == "Driver") {
+            if (!permissionGranted) {
+                launcher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        }
+    }
+    if (permissionGranted) {
+        cardMap(cardColor,modifier,context)
+    } else {
+        Toast.makeText(context, "Please enable location permission.", Toast.LENGTH_SHORT).show()
+    }
+
+
+}
 
 @Composable
-fun MapPrototype(modifier: Modifier = Modifier, cardColor: Color) {
+fun cardMap(cardColor: Color,modifier: Modifier,context: Context){
+    val viewModel = remember { LocationViewModel(LocationImpl(context)) }
+    val currentLocation by viewModel.location.collectAsState()
 
-    val embedUrl =
-        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.3609923548975!2d85.327404275571!3d27.706138376183215!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb190a74aa1f23%3A0x74ebef82ad0e5c15!2sSoftwarica%20College%20of%20IT%20and%20E-Commerce!5e0!3m2!1sen!2snp!4v1764858914671!5m2!1sen!2snp"
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            currentLocation ?: LatLng(27.7172, 85.3240), // Default location
+            16f
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.startTracking { latLng: LatLng, _: Boolean ->}
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { viewModel.stopLocationUpdates() }
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -117,20 +216,21 @@ fun MapPrototype(modifier: Modifier = Modifier, cardColor: Color) {
             .fillMaxWidth()
             .fillMaxHeight(0.6f)
     ) {
-        AndroidView(
+        GoogleMap(
             modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                WebView(context).apply {
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    webViewClient = WebViewClient()
-                    loadUrl(embedUrl)
-                }
-            }
-        )
+            cameraPositionState = cameraPositionState,
+            properties = MapProperties(
+                isMyLocationEnabled = true // Blue dot enabled
+            ),
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = true,
+                myLocationButtonEnabled = true
+            )
+        ) {
+            //marker sarker or bus ko icon halna sakincha pachi
+        }
     }
 }
-
 
 
 @Composable
@@ -198,4 +298,11 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color) {
             }
         }
     }
+}
+
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun previewLocation() {
+    LiveLocationScreen()
 }
