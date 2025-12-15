@@ -39,6 +39,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.dashboard.ParentDashboardActivity
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
+import com.example.busmate.R
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
@@ -51,9 +52,9 @@ class LoginScreen : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
-                val repo= UserRepositoryImpl()
-                val viewModel= UserViewModel(repo)
-                    LoginScreenUI(viewModel)
+            val repo= UserRepositoryImpl()
+            val viewModel= UserViewModel(repo)
+            LoginScreenUI(viewModel)
         }
     }
 }
@@ -77,11 +78,17 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val user by viewModel.user.collectAsState()
     val snackbarHostState=remember { SnackbarHostState() }
     val coroutineScope=rememberCoroutineScope()
-    // Validation error states
+
     var userIdError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
-    val isValid = userId.isNotBlank() && password.isNotBlank()
+
+    // Logic for enabling the button now checks both ID and Password UI constraints
+    val isPasswordLengthValid = password.isEmpty() || password.length >= 8
+    val isUserIdNumeric = userId.isEmpty() || userId.all { it.isDigit() } // New numeric check
+
+    val isValid = userId.isNotBlank() && password.isNotBlank() && isPasswordLengthValid && isUserIdNumeric
     val isButtonEnabled = isValid && message != "Loading"
+
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
         context.startActivity(intent)
@@ -131,20 +138,23 @@ fun LoginScreenUI(viewModel: UserViewModel) {
         userIdError = ""
         passwordError = ""
 
-        // Validation
         if (userId.isBlank()) {
             userIdError = "User ID is required"
+        } else if (!userId.all { it.isDigit() }) {
+            userIdError = "Only numbers are allowed"
         }
+
         if (password.isBlank()) {
             passwordError = "Password is required"
         }
+        else if (password.length < 8) {
+            passwordError = "Password length should be minimum 8 characters."
+        }
 
-        // If there are errors, stop login
         if (userIdError.isNotEmpty() || passwordError.isNotEmpty()) {
             return
         }
 
-        // Original login call
         viewModel.login(userId, password)
     }
 
@@ -157,7 +167,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 contentColor = Color.White
             )
         } }
-        )
+    )
     {paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             // 1. Top Blue Background Section
@@ -169,7 +179,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
-                Spacer(modifier = Modifier.height(48.dp)) // Top padding
+                Spacer(modifier = Modifier.height(24.dp)) // FIX: Reduced top padding to 24.dp
 
                 // Bus Logo
                 Image(
@@ -221,16 +231,27 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
+
                     // User ID Field
                     OutlinedTextField(
                         value = userId,
-                        onValueChange = {
-                            userId = it
-                            if (it.isNotBlank()) userIdError = "" // Remove error while typing
+                        onValueChange = { newValue ->
+                            userId = newValue
+
+                            // FIX: Real-time validation for numeric input
+                            if (newValue.isNotBlank() && !newValue.all { it.isDigit() }) {
+                                userIdError = "Only numbers are allowed"
+                            } else if (newValue.isNotBlank()) {
+                                userIdError = ""
+                            } else if (newValue.isBlank()) {
+                                userIdError = ""
+                            }
                         },
                         label = { Text("Enter ID here") },
                         singleLine = true,
                         isError = userIdError.isNotEmpty(),
+                        // FIX: Set keyboard to numeric
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             focusedLabelColor = PrimaryBlue,
@@ -253,9 +274,16 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     // Password Field
                     OutlinedTextField(
                         value = password,
-                        onValueChange = {
-                            password = it
-                            if (it.isNotBlank()) passwordError = "" // Remove error while typing
+                        onValueChange = { newValue ->
+                            password = newValue
+
+                            if (newValue.length > 0 && newValue.length < 8) {
+                                passwordError = "Password length should be minimum 8 characters."
+                            } else if (newValue.isNotBlank() && newValue.length >= 8) {
+                                passwordError = "" // Clear error if criteria is met
+                            } else if (newValue.isBlank()) {
+                                passwordError = "" // Clear error if field is empty
+                            }
                         },
                         interactionSource = passwordInteractionSource,
                         label = { Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Password") },
