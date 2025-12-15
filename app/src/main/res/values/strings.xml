@@ -24,4 +24,8 @@
     <string name="title_activity_bus_screen">BusScreen</string>
     <string name="title_activity_edit">EditActivity</string>
     <string name="title_activity_edit_profile">EditProfileActivity</string>
+
+<!--    DO NOT SHARE THIS API KOILAI PANI HAI!!!-->
+    <string name="google_maps_api_key">AIzaSyD3AGMHKSR2Eq1tlnFg5d3H3csR1v7K3PY</string>
+
 </resources>

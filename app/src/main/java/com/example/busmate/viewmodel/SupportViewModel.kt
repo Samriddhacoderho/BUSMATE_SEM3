@@ -12,6 +12,9 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
+    private val _supportMessages = MutableStateFlow<List<SupportModel>>(emptyList())
+    val supportMessages: StateFlow<List<SupportModel>> = _supportMessages
+
     fun writeReport(name: String, typeofUser: String?, title: String, mess_age: String){
         viewModelScope.launch {
             _message.value="Loading"
@@ -32,4 +35,27 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
             }
         }
     }
+    fun fetchSupportMessages() {
+        viewModelScope.launch {
+            repository.fetchSupportMessages { messages ->
+                _supportMessages.value = messages
+            }
+        }
+    }
+    fun replyToSupport(supportId: String, replyMessage: String) {
+        viewModelScope.launch {
+            _message.value = "Sending reply..."
+            try {
+                repository.replyToSupport(supportId, replyMessage) { response, success ->
+                    _message.value = response
+                    if(success){
+                        fetchSupportMessages() // refresh list after reply
+                    }
+                }
+            } catch (e: Exception) {
+                _message.value = e.message ?: "Failed to send reply"
+            }
+        }
+    }
+
 }

@@ -73,8 +73,14 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.6.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.multidex:multidex:2.0.1")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
-    implementation("com.google.maps.android:maps-compose:3.0.0")
+    implementation("com.google.maps.android:maps-compose:4.3.0")
+
+    // Google Play Services Location (For GPS)
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // Core Maps SDK (Needed by Compose library)
+    implementation("com.google.android.gms:play-services-maps:19.1.0")
+
     implementation("com.google.code.gson:gson:2.10.1")
 //    implementation("com.baato:baato-android:1.1.0")
 }
