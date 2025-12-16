@@ -1,35 +1,25 @@
-package com.example.busmate.view
+package com.example.busmate.view.dashboard
 
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.busmate.view.ui.theme.BUSMATETheme
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -37,22 +27,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -60,13 +43,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,8 +56,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.busmate.view.dashboard.SettingsMenuItem
+import com.example.busmate.view.BackgroundWhite
+import com.example.busmate.view.ButtonGray
+import com.example.busmate.view.EditProfileActivity
+import com.example.busmate.view.IconGray
+import com.example.busmate.view.LoginScreen
+import com.example.busmate.view.PrimaryBlack
+import com.example.busmate.view.TextGray
 import com.google.firebase.auth.FirebaseAuth
+import com.example.busmate.view.DarkMoodSettingActivity
+
 
 // --- Colors and Theme (Simplified placeholders based on the image's black and white style) ---
 // Using MaterialTheme.colorScheme for better practices, but keeping a simple palette.
@@ -90,24 +75,14 @@ val ButtonGray = Color(0xFFEEEEEE)
 val TextGray = Color(0xFF6A6A6A)
 val IconGray = Color(0xFF4A4A4A)
 
-class EditActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            ProfileScreen()
-
-        }
-    }
-}
 @Composable
-fun ProfileScreen() {
+fun ProfileEditScreen() {
     // This state would typically be managed by a ViewModel
     var fullName by remember { mutableStateOf("Sandip") }
     var lastName by remember { mutableStateOf("") }
     val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
-
+//    var isDarkModeEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = BackgroundWhite,
@@ -121,9 +96,6 @@ fun ProfileScreen() {
                 .padding(horizontal = 20.dp)
         ) {
             item {
-                // 1. App Bar
-//                ProfileScreenHeader(title = "Profile")
-
                 // 2. Profile Info Section
                 ProfileInfoCard(
                     fullName = fullName,
@@ -133,18 +105,6 @@ fun ProfileScreen() {
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))
-
-                // 3. Menu Items
-                ProfileMenuItem(
-                    icon = Icons.Default.Settings,
-                    label = "Settings",
-                    onClick = { /* Handle click */ }
-                )
-//                ProfileMenuItem(
-//                    icon = Icons.Default.ShoppingBag,
-//                    label = "My Orders",
-//                    onClick = { /* Handle click */ }
-//                )
                 ProfileMenuItem(
                     icon = Icons.Default.LocationOn,
                     label = "Address",
@@ -155,22 +115,14 @@ fun ProfileScreen() {
                     label = "Change Password",
                     onClick = { /* Handle click */ }
                 )
-
-//                HorizontalDivider(
-//                    modifier = Modifier.padding(vertical = 5.dp),
-//                    color = Color(0xFFF5F5F5) // Very light divider
-//                )
                 ProfileMenuItem(
                     icon = Icons.Default.DarkMode,
                     label = "Dark Mode",
-                    onClick = { /* Handle click */ }
+                    onClick = {
+                        val intent = Intent(context, DarkMoodSettingActivity::class.java)
+                        context.startActivity(intent)
+                    }
                 )
-//                {
-//                    Switch(
-//                        checked = isDarkModeEnabled,
-//                        onCheckedChange = { onThemeChange(it) }
-//                    )
-//                }
 
                 // 4. Footer Menu Items
                 ProfileMenuItem(
@@ -276,34 +228,6 @@ fun ProfileScreen() {
     }
 
 }
-//
-//@Composable
-//fun ProfileScreenHeader(title: String) {
-//    val context = LocalContext.current
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(vertical = 16.dp),
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        IconButton(onClick = {  (context as? Activity)?.onBackPressed() }) {
-//            Icon(
-//                imageVector = Icons.Default.ArrowBack,
-//                contentDescription = "Back",
-//                tint = PrimaryBlack,
-//                modifier = Modifier.size(24.dp)
-//            )
-//        }
-//        Spacer(modifier = Modifier.width(16.dp))
-//        Text(
-//            text = title,
-//            fontSize = 20.sp,
-//            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-//            color = PrimaryBlack
-//        )
-//    }
-//}
-
 @Composable
 fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit) {
     Column(
@@ -370,7 +294,7 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
         }
     }
 }
-
+//testing the profile screen
 @Composable
 fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true, onClick: () -> Unit) {
     Row(
@@ -406,12 +330,3 @@ fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true,
         }
     }
 }
-@Preview(showBackground = true, name = "Profile Screen Preview")
-@Composable
-fun PreviewProfileScreen() {
-    Surface(color = BackgroundWhite) {
-        ProfileScreen()
-    }
-}
-
-

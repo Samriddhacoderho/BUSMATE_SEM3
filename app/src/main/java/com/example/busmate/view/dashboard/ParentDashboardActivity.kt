@@ -29,6 +29,7 @@ import com.example.busmate.data.SupportRepositoryImpl
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.view.EditActivity
+import com.example.busmate.view.ProfileScreen
 import com.example.busmate.viewmodel.SupportViewModel
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -97,17 +98,15 @@ fun ParentDashboardScreen(
                 )
 
                 Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = {
-                        context.startActivity(
-                            Intent(context, EditActivity::class.java)
-                        )
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+//                    IconButton(onClick = {
+//                        selectedItem = 3   // Profile tab
+//                    }) {
+//                    Icon(
+//                            imageVector = Icons.Filled.Person,
+//                            contentDescription = "Profile",
+//                            tint = MaterialTheme.colorScheme.onSurface
+//                        )
+//                    }
 
                     IconButton(onClick = {}) {
                         Icon(
@@ -128,16 +127,7 @@ fun ParentDashboardScreen(
                 navList.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedItem == index,
-                        onClick = {
-                            if (index == 3) {
-                                // OPEN EditActivity
-                                context.startActivity(
-                                    Intent(context, EditActivity::class.java)
-                                )
-                            } else {
-                                selectedItem = index
-                            }
-                        },
+                        onClick = { selectedItem = index},
                         icon = {
                             Icon(
                                 imageVector = item.icon,
@@ -173,6 +163,7 @@ fun ParentDashboardScreen(
                 0 -> HomeScreen()
                 1 -> SupportScreen(viewModel = supportViewModel)
                 2 -> LiveLocationScreen()
+                3 -> ProfileEditScreen()
             }
         }
     }
