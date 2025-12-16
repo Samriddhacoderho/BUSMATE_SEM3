@@ -98,15 +98,15 @@ fun ParentDashboardScreen(
                 )
 
                 Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = {
-                        selectedItem = 3   // Profile tab
-                    }) {
-                    Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+//                    IconButton(onClick = {
+//                        selectedItem = 3   // Profile tab
+//                    }) {
+//                    Icon(
+//                            imageVector = Icons.Filled.Person,
+//                            contentDescription = "Profile",
+//                            tint = MaterialTheme.colorScheme.onSurface
+//                        )
+//                    }
 
                     IconButton(onClick = {}) {
                         Icon(
