@@ -294,7 +294,7 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
         }
     }
 }
-
+//testing the profile screen
 @Composable
 fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true, onClick: () -> Unit) {
     Row(
