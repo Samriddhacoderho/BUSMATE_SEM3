@@ -1,24 +1,26 @@
 package com.example.busmate.view.dashboard
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import android.os.Bundle
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ import com.example.busmate.view.EditActivity
 import com.example.busmate.viewmodel.SupportViewModel
 
 class ParentDashboardActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,84 +56,91 @@ fun ParentDashboardScreen(
     isDarkModeEnabled: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
-
     val context = LocalContext.current
-    val activity = context as? Activity
     val supportViewModel = SupportViewModel(repository = SupportRepositoryImpl())
 
-    data class NavItem(val label: String, val icon: Int)
+    /* ---------- NAV ITEM MODEL ---------- */
+    data class NavItem(
+        val label: String,
+        val icon: ImageVector
+    )
 
     var selectedItem by remember { mutableStateOf(0) }
 
+    /* ---------- NAV ITEMS ---------- */
     val navList = listOf(
-        NavItem("Home", R.drawable.baseline_home_24),
-        NavItem("Support", R.drawable.baseline_support_24),
-        NavItem("Location", R.drawable.baseline_location_on_24),
-        NavItem("Setting", R.drawable.baseline_settings_24),
+        NavItem("Home", Icons.Filled.Home),
+        NavItem("Support", Icons.Filled.SupportAgent),
+        NavItem("Location", Icons.Filled.LocationOn),
+        NavItem("Profile", Icons.Filled.Person)
     )
-    val navigateToEditProfile: () -> Unit = {
-        val intent = Intent(context, EditActivity::class.java)
-        context.startActivity(intent)
-    }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,   // FIX ✔
+        containerColor = MaterialTheme.colorScheme.background,
 
-        // ---------------- TOP BAR FIXED ----------------
+        /* ---------- TOP BAR ---------- */
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)  // FIX ✔
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
                     painter = painterResource(R.drawable.logo),
                     contentDescription = null,
-                    colorFilter = if (isDarkModeEnabled) ColorFilter.tint(PlaceholderBusColor) else null,
-                    modifier = Modifier.weight(0.5f)
+                    colorFilter = if (isDarkModeEnabled)
+                        ColorFilter.tint(PlaceholderBusColor)
+                    else null,
+                    modifier = Modifier.weight(1f)
                 )
 
-                Row(
-                    Modifier.weight(0.5f),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = { // Intent to start EditActivity
-                        val intent = Intent(context, EditActivity::class.java)
-                        // Optionally, you can pass the dark mode setting or other data
-//                        intent.putExtra("isDarkModeEnabled", isDarkModeEnabled)
-                        context.startActivity(intent)}) {
+                Row(horizontalArrangement = Arrangement.End) {
+                    IconButton(onClick = {
+                        context.startActivity(
+                            Intent(context, EditActivity::class.java)
+                        )
+                    }) {
                         Icon(
-                            Icons.Filled.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface // FIX ✔
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
+
                     IconButton(onClick = {}) {
                         Icon(
-                            Icons.Filled.Notifications,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error      // FIX ✔
+                            imageVector = Icons.Filled.Notifications,
+                            contentDescription = "Notifications",
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
             }
         },
 
-        // ---------------- BOTTOM NAVIGATION ----------------
+        /* ---------- BOTTOM NAV ---------- */
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface   // FIX ✔
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 navList.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedItem == index,
-                        onClick = { selectedItem = index },
+                        onClick = {
+                            if (index == 3) {
+                                // OPEN EditActivity
+                                context.startActivity(
+                                    Intent(context, EditActivity::class.java)
+                                )
+                            } else {
+                                selectedItem = index
+                            }
+                        },
                         icon = {
                             Icon(
-                                painter = painterResource(item.icon),
+                                imageVector = item.icon,
                                 contentDescription = item.label,
                                 tint = if (selectedItem == index)
                                     MaterialTheme.colorScheme.primary
@@ -153,7 +163,7 @@ fun ParentDashboardScreen(
         }
     ) { paddingValues ->
 
-        // ---------------- SCREEN SWITCHER ----------------
+        /* ---------- SCREEN SWITCHER ---------- */
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -163,14 +173,7 @@ fun ParentDashboardScreen(
                 0 -> HomeScreen()
                 1 -> SupportScreen(viewModel = supportViewModel)
                 2 -> LiveLocationScreen()
-                3 -> SettingScreen(
-                    isDarkModeEnabled = isDarkModeEnabled,
-                    onThemeChange = onThemeChange
-                )
-                else -> HomeScreen()
             }
         }
     }
 }
-
-//small changes in setting ui
