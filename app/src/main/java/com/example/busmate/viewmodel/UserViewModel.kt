@@ -40,26 +40,18 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             _user.value = data
         }
     }
+fun login(userId: String, password: String) {
 
-//    fun login(userID: String, password: String) {
-//        viewModelScope.launch {
-//            _message.value = "Loading"
-//            try {
-//                val result = repository.loginUser(userID, password)
-//                if (result.isSuccess) {
-//                    _message.value = "Successful Login"
-//                    _user.value = result.getOrNull() // This updates the user state flow
-//                } else {
-//                    _message.value = result.exceptionOrNull()?.message ?: "Unknown Error"
-//                }
-//            } catch (e: Exception) {
-//                _message.value = e.toString()
-//            }
-//        }
-//    }
-fun login(userId: String,password: String){
+    _message.value = "Loading..."
 
+    repository.loginUser(userId, password) { success, msg, user ->
+        _message.value = msg
+        if (success) {
+            _user.value = user
+        }
+    }
 }
+
 
     fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
         viewModelScope.launch {

@@ -24,67 +24,6 @@ class UserRepositoryImpl : UserRepositoryInterface {
     private val adminRef = db.getReference("user")   // pre-created by admin
     private val usersRef = db.getReference("users")  // registered users
 
-//    override suspend fun registerUser(
-//        user: UserModel,
-//        password: String,
-//    ): Result<UserModel> {
-//
-//        return try {
-//
-//            // 1️⃣ CHECK IF ADMIN CREATED THIS SCHOOL ID
-//            val adminDoc = firestore.collection("user")
-//                .document(user.schoolId)
-//                .get()
-//                .await()
-//
-//            if (!adminDoc.exists()) {
-//                return Result.failure(Exception("Invalid User ID. Contact school admin."))
-//            }
-//
-//            // ADMIN ROLE
-//            val adminRole = adminDoc.getString("role") ?: ""
-//
-//            // 2️⃣ CHECK IF THIS USER ID IS ALREADY REGISTERED
-//            val existingUser = firestore.collection("users")
-//                .whereEqualTo("schoolId", user.schoolId)
-//                .get()
-//                .await()
-//
-//            if (!existingUser.isEmpty) {
-//                return Result.failure(Exception("This User ID is already registered."))
-//            }
-//
-//            // 3️⃣ USER ROLE MUST MATCH ADMIN ROLE
-//            if (adminRole.isNotEmpty()) {
-//                // replace user's role with admin role (user has no role field in your model)
-//                // so you do not store role inside user, but we enforce the logic here
-//            }
-//
-//            // 4️⃣ CREATE AUTH ACCOUNT
-//            val authResult = auth.createUserWithEmailAndPassword(user.email, password).await()
-//            val firebaseUser = authResult.user ?: return Result.failure(Exception("User is null"))
-//
-//            val updatedUser = user.copy(uid = firebaseUser.uid, typeofUser = adminRole)
-//
-//            // 5️⃣ SAVE USER DATA
-//            firestore.collection("users")
-//                .document(firebaseUser.uid)
-//                .set(updatedUser.toMap())
-//                .await()
-//
-//            Result.success(updatedUser)
-//
-//        } catch (e: Exception) {
-//            val message = when (e) {
-//                is FirebaseAuthUserCollisionException -> "This email is already registered."
-//                is FirebaseAuthWeakPasswordException -> "Password is too weak."
-//                is FirebaseAuthInvalidCredentialsException -> "Invalid email format."
-//                else -> "Registration failed. Please try again."
-//            }
-//            Result.failure(Exception(message))
-//        }
-//    }
-
     override fun registerUser(
         user: UserModel,
         password: String,
@@ -207,8 +146,49 @@ class UserRepositoryImpl : UserRepositoryInterface {
         password: String,
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
-        TODO("Not yet implemented")
+        usersRef.child(schoolId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    if (!snapshot.exists()) {
+                        callback(false, "No such user found", null)
+                        return
+                    }
+
+                    val user = snapshot.getValue(UserModel::class.java)
+                    if (user == null) {
+                        callback(false, "Failed to read user data", null)
+                        return
+                    }
+
+                    // Check account status
+                    if (user.status != "active") {
+                        callback(
+                            false,
+                            "Your account is deactivated. Please contact administration.",
+                            null
+                        )
+                        return
+                    }
+
+                    // Login using email from DB
+                    auth.signInWithEmailAndPassword(user.email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                callback(true, "Successful Login", user)
+                            } else {
+                                callback(false, "Invalid Email ID or Password", null)
+                            }
+                        }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
     }
+
 
 
     override suspend fun changePassword(
