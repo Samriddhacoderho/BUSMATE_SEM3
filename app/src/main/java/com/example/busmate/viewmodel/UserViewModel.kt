@@ -40,93 +40,117 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             _user.value = data
         }
     }
-fun login(userId: String, password: String) {
 
-    _message.value = "Loading..."
+    fun login(userId: String, password: String) {
 
-    repository.loginUser(userId, password) { success, msg, user ->
-        _message.value = msg
-        if (success) {
-            _user.value = user
+        _message.value = "Loading..."
+
+        repository.loginUser(userId, password) { success, msg, user ->
+            _message.value = msg
+            if (success) {
+                _user.value = user
+            }
         }
     }
-}
 
 
+    //    fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
+//        viewModelScope.launch {
+//            _message.value = "Loading"
+//
+//            // Input Validation (Pass/Confirm match, not blank, length)
+//            if (newPass.isBlank() || confirmPass.isBlank() || oldPass.isBlank()) {
+//                _message.value = "All password fields must be filled."
+//                return@launch
+//            }
+//            if (newPass != confirmPass) {
+//                _message.value = "New password and confirmation password do not match."
+//                return@launch
+//            }
+//            if (newPass.length < 6) {
+//                _message.value = "New password is too short (minimum 6 characters)."
+//                return@launch
+//            }
+//
+//            try {
+//                // Call the Repository
+//                val result = repository.changePassword(oldPass, newPass)
+//
+//                // Update state
+//                _message.value =
+//                    if (result.isSuccess) "Password successfully changed!"
+//                    else result.exceptionOrNull()?.message ?: "Password change failed."
+//
+//            } catch (e: Exception) {
+//                _message.value = e.toString()
+//            }
+//        }
+//    }
     fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
-        viewModelScope.launch {
-            _message.value = "Loading"
 
-            // Input Validation (Pass/Confirm match, not blank, length)
-            if (newPass.isBlank() || confirmPass.isBlank() || oldPass.isBlank()) {
-                _message.value = "All password fields must be filled."
-                return@launch
-            }
-            if (newPass != confirmPass) {
-                _message.value = "New password and confirmation password do not match."
-                return@launch
-            }
-            if (newPass.length < 6) {
-                _message.value = "New password is too short (minimum 6 characters)."
-                return@launch
-            }
+        _message.value = "Loading..."
 
-            try {
-                // Call the Repository
-                val result = repository.changePassword(oldPass, newPass)
+        if (oldPass.isBlank() || newPass.isBlank() || confirmPass.isBlank()) {
+            _message.value = "All password fields must be filled."
+            return
+        }
 
-                // Update state
-                _message.value =
-                    if (result.isSuccess) "Password successfully changed!"
-                    else result.exceptionOrNull()?.message ?: "Password change failed."
+        if (newPass != confirmPass) {
+            _message.value = "Passwords do not match."
+            return
+        }
 
-            } catch (e: Exception) {
-                _message.value = e.toString()
-            }
+        if (newPass.length < 6) {
+            _message.value = "Password must be at least 6 characters."
+            return
+        }
+
+        repository.changePassword(oldPass, newPass) { success, msg ->
+            _message.value = msg
         }
     }
+
+
 
     fun resetPassword(email: String) {
-        viewModelScope.launch {
-            _message.value = "Loading"
-            // The repository is now UserRepositoryInterface, which implements the function
-            repository.sendPasswordResetEmail(email) { msg, success ->
-                _message.value = msg
-            }
+        _message.value = "Loading..."
+
+        repository.sendPasswordResetEmail(email) { msg, _ ->
+            _message.value = msg
         }
     }
+
+
+//
 
     fun loadUserProfile(userId: String) {
-        viewModelScope.launch {
-            _message.value = "Loading Profile..."
-            try {
-                val result = repository.getUserProfile(userId) // Method to load user profile data
-                _user.value = result.getOrNull()
-            } catch (e: Exception) {
-                _message.value = "Failed to load user profile: ${e.message}"
-            }
+        _message.value = "Loading Profile..."
+
+        repository.getUserProfile(userId) { success, msg, user ->
+            _message.value = msg
+            if (success) _user.value = user
         }
     }
 
+
+
     fun updateUserProfile(firstName: String, lastName: String, phone: String) {
-        viewModelScope.launch {
-            _message.value = "Updating Profile..."
+        val currentUser = _user.value ?: return
 
-            // Get the current user (you might need to get this from the auth session)
-            val currentUser = _user.value
-            if (currentUser != null) {
-                val result =
-                    repository.updateUserProfile(currentUser.uid, firstName, lastName, phone)
+        _message.value = "Updating Profile..."
 
-                _message.value = if (result.isSuccess) {
-                    "Profile Updated Successfully!"
-                } else {
-                    result.exceptionOrNull()?.message ?: "Error Updating Profile"
-                }
-            } else {
-                _message.value = "User not found!"
+        repository.updateUserProfile(currentUser.uid, firstName, lastName, phone) { success, msg ->
+            _message.value = msg
+            if (success) {
+                _user.value = currentUser.copy(
+                    firstName = firstName,
+                    lastName = lastName,
+                    phone = phone
+                )
             }
         }
+
+
     }
 }
 

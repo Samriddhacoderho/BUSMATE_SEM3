@@ -20,25 +20,33 @@ interface UserRepositoryInterface {
     )
 
 
-    suspend fun changePassword(
+    fun changePassword(
         oldPassword: String,
-        newPassword: String
-    ): Result<Unit>
+        newPassword: String,
+        callback: (Boolean, String) -> Unit
+    )
 
     fun createAccount(
         model: CreateAccountModel,
         callback: (String, Boolean) -> Unit
     )
 
-    suspend fun sendPasswordResetEmail(
+    fun sendPasswordResetEmail(
         email: String,
         callback: (String, Boolean) -> Unit
     )
-    suspend fun updateUserProfile(
-        userId: String,
+
+    fun getUserProfile(
+        schoolId: String,
+        callback: (Boolean, String, UserModel?) -> Unit
+    )
+    fun updateUserProfile(
+        schoolId: String,
         firstName: String,
         lastName: String,
-        phone: String): Result<Unit>
-    suspend fun getUserProfile(userId: String): Result<UserModel>
+        phone: String,
+        callback: (Boolean, String) -> Unit
+    )
+
 
 }

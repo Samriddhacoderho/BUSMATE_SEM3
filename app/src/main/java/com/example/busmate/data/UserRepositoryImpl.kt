@@ -18,7 +18,6 @@ import kotlinx.coroutines.tasks.await
 class UserRepositoryImpl : UserRepositoryInterface {
 
     private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
     private val db = FirebaseDatabase.getInstance()
 
     private val adminRef = db.getReference("user")   // pre-created by admin
@@ -31,6 +30,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
     ) {
         adminRef.child(user.schoolId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
+
                 override fun onDataChange(snapshot: DataSnapshot) {
 
                     if (!snapshot.exists()) {
@@ -40,58 +40,31 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
                     val role = snapshot.child("role").getValue(String::class.java) ?: ""
 
-                    // 2️⃣ Check already registered
-                    usersRef.child(user.schoolId)
-                        .addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(userSnap: DataSnapshot) {
+                    auth.createUserWithEmailAndPassword(user.email, password)
+                        .addOnCompleteListener { task ->
 
-                                if (userSnap.exists()) {
-                                    callback(false, "This User ID is already registered.", null)
-                                    return
-                                }
+                            if (!task.isSuccessful) {
+                                callback(false, task.exception?.message ?: "Registration failed", null)
+                                return@addOnCompleteListener
+                            }
 
-                                // 3️⃣ Create Auth account
-                                auth.createUserWithEmailAndPassword(user.email, password)
-                                    .addOnCompleteListener { task ->
+                            val firebaseUser = task.result.user!!
 
-                                        if (!task.isSuccessful) {
-                                            callback(
-                                                false,
-                                                task.exception?.message ?: "Registration failed",
-                                                null
-                                            )
-                                            return@addOnCompleteListener
-                                        }
+                            val updatedUser = user.copy(
+                                uid = firebaseUser.uid,
+                                typeofUser = role
+                            )
 
-                                        val firebaseUser = task.result.user!!
-
-                                        val updatedUser = user.copy(
-                                            uid = firebaseUser.uid,
-                                            typeofUser = role
-                                        )
-
-                                        // 4️⃣ Save user in Realtime DB
-                                        usersRef.child(user.schoolId)
-                                            .setValue(updatedUser)
-                                            .addOnCompleteListener {
-
-                                                if (it.isSuccessful) {
-                                                    callback(
-                                                        true,
-                                                        "Registration Successful",
-                                                        updatedUser
-                                                    )
-                                                } else {
-                                                    callback(false, "Failed to save user", null)
-                                                }
-                                            }
+                            usersRef.child(firebaseUser.uid)
+                                .setValue(updatedUser)
+                                .addOnCompleteListener {
+                                    if (it.isSuccessful) {
+                                        callback(true, "Registration Successful", updatedUser)
+                                    } else {
+                                        callback(false, "Failed to save user", null)
                                     }
-                            }
-
-                            override fun onCancelled(error: DatabaseError) {
-                                callback(false, error.message, null)
-                            }
-                        })
+                                }
+                        }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -100,53 +73,15 @@ class UserRepositoryImpl : UserRepositoryInterface {
             })
     }
 
-//override suspend fun loginUser(userID: String, password: String): Result<UserModel> {
-//    return try {
-//        val snapshot = firestore.collection("users")
-//            .whereEqualTo("schoolId", userID)
-//            .get()
-//            .await()
-//
-//        if (snapshot.isEmpty) {
-//            return Result.failure(Exception("No such user found"))
-//        }
-//
-//        val document = snapshot.documents.first()
-//
-//        // Check status field
-//        val status = document.getString("status") ?: "deactivated"
-//        if (status != "active") {
-//            return Result.failure(Exception("Your account is deactivated. Please contact administration."))
-//        }
-//
-//        val email = document.getString("email")
-//            ?: return Result.failure(Exception("Email not found for this user"))
-//
-//        val signInResult = auth.signInWithEmailAndPassword(email, password).await()
-//        if (signInResult.user == null) {
-//            return Result.failure(Exception("Invalid Email ID or Password"))
-//        }
-//
-//        val userModel: UserModel = document.toObject(UserModel::class.java)!!
-//
-//        Result.success(userModel)
-//
-//    } catch (e: Exception) {
-//        val message = when (e) {
-//            is FirebaseAuthInvalidCredentialsException -> "Invalid Email ID or Password"
-//            else -> "Login failed. Please try again."
-//        }
-//        Result.failure(Exception(message))
-//    }
-//}
-
 
     override fun loginUser(
         schoolId: String,
         password: String,
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
-        usersRef.child(schoolId)
+        usersRef
+            .orderByChild("schoolId")
+            .equalTo(schoolId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
 
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -156,23 +91,18 @@ class UserRepositoryImpl : UserRepositoryInterface {
                         return
                     }
 
-                    val user = snapshot.getValue(UserModel::class.java)
+                    val userSnap = snapshot.children.first()
+                    val user = userSnap.getValue(UserModel::class.java)
                     if (user == null) {
                         callback(false, "Failed to read user data", null)
                         return
                     }
 
-                    // Check account status
                     if (user.status != "active") {
-                        callback(
-                            false,
-                            "Your account is deactivated. Please contact administration.",
-                            null
-                        )
+                        callback(false, "Your account is deactivated.", null)
                         return
                     }
 
-                    // Login using email from DB
                     auth.signInWithEmailAndPassword(user.email, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
@@ -191,29 +121,70 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
 
 
-    override suspend fun changePassword(
+//    override suspend fun changePassword(
+//        oldPassword: String,
+//        newPassword: String
+//    ): Result<Unit> {
+//        return try {
+//            val user =
+//                auth.currentUser ?: return Result.failure(Exception("No user currently logged in."))
+//
+//            val credential = EmailAuthProvider.getCredential(
+//                user.email ?: throw Exception("User email is missing for re-authentication."),
+//                oldPassword
+//            )
+//
+//            user.reauthenticate(credential).await()
+//
+//            user.updatePassword(newPassword).await()
+//
+//            Result.success(Unit)
+//
+//        } catch (e: Exception) {
+//            Result.failure(e)
+//        }
+//    }
+
+    override fun changePassword(
         oldPassword: String,
-        newPassword: String
-    ): Result<Unit> {
-        return try {
-            val user =
-                auth.currentUser ?: return Result.failure(Exception("No user currently logged in."))
-
-            val credential = EmailAuthProvider.getCredential(
-                user.email ?: throw Exception("User email is missing for re-authentication."),
-                oldPassword
-            )
-
-            user.reauthenticate(credential).await()
-
-            user.updatePassword(newPassword).await()
-
-            Result.success(Unit)
-
-        } catch (e: Exception) {
-            Result.failure(e)
+        newPassword: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val user = auth.currentUser
+        if (user == null) {
+            callback(false, "No user currently logged in.")
+            return
         }
+
+        val email = user.email
+        if (email.isNullOrEmpty()) {
+            callback(false, "User email not found.")
+            return
+        }
+
+        val credential = EmailAuthProvider.getCredential(email, oldPassword)
+
+        user.reauthenticate(credential)
+            .addOnCompleteListener { authTask ->
+                if (!authTask.isSuccessful) {
+                    callback(false, "Old password is incorrect.")
+                    return@addOnCompleteListener
+                }
+
+                user.updatePassword(newPassword)
+                    .addOnCompleteListener { updateTask ->
+                        if (updateTask.isSuccessful) {
+                            callback(true, "Password successfully changed!")
+                        } else {
+                            callback(
+                                false,
+                                updateTask.exception?.message ?: "Password update failed."
+                            )
+                        }
+                    }
+            }
     }
+
 
     override fun createAccount(
         model: CreateAccountModel,
@@ -247,66 +218,80 @@ class UserRepositoryImpl : UserRepositoryInterface {
     }
 
 
-    override suspend fun sendPasswordResetEmail(
+
+    override fun sendPasswordResetEmail(
         email: String,
         callback: (String, Boolean) -> Unit
     ) {
-        try {
-            auth.sendPasswordResetEmail(email).await()
-            callback("A reset link has been sent to your email.", true)
-
-        } catch (e: FirebaseAuthInvalidUserException) {
-            callback("No account found with this email.", false)
-
-        } catch (e: FirebaseAuthInvalidCredentialsException) {
-            callback("Email format is invalid.", false)
-
-        } catch (e: Exception) {
-            callback("Error: ${e.message}", false)
-        }
-    }
-
-    override suspend fun getUserProfile(userId: String): Result<UserModel> {
-        return try {
-            val documentSnapshot = firestore.collection("users")
-                .document(userId)
-                .get()
-                .await()
-
-            if (!documentSnapshot.exists()) {
-                return Result.failure(Exception("User not found"))
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback("A reset link has been sent to your email.", true)
+                } else {
+                    val msg = when (task.exception) {
+                        is FirebaseAuthInvalidUserException -> "No account found with this email."
+                        is FirebaseAuthInvalidCredentialsException -> "Invalid email format."
+                        else -> task.exception?.message ?: "Failed to send reset email."
+                    }
+                    callback(msg, false)
+                }
             }
-
-            // Convert document to UserModel
-            val userModel = documentSnapshot.toObject(UserModel::class.java)
-                ?: return Result.failure(Exception("Error converting document to UserModel"))
-
-            Result.success(userModel)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
     }
 
-    override suspend fun updateUserProfile(
-        userId: String,
+
+    override fun getUserProfile(
+        uid: String,
+        callback: (Boolean, String, UserModel?) -> Unit
+    ) {
+        usersRef.child(uid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (!snapshot.exists()) {
+                        callback(false, "User not found", null)
+                        return
+                    }
+
+                    val user = snapshot.getValue(UserModel::class.java)
+                    if (user == null) {
+                        callback(false, "Failed to parse user data", null)
+                    } else {
+                        callback(true, "Profile Loaded", user)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
+
+
+
+    override fun updateUserProfile(
+        uid: String,
         firstName: String,
         lastName: String,
-        phone: String
-    ): Result<Unit> {
-        return try {
-            // Access the 'users' collection and update the document
-            firestore.collection("users")
-                .document(userId) // Use userId to locate the document
-                .update(
-                    "firstName", firstName,
-                    "lastName", lastName,
-                    "phone", phone
-                )
-                .await() // Await the result of the update operation
+        phone: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val updates = mapOf(
+            "firstName" to firstName,
+            "lastName" to lastName,
+            "phone" to phone
+        )
 
-            Result.success(Unit) // If update is successful
-        } catch (e: Exception) {
-            Result.failure(e) // If there's an error, return failure
-        }
+        usersRef.child(uid)
+            .updateChildren(updates)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "Profile Updated Successfully!")
+                } else {
+                    callback(false, it.exception?.message ?: "Failed to update profile.")
+                }
+            }
     }
+
+
 }
