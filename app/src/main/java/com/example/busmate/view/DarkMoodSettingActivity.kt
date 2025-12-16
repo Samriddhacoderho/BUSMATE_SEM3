@@ -204,3 +204,4 @@ fun DarkModeScreenPreview() {
         DarkModeSettingsScreen()
     }
 }
+//testing the function of darkmodesetting
