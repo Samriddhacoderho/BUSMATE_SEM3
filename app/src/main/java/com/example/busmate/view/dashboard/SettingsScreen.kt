@@ -57,8 +57,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SettingScreen(
-    isDarkModeEnabled: Boolean,
-    onThemeChange: (Boolean) -> Unit
+
 ) {
     val context = LocalContext.current
     var isNotificationEnabled by remember { mutableStateOf(true) }
@@ -86,16 +85,16 @@ fun SettingScreen(
                     )
                 }
 
-                SettingsMenuItem(
-                    title = "Dark Mode",
-                    imageVector = Icons.Filled.DarkMode,
-                    onClick = { onThemeChange(!isDarkModeEnabled) }
-                ) {
-                    Switch(
-                        checked = isDarkModeEnabled,
-                        onCheckedChange = { onThemeChange(it) }
-                    )
-                }
+//                SettingsMenuItem(
+//                    title = "Dark Mode",
+//                    imageVector = Icons.Filled.DarkMode,
+//                    onClick = { onThemeChange(!isDarkModeEnabled) }
+//                ) {
+//                    Switch(
+//                        checked = isDarkModeEnabled,
+//                        onCheckedChange = { onThemeChange(it) }
+//                    )
+//                }
 
                 SettingsMenuItem(
                     title = "Rate App",
