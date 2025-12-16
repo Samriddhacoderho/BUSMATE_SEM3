@@ -1,5 +1,6 @@
 package com.example.busmate.view
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -117,6 +119,7 @@ fun DarkModeSettingsScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DarkModeTopBar() {
+    val context = LocalContext.current
     TopAppBar(
         title = {
             // Center the title visually
@@ -132,7 +135,7 @@ fun DarkModeTopBar() {
             }
         },
         navigationIcon = {
-            IconButton(onClick = { /* Handle back click */ }) {
+            IconButton(onClick = { (context as Activity).finish()}) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Go back",
@@ -204,4 +207,3 @@ fun DarkModeScreenPreview() {
         DarkModeSettingsScreen()
     }
 }
-//testing the function of darkmodesetting
