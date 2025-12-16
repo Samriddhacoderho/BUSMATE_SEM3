@@ -168,3 +168,4 @@ fun ParentDashboardScreen(
         }
     }
 }
+// remove the avatar icon from the top bar
