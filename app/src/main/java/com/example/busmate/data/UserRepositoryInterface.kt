@@ -4,23 +4,30 @@ import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 
 interface UserRepositoryInterface {
-    suspend fun registerUser(
+    fun registerUser(
         user: UserModel,
         password: String,
-    ): Result<UserModel>
+        callback: (Boolean, String, UserModel?) -> Unit
+    )
 
 //    fun login(email:String,password: String,callback:(String, Boolean, UserModel)->Unit)
     //sir ko changed code
 
-    suspend fun loginUser(userID:String,password: String): Result<UserModel>
+    fun loginUser(
+        schoolId: String,
+        password: String,
+        callback: (Boolean, String, UserModel?) -> Unit
+    )
+
 
     suspend fun changePassword(
         oldPassword: String,
         newPassword: String
     ): Result<Unit>
 
-    suspend fun createAccount(
-        model: CreateAccountModel,callback:(String,Boolean)->Unit
+    fun createAccount(
+        model: CreateAccountModel,
+        callback: (String, Boolean) -> Unit
     )
 
     suspend fun sendPasswordResetEmail(

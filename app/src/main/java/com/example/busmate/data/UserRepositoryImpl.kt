@@ -8,6 +8,10 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -15,106 +19,195 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseDatabase.getInstance()
 
-    override suspend fun registerUser(
+    private val adminRef = db.getReference("user")   // pre-created by admin
+    private val usersRef = db.getReference("users")  // registered users
+
+//    override suspend fun registerUser(
+//        user: UserModel,
+//        password: String,
+//    ): Result<UserModel> {
+//
+//        return try {
+//
+//            // 1️⃣ CHECK IF ADMIN CREATED THIS SCHOOL ID
+//            val adminDoc = firestore.collection("user")
+//                .document(user.schoolId)
+//                .get()
+//                .await()
+//
+//            if (!adminDoc.exists()) {
+//                return Result.failure(Exception("Invalid User ID. Contact school admin."))
+//            }
+//
+//            // ADMIN ROLE
+//            val adminRole = adminDoc.getString("role") ?: ""
+//
+//            // 2️⃣ CHECK IF THIS USER ID IS ALREADY REGISTERED
+//            val existingUser = firestore.collection("users")
+//                .whereEqualTo("schoolId", user.schoolId)
+//                .get()
+//                .await()
+//
+//            if (!existingUser.isEmpty) {
+//                return Result.failure(Exception("This User ID is already registered."))
+//            }
+//
+//            // 3️⃣ USER ROLE MUST MATCH ADMIN ROLE
+//            if (adminRole.isNotEmpty()) {
+//                // replace user's role with admin role (user has no role field in your model)
+//                // so you do not store role inside user, but we enforce the logic here
+//            }
+//
+//            // 4️⃣ CREATE AUTH ACCOUNT
+//            val authResult = auth.createUserWithEmailAndPassword(user.email, password).await()
+//            val firebaseUser = authResult.user ?: return Result.failure(Exception("User is null"))
+//
+//            val updatedUser = user.copy(uid = firebaseUser.uid, typeofUser = adminRole)
+//
+//            // 5️⃣ SAVE USER DATA
+//            firestore.collection("users")
+//                .document(firebaseUser.uid)
+//                .set(updatedUser.toMap())
+//                .await()
+//
+//            Result.success(updatedUser)
+//
+//        } catch (e: Exception) {
+//            val message = when (e) {
+//                is FirebaseAuthUserCollisionException -> "This email is already registered."
+//                is FirebaseAuthWeakPasswordException -> "Password is too weak."
+//                is FirebaseAuthInvalidCredentialsException -> "Invalid email format."
+//                else -> "Registration failed. Please try again."
+//            }
+//            Result.failure(Exception(message))
+//        }
+//    }
+
+    override fun registerUser(
         user: UserModel,
         password: String,
-    ): Result<UserModel> {
+        callback: (Boolean, String, UserModel?) -> Unit
+    ) {
+        adminRef.child(user.schoolId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
 
-        return try {
+                    if (!snapshot.exists()) {
+                        callback(false, "Invalid User ID. Contact school admin.", null)
+                        return
+                    }
 
-            // 1️⃣ CHECK IF ADMIN CREATED THIS SCHOOL ID
-            val adminDoc = firestore.collection("user")
-                .document(user.schoolId)
-                .get()
-                .await()
+                    val role = snapshot.child("role").getValue(String::class.java) ?: ""
 
-            if (!adminDoc.exists()) {
-                return Result.failure(Exception("Invalid User ID. Contact school admin."))
-            }
+                    // 2️⃣ Check already registered
+                    usersRef.child(user.schoolId)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(userSnap: DataSnapshot) {
 
-            // ADMIN ROLE
-            val adminRole = adminDoc.getString("role") ?: ""
+                                if (userSnap.exists()) {
+                                    callback(false, "This User ID is already registered.", null)
+                                    return
+                                }
 
-            // 2️⃣ CHECK IF THIS USER ID IS ALREADY REGISTERED
-            val existingUser = firestore.collection("users")
-                .whereEqualTo("schoolId", user.schoolId)
-                .get()
-                .await()
+                                // 3️⃣ Create Auth account
+                                auth.createUserWithEmailAndPassword(user.email, password)
+                                    .addOnCompleteListener { task ->
 
-            if (!existingUser.isEmpty) {
-                return Result.failure(Exception("This User ID is already registered."))
-            }
+                                        if (!task.isSuccessful) {
+                                            callback(
+                                                false,
+                                                task.exception?.message ?: "Registration failed",
+                                                null
+                                            )
+                                            return@addOnCompleteListener
+                                        }
 
-            // 3️⃣ USER ROLE MUST MATCH ADMIN ROLE
-            if (adminRole.isNotEmpty()) {
-                // replace user's role with admin role (user has no role field in your model)
-                // so you do not store role inside user, but we enforce the logic here
-            }
+                                        val firebaseUser = task.result.user!!
 
-            // 4️⃣ CREATE AUTH ACCOUNT
-            val authResult = auth.createUserWithEmailAndPassword(user.email, password).await()
-            val firebaseUser = authResult.user ?: return Result.failure(Exception("User is null"))
+                                        val updatedUser = user.copy(
+                                            uid = firebaseUser.uid,
+                                            typeofUser = role
+                                        )
 
-            val updatedUser = user.copy(uid = firebaseUser.uid, typeofUser = adminRole)
+                                        // 4️⃣ Save user in Realtime DB
+                                        usersRef.child(user.schoolId)
+                                            .setValue(updatedUser)
+                                            .addOnCompleteListener {
 
-            // 5️⃣ SAVE USER DATA
-            firestore.collection("users")
-                .document(firebaseUser.uid)
-                .set(updatedUser.toMap())
-                .await()
+                                                if (it.isSuccessful) {
+                                                    callback(
+                                                        true,
+                                                        "Registration Successful",
+                                                        updatedUser
+                                                    )
+                                                } else {
+                                                    callback(false, "Failed to save user", null)
+                                                }
+                                            }
+                                    }
+                            }
 
-            Result.success(updatedUser)
+                            override fun onCancelled(error: DatabaseError) {
+                                callback(false, error.message, null)
+                            }
+                        })
+                }
 
-        } catch (e: Exception) {
-            val message = when (e) {
-                is FirebaseAuthUserCollisionException -> "This email is already registered."
-                is FirebaseAuthWeakPasswordException -> "Password is too weak."
-                is FirebaseAuthInvalidCredentialsException -> "Invalid email format."
-                else -> "Registration failed. Please try again."
-            }
-            Result.failure(Exception(message))
-        }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
     }
 
-    override suspend fun loginUser(userID: String, password: String): Result<UserModel> {
-        return try {
-            val snapshot = firestore.collection("users")
-                .whereEqualTo("schoolId", userID)
-                .get()
-                .await()
+//override suspend fun loginUser(userID: String, password: String): Result<UserModel> {
+//    return try {
+//        val snapshot = firestore.collection("users")
+//            .whereEqualTo("schoolId", userID)
+//            .get()
+//            .await()
+//
+//        if (snapshot.isEmpty) {
+//            return Result.failure(Exception("No such user found"))
+//        }
+//
+//        val document = snapshot.documents.first()
+//
+//        // Check status field
+//        val status = document.getString("status") ?: "deactivated"
+//        if (status != "active") {
+//            return Result.failure(Exception("Your account is deactivated. Please contact administration."))
+//        }
+//
+//        val email = document.getString("email")
+//            ?: return Result.failure(Exception("Email not found for this user"))
+//
+//        val signInResult = auth.signInWithEmailAndPassword(email, password).await()
+//        if (signInResult.user == null) {
+//            return Result.failure(Exception("Invalid Email ID or Password"))
+//        }
+//
+//        val userModel: UserModel = document.toObject(UserModel::class.java)!!
+//
+//        Result.success(userModel)
+//
+//    } catch (e: Exception) {
+//        val message = when (e) {
+//            is FirebaseAuthInvalidCredentialsException -> "Invalid Email ID or Password"
+//            else -> "Login failed. Please try again."
+//        }
+//        Result.failure(Exception(message))
+//    }
+//}
 
-            if (snapshot.isEmpty) {
-                return Result.failure(Exception("No such user found"))
-            }
 
-            val document = snapshot.documents.first()
-
-            // Check status field
-            val status = document.getString("status") ?: "deactivated"
-            if (status != "active") {
-                return Result.failure(Exception("Your account is deactivated. Please contact administration."))
-            }
-
-            val email = document.getString("email")
-                ?: return Result.failure(Exception("Email not found for this user"))
-
-            val signInResult = auth.signInWithEmailAndPassword(email, password).await()
-            if (signInResult.user == null) {
-                return Result.failure(Exception("Invalid Email ID or Password"))
-            }
-
-            val userModel: UserModel = document.toObject(UserModel::class.java)!!
-
-            Result.success(userModel)
-
-        } catch (e: Exception) {
-            val message = when (e) {
-                is FirebaseAuthInvalidCredentialsException -> "Invalid Email ID or Password"
-                else -> "Login failed. Please try again."
-            }
-            Result.failure(Exception(message))
-        }
+    override fun loginUser(
+        schoolId: String,
+        password: String,
+        callback: (Boolean, String, UserModel?) -> Unit
+    ) {
+        TODO("Not yet implemented")
     }
 
 
@@ -142,35 +235,37 @@ class UserRepositoryImpl : UserRepositoryInterface {
         }
     }
 
-    override suspend fun createAccount(
+    override fun createAccount(
         model: CreateAccountModel,
         callback: (String, Boolean) -> Unit
     ) {
-        try {
+        adminRef.child(model.schoolId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
 
-            // 1️⃣ CHECK IF SCHOOL ID ALREADY EXISTS
-            val existing = firestore.collection("user")
-                .document(model.schoolId)
-                .get()
-                .await()
+                override fun onDataChange(snapshot: DataSnapshot) {
 
-            if (existing.exists()) {
-                callback("This User ID already exists.", false)
-                return
-            }
+                    if (snapshot.exists()) {
+                        callback("This User ID already exists.", false)
+                        return
+                    }
 
-            // 2️⃣ CREATE NEW ACCOUNT
-            firestore.collection("user")
-                .document(model.schoolId)
-                .set(model.toMap())
-                .await()
+                    adminRef.child(model.schoolId)
+                        .setValue(model)
+                        .addOnCompleteListener {
+                            if (it.isSuccessful) {
+                                callback("Created Account Successful", true)
+                            } else {
+                                callback("Failed to Create Account", false)
+                            }
+                        }
+                }
 
-            callback("Created Account Successful", true)
-
-        } catch (e: Exception) {
-            callback("Failed to Create Account: ${e.message}", false)
-        }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(error.message, false)
+                }
+            })
     }
+
 
     override suspend fun sendPasswordResetEmail(
         email: String,
@@ -190,6 +285,7 @@ class UserRepositoryImpl : UserRepositoryInterface {
             callback("Error: ${e.message}", false)
         }
     }
+
     override suspend fun getUserProfile(userId: String): Result<UserModel> {
         return try {
             val documentSnapshot = firestore.collection("users")
@@ -211,7 +307,12 @@ class UserRepositoryImpl : UserRepositoryInterface {
         }
     }
 
-    override suspend fun updateUserProfile(userId: String, firstName: String, lastName: String, phone: String): Result<Unit> {
+    override suspend fun updateUserProfile(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        phone: String
+    ): Result<Unit> {
         return try {
             // Access the 'users' collection and update the document
             firestore.collection("users")

@@ -9,31 +9,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class CreateAccountViewModel(private val repository: UserRepositoryInterface) : ViewModel() {
+class CreateAccountViewModel(
+    private val repository: UserRepositoryInterface
+) : ViewModel() {
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-
-
     fun createAccountWithMinimalData(role: String, schoolId: String) {
 
-        viewModelScope.launch {
-            _message.value = "Loading"
-            try{
-                val model= CreateAccountModel(
-                    role = role,
-                    schoolId = schoolId
-                )
-                repository.createAccount(model=model) { responseMessage, success ->
-                    _message.value = responseMessage
-                }
+        _message.value = "Loading..."
 
+        val model = CreateAccountModel(
+            role = role,
+            schoolId = schoolId
+        )
 
-            }catch (e: Exception){
-                _message.value = e.toString()
-            }
-
+        repository.createAccount(model) { responseMessage, success ->
+            _message.value = responseMessage
         }
     }
 }
+

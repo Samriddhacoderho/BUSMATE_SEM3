@@ -26,49 +26,40 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         password: String,
 
         ) {
-        viewModelScope.launch {
+        val user = UserModel(
+            firstName = firstName,
+            lastName = lastName,
+            email = email,
+            schoolId = schoolId,
+            phone = phone
+        )
+        _message.value = "Loading..."
 
-            _message.value = "Loading"
-
-            try {
-                val user = UserModel(
-                    firstName = firstName,
-                    lastName = lastName,
-                    email = email,
-                    schoolId = schoolId,
-                    phone = phone,
-
-
-                    )
-
-                val result = repository.registerUser(user, password)
-
-                _message.value =
-                    if (result.isSuccess) "Successful Registration"
-                    else result.exceptionOrNull()?.message ?: "Unknown Error"
-
-            } catch (e: Exception) {
-                _message.value = e.toString()
-            }
+        repository.registerUser(user, password) { success, msg, data ->
+            _message.value = msg
+            _user.value = data
         }
     }
 
-    fun login(userID: String, password: String) {
-        viewModelScope.launch {
-            _message.value = "Loading"
-            try {
-                val result = repository.loginUser(userID, password)
-                if (result.isSuccess) {
-                    _message.value = "Successful Login"
-                    _user.value = result.getOrNull() // This updates the user state flow
-                } else {
-                    _message.value = result.exceptionOrNull()?.message ?: "Unknown Error"
-                }
-            } catch (e: Exception) {
-                _message.value = e.toString()
-            }
-        }
-    }
+//    fun login(userID: String, password: String) {
+//        viewModelScope.launch {
+//            _message.value = "Loading"
+//            try {
+//                val result = repository.loginUser(userID, password)
+//                if (result.isSuccess) {
+//                    _message.value = "Successful Login"
+//                    _user.value = result.getOrNull() // This updates the user state flow
+//                } else {
+//                    _message.value = result.exceptionOrNull()?.message ?: "Unknown Error"
+//                }
+//            } catch (e: Exception) {
+//                _message.value = e.toString()
+//            }
+//        }
+//    }
+fun login(userId: String,password: String){
+
+}
 
     fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
         viewModelScope.launch {
@@ -112,6 +103,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
     }
+
     fun loadUserProfile(userId: String) {
         viewModelScope.launch {
             _message.value = "Loading Profile..."
@@ -123,6 +115,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             }
         }
     }
+
     fun updateUserProfile(firstName: String, lastName: String, phone: String) {
         viewModelScope.launch {
             _message.value = "Updating Profile..."
@@ -130,7 +123,8 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             // Get the current user (you might need to get this from the auth session)
             val currentUser = _user.value
             if (currentUser != null) {
-                val result = repository.updateUserProfile(currentUser.uid, firstName, lastName, phone)
+                val result =
+                    repository.updateUserProfile(currentUser.uid, firstName, lastName, phone)
 
                 _message.value = if (result.isSuccess) {
                     "Profile Updated Successfully!"
