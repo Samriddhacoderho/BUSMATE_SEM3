@@ -5,16 +5,16 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class UserModel(
-    val uid:String="",
+    var uid:String="",
     var firstName:String="",
     var lastName:String="",
-    val email:String="",
-    val schoolId:String="",
+    var email:String="",
+    var schoolId:String="",
     var phone:String="",
-    val typeofUser:String="",
-    val children: Map<String, ChildModel> = emptyMap(),
-    val status:String="active",
-    val profileImageUrl: String? = null,
+    var typeofUser:String="",
+    var children: Map<String, ChildModel> = emptyMap(),
+    var status:String="active",
+    var profileImageUrl: String? = null,
 ): Parcelable {
     fun toMap(): Map<String, Any> {
         return mapOf(

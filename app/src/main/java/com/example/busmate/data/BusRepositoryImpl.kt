@@ -2,13 +2,14 @@ package com.example.busmate.data
 
 import android.util.Log
 import com.example.busmate.model.BusModel
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.*
 
 class BusRepositoryImpl : BusRepositoryInterface {
-    private val firestore = FirebaseFirestore.getInstance()
 
-    override suspend fun registerBus(
+    private val db = FirebaseDatabase.getInstance()
+    private val busesRef = db.getReference("buses")
+
+    override fun registerBus(
         bus: BusModel,
         callback: (String, Boolean) -> Unit
     ) {
@@ -20,47 +21,69 @@ class BusRepositoryImpl : BusRepositoryInterface {
             return
         }
 
-        try {
-            val busCollectionRef = firestore.collection("buses")
+        // 1️⃣ Check unique Bus Number
+        busesRef.orderByChild("busNumber").equalTo(busNumber)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
 
-            // --- Check unique bus number ---
-            val existingBusNumberQuery = busCollectionRef
-                .whereEqualTo("busNumber", busNumber)
-                .get()
-                .await()
+                override fun onDataChange(busNumberSnap: DataSnapshot) {
 
-            if (!existingBusNumberQuery.isEmpty) {
-                callback("Bus Number '$busNumber' already exists.", false)
-                return
-            }
+                    if (busNumberSnap.exists()) {
+                        callback("Bus Number '$busNumber' already exists.", false)
+                        return
+                    }
 
-            // --- Check unique license plate ---
-            val existingLicenseQuery = busCollectionRef
-                .whereEqualTo("licensePlate", licensePlate)
-                .get()
-                .await()
+                    // 2️⃣ Check unique License Plate
+                    busesRef.orderByChild("licensePlate").equalTo(licensePlate)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
 
-            if (!existingLicenseQuery.isEmpty) {
-                callback("License Plate '$licensePlate' is already assigned to another bus.", false)
-                return
-            }
+                            override fun onDataChange(licenseSnap: DataSnapshot) {
 
-            // ----------------------------------------------------
-            // ✅ FIX: Correctly generate and use Firestore document ID
-            // ----------------------------------------------------
-            val newDocRef = busCollectionRef.document()   // Generate the ID FIRST
+                                if (licenseSnap.exists()) {
+                                    callback(
+                                        "License Plate '$licensePlate' is already assigned to another bus.",
+                                        false
+                                    )
+                                    return
+                                }
 
-            val updatedBus = bus.copy(uid = newDocRef.id)
+                                // 3️⃣ Generate Firebase UID
+                                val newBusRef = busesRef.push()
+                                val busUid = newBusRef.key!!
 
-            // Save the bus at EXACTLY that document ID
-            newDocRef.set(updatedBus.toMap()).await()
+                                val updatedBus = bus.copy(uid = busUid, driver = null)
 
-            Log.d("BusRepo", "Successfully registered bus: ${updatedBus.uid}")
+                                // 4️⃣ Save bus
+                                newBusRef.setValue(updatedBus.toMap())
+                                    .addOnCompleteListener {
 
-            callback("Bus $busNumber registered successfully!", true)
+                                        if (it.isSuccessful) {
+                                            Log.d(
+                                                "BusRepo",
+                                                "Bus registered successfully: $busUid"
+                                            )
+                                            callback(
+                                                "Bus $busNumber registered successfully!",
+                                                true
+                                            )
+                                        } else {
+                                            callback(
+                                                it.exception?.message
+                                                    ?: "Failed to register bus",
+                                                false
+                                            )
+                                        }
+                                    }
+                            }
 
-        } catch (e: Exception) {
-            callback("Failed to register bus: ${e.message}", false)
-        }
+                            override fun onCancelled(error: DatabaseError) {
+                                callback(error.message, false)
+                            }
+                        })
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(error.message, false)
+                }
+            })
     }
 }
