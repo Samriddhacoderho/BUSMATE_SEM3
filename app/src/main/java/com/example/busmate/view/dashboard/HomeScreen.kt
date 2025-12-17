@@ -32,6 +32,7 @@ import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
+import com.example.busmate.view.TripActivity
 
 @Composable
 fun HomeScreen() {
@@ -49,6 +50,10 @@ fun HomeScreen() {
     }
     val navigateToAddBus: () -> Unit = {
         val intent = Intent(context, BusScreen::class.java)
+        context.startActivity(intent)
+    }
+    val navigateToTrip: () -> Unit = {
+        val intent = Intent(context, TripActivity::class.java)
         context.startActivity(intent)
     }
 
@@ -119,6 +124,14 @@ fun HomeScreen() {
                     mapImageResource = R.drawable.map
                 )
                 if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+
+                if (model?.typeofUser == "Driver") {
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    DriverTripButton(
+                        onClick = navigateToTrip
+                    )
+                }
             }
         }
     }
@@ -518,4 +531,26 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit){
         message = "School closed on Friday",
         indicatorColor = BusMateOrange
     )
+}
+
+@Composable
+fun DriverTripButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .height(50.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = BusMateBlue
+        )
+    ) {
+        Text(
+            text = "Go To Trip",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
 }

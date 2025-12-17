@@ -9,19 +9,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.viewmodel.AccelerometerViewModel
 
@@ -71,20 +77,44 @@ fun TripScreen(viewModel: AccelerometerViewModel = viewModel()) {
 
         // Control Buttons
         Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth()
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            if (state.isRunning) {
-                Button(onClick = viewModel::stopMeasurement) {
-                    Text("Stop Trip")
-                }
-            } else {
-                Button(onClick = viewModel::startMeasurement) {
-                    Text("Start Trip")
-                }
+
+            val buttonText = if (state.isRunning) "Stop Trip" else "Start Trip"
+            val buttonColor = if (state.isRunning) BusMateOrange else BusMateBlue
+
+            Button(
+                onClick = {
+                    if (state.isRunning) {
+                        viewModel.stopMeasurement()
+                    } else {
+                        viewModel.startMeasurement()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor,
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp
+                )
+            ) {
+                Text(
+                    text = buttonText,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 
-}
+
+    }
 
