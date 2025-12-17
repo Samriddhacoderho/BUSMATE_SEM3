@@ -59,7 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.ui)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.foundation) //added by keshab for material icons
+    implementation(libs.androidx.foundation)
+    implementation(libs.firebase.database.ktx) //added by keshab for material icons
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
