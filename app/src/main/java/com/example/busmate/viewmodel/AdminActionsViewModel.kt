@@ -37,6 +37,7 @@
 
 package com.example.busmate.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AdminActionsInterface
 import com.example.busmate.model.BusModel
@@ -74,11 +75,13 @@ class AdminActionsViewModel(
         repo.deleteUser(userID, callback)
     }
 
-    fun getAllBus(
-        callback: (Boolean, List<BusModel>?) -> Unit
-    ) {
-        repo.getAllBus(callback)
+    fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit) {
+        repo.getAllBus { success, list ->
+            Log.d("DEBUG", "getAllBus result: success=$success, listSize=${list?.size ?: "null"}")
+            callback(success, list)
+        }
     }
+
 
     fun getAllDrivers(
         callback: (Boolean, List<UserModel>?) -> Unit

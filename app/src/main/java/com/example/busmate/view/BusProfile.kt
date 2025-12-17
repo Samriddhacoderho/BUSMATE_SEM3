@@ -3,10 +3,13 @@ package com.example.busmate.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,7 +25,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -38,29 +40,11 @@ import com.example.busmate.viewmodel.AdminActionsViewModel
 
 class BusProfileScreen : ComponentActivity() {
 
-    // Shared variable for passing driver result back to Composables
-    companion object {
-        var onDriverSelectedCallback: ((String, String) -> Unit)? = null
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             BusProfileMainScreen()
-        }
-    }
-
-    // Handle driver selection result
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 1001 && resultCode == Activity.RESULT_OK && data != null) {
-            val driverId = data.getStringExtra("driverId") ?: return
-            val driverName = data.getStringExtra("driverName") ?: return
-
-            // Call Composable callback
-            onDriverSelectedCallback?.invoke(driverId, driverName)
         }
     }
 }
@@ -76,6 +60,8 @@ fun BusProfileMainScreen() {
             if (success && list != null) buses.addAll(list)
         }
     }
+
+
 
     BusProfileScreenUI(buses)
 }
@@ -105,7 +91,6 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
                 .fillMaxSize()
                 .padding(padding)
         ) { page ->
-
             SingleBusProfile(bus = buses[page])
         }
     }
@@ -118,24 +103,31 @@ fun SingleBusProfile(bus: BusModel) {
     var currentDriver by remember {
         mutableStateOf(
             bus.driver?.let {
-                if (it.firstName.isNotBlank() || it.lastName.isNotBlank())
-                    "${it.firstName} ${it.lastName}"
+                val first = it.firstName.orEmpty()
+                val last = it.lastName.orEmpty()
+                if (first.isNotBlank() || last.isNotBlank())
+                    "$first $last"
                 else
                     "Not Assigned"
             } ?: "Not Assigned"
         )
     }
+
     val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
 
-    // Register callback for selection result
-    BusProfileScreen.onDriverSelectedCallback = { driverId, driverName ->
-        currentDriver = driverName
+    // ✅ FIX: Compose-safe activity result launcher
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data ?: return@rememberLauncherForActivityResult
+            val driverId = data.getStringExtra("driverId") ?: return@rememberLauncherForActivityResult
+            val driverName = data.getStringExtra("driverName") ?: return@rememberLauncherForActivityResult
 
-        viewModel.assignBusToDriver(bus.uid,driverId){success,message->
-            if (success){
-                Toast.makeText(context,message,Toast.LENGTH_SHORT).show()
-            }else{
-                Toast.makeText(context,message,Toast.LENGTH_SHORT).show()
+            currentDriver = driverName
+
+            viewModel.assignBusToDriver(bus.uid, driverId) { _, message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -199,15 +191,16 @@ fun SingleBusProfile(bus: BusModel) {
                 BusProfileItem(Icons.Default.Badge, "Bus Number: ${bus.busNumber}")
                 BusProfileItem(Icons.Default.People, "Capacity: ${bus.capacity}")
 
-                // 🔥 CLICKABLE DRIVER ROW
+                // 🔥 CLICKABLE DRIVER ROW (FIXED)
                 BusProfileItem(
                     icon = Icons.Default.Person,
                     text = "Driver: $currentDriver",
                     clickable = true
                 ) {
-                    val intent = Intent(context, DriverProfileScreen::class.java)
-                    intent.putExtra("select_mode", true)
-                    (context as Activity).startActivityForResult(intent, 1001)
+                    launcher.launch(
+                        Intent(context, DriverProfileScreen::class.java)
+                            .putExtra("select_mode", true)
+                    )
                 }
 
                 BusProfileItem(Icons.Default.Info, "Maintenance: ${bus.maintenanceStatus}")

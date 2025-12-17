@@ -232,6 +232,7 @@
 
 package com.example.busmate.data
 
+import android.util.Log
 import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 import com.google.firebase.database.*
@@ -359,15 +360,40 @@ class AdminActionsImpl : AdminActionsInterface {
             })
     }
 
-    override fun getAllBus(
-        callback: (Boolean, List<BusModel>?) -> Unit
-    ) {
+    override fun getAllBus(callback: (Boolean, List<BusModel>?) -> Unit) {
+
         busesRef.addListenerForSingleValueEvent(object : ValueEventListener {
 
             override fun onDataChange(snapshot: DataSnapshot) {
-                val buses = snapshot.children.mapNotNull {
-                    it.getValue(BusModel::class.java)
+
+                val buses = mutableListOf<BusModel>()
+
+                for (child in snapshot.children) {
+
+                    val bus = BusModel(
+                        uid = child.key ?: "",
+                        busNumber = child.child("busNumber")
+                            .getValue(String::class.java) ?: "",
+                        licensePlate = child.child("licensePlate")
+                            .getValue(String::class.java) ?: "",
+                        routeId = child.child("routeId")
+                            .getValue(String::class.java) ?: "",
+                        capacity = child.child("capacity")
+                            .getValue(Int::class.java) ?: 0,
+                        maintenanceStatus = child.child("maintenanceStatus")
+                            .getValue(String::class.java) ?: "Good",
+                        currentLocation = child.child("currentLocation")
+                            .getValue(String::class.java) ?: "Depot",
+                        speed = child.child("speed")
+                            .getValue(Double::class.java) ?: 0.0,
+                        // ✅ SAFE: driver may or may not exist
+                        driver = child.child("driver")
+                            .getValue(UserModel::class.java)
+                    )
+
+                    buses.add(bus)
                 }
+
                 callback(true, buses)
             }
 
@@ -376,6 +402,7 @@ class AdminActionsImpl : AdminActionsInterface {
             }
         })
     }
+
 
     override fun getAllDrivers(
         callback: (Boolean, List<UserModel>?) -> Unit
@@ -396,6 +423,39 @@ class AdminActionsImpl : AdminActionsInterface {
             })
     }
 
+//    override fun assignBusToDriver(
+//        busId: String,
+//        driverId: String,
+//        callback: (Boolean, String) -> Unit
+//    ) {
+//        usersRef.orderByChild("schoolId").equalTo(driverId)
+//            .addListenerForSingleValueEvent(object : ValueEventListener {
+//
+//                override fun onDataChange(driverSnap: DataSnapshot) {
+//                    if (!driverSnap.exists()) {
+//                        callback(false, "Driver Not Found")
+//                        return
+//                    }
+//
+//                    val driver = driverSnap.children.first().getValue(UserModel::class.java)
+//
+//                    busesRef.child(busId)
+//                        .child("driver")
+//                        .setValue(driver)
+//                        .addOnCompleteListener {
+//                            if (it.isSuccessful)
+//                                callback(true, "Driver Assigned Successfully")
+//                            else
+//                                callback(false, "Failed to Assign Driver")
+//                        }
+//                }
+//
+//                override fun onCancelled(error: DatabaseError) {
+//                    callback(false, error.message)
+//                }
+//            })
+//    }
+
     override fun assignBusToDriver(
         busId: String,
         driverId: String,
@@ -403,18 +463,14 @@ class AdminActionsImpl : AdminActionsInterface {
     ) {
         usersRef.orderByChild("schoolId").equalTo(driverId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
-
                 override fun onDataChange(driverSnap: DataSnapshot) {
-                    if (!driverSnap.exists()) {
+                    val driver = driverSnap.children.firstOrNull()?.getValue(UserModel::class.java)
+                    if (driver == null) {
                         callback(false, "Driver Not Found")
                         return
                     }
 
-                    val driver = driverSnap.children.first().getValue(UserModel::class.java)
-
-                    busesRef.child(busId)
-                        .child("driver")
-                        .setValue(driver)
+                    busesRef.child(busId).child("driver").setValue(driver)
                         .addOnCompleteListener {
                             if (it.isSuccessful)
                                 callback(true, "Driver Assigned Successfully")
@@ -428,4 +484,5 @@ class AdminActionsImpl : AdminActionsInterface {
                 }
             })
     }
+
 }
