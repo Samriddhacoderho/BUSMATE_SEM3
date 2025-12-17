@@ -3,39 +3,12 @@ package com.example.busmate.view.dashboard
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.model.SupportModel
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.LightGrayBackground
@@ -59,13 +33,13 @@ fun SupportScreen(viewModel: SupportViewModel) {
     var titleText by remember { mutableStateOf("") }
     var explainText by remember { mutableStateOf("") }
     val message by viewModel.message.collectAsState()
+    val supportMessages by viewModel.supportMessages.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val supportMessages by viewModel.supportMessages.collectAsState()
-    var replyText by remember { mutableStateOf("") }
     val model = activity.intent.getParcelableExtra<UserModel>("model")
+
     val customTextFieldColors = TextFieldDefaults.colors(
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
@@ -79,35 +53,27 @@ fun SupportScreen(viewModel: SupportViewModel) {
         unfocusedTextColor = Color.Black
     )
 
+    // Show snackbars
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                )
+                snackbarHostState.showSnackbar(message)
             }
-
             if (message == "Support request submitted") {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = message,
-                    )
-                }
                 delay(2000)
                 activity.finish()
             }
         }
     }
 
-    LaunchedEffect(model?.typeofUser) {
-        if (model?.typeofUser == "Admin") {
-            viewModel.fetchSupportMessages()
-        }
+    // Fetch all support messages
+    LaunchedEffect(true) {
+        viewModel.fetchSupportMessages()
     }
 
     fun onSupportSubmit() {
         viewModel.writeReport(
-            model?.firstName + model?.lastName,
+            "${model?.firstName} ${model?.lastName}",
             model?.typeofUser,
             titleText,
             explainText
@@ -118,7 +84,7 @@ fun SupportScreen(viewModel: SupportViewModel) {
         SnackbarHost(hostState = snackbarHostState) {
             Snackbar(
                 snackbarData = it,
-                containerColor = if (message.isNotEmpty() && message == "Support request submitted") Color.Green else Color.Red,
+                containerColor = if (message == "Support request submitted") Color.Green else Color.Red,
                 contentColor = Color.White
             )
         }
@@ -126,18 +92,18 @@ fun SupportScreen(viewModel: SupportViewModel) {
 
         if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
 
+            val userSupportMessages = supportMessages.filter { it.uid == model.uid }
+
             LazyColumn(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                // Form for submitting new support
                 item {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
+                        modifier = Modifier.fillMaxSize()
                     ) {
-
-                        // 🔵 TOP BLUE BACKGROUND (updated with logo)
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -146,12 +112,10 @@ fun SupportScreen(viewModel: SupportViewModel) {
                                 .padding(top = 50.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-
-                            // ⭐ Bus Mate Logo (same as Login screen)
                             Image(
                                 painter = painterResource(R.drawable.logo),
                                 contentDescription = "Bus Mate Logo",
-                                colorFilter = ColorFilter.tint(Color(0xFFFFB74D)),  // same orange-yellow tint
+                                colorFilter = ColorFilter.tint(Color(0xFFFFB74D)),
                                 modifier = Modifier.size(140.dp)
                             )
 
@@ -173,7 +137,6 @@ fun SupportScreen(viewModel: SupportViewModel) {
                             )
                         }
 
-                        // WHITE CARD (overlapping)
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -184,30 +147,13 @@ fun SupportScreen(viewModel: SupportViewModel) {
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                         ) {
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp)
-                            ) {
-
-                                // Title Label
-                                Text(
-                                    text = "Title",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.Black,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-
-                                // Title Input
+                            Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+                                Text("Title", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                                 OutlinedTextField(
                                     value = titleText,
                                     onValueChange = { titleText = it },
                                     placeholder = { Text("Add your grievance title here") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(55.dp),
+                                    modifier = Modifier.fillMaxWidth().height(55.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = customTextFieldColors,
                                     singleLine = true
@@ -215,47 +161,25 @@ fun SupportScreen(viewModel: SupportViewModel) {
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                // Explain Label
-                                Text(
-                                    text = "Explain the problem",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.Black,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-
-                                // Explain input
+                                Text("Explain the problem", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                                 OutlinedTextField(
                                     value = explainText,
                                     onValueChange = { explainText = it },
                                     placeholder = { Text("Type your query here") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp),
+                                    modifier = Modifier.fillMaxWidth().height(160.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = customTextFieldColors
                                 )
 
                                 Spacer(modifier = Modifier.height(30.dp))
 
-                                // Button
                                 Button(
                                     onClick = { onSupportSubmit() },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(55.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = BusMateBlue
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                                    modifier = Modifier.fillMaxWidth().height(55.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text(
-                                        text = "SUBMIT",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
+                                    Text("SUBMIT", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                 }
 
                                 Spacer(modifier = Modifier.height(20.dp))
@@ -264,25 +188,34 @@ fun SupportScreen(viewModel: SupportViewModel) {
                                     modifier = Modifier.align(Alignment.CenterHorizontally),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "You can contact us at ",
-                                        color = Color.Gray,
-                                        fontSize = 14.sp
-                                    )
-                                    Text(
-                                        text = "1234567892",
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontSize = 14.sp
-                                    )
+                                    Text("You can contact us at ", color = Color.Gray, fontSize = 14.sp)
+                                    Text("1234567892", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 14.sp)
                                 }
 
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(20.dp))
                             }
                         }
                     }
                 }
+
+                // Display previous support messages + admin replies
+                items(userSupportMessages) { support ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Title: ${support.title}", fontWeight = FontWeight.SemiBold)
+                            Text("Message: ${support.message}")
+                            Text("Reply: ${support.reply.ifEmpty { "No reply yet" }}")
+                        }
+                    }
+                }
             }
+
         } else if (model?.typeofUser == "Admin") {
 
             LazyColumn(
@@ -301,69 +234,50 @@ fun SupportScreen(viewModel: SupportViewModel) {
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "User ID: ${support.uid ?: "N/A"}",
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("User ID: ${support.uid ?: "N/A"}", fontWeight = FontWeight.Bold)
                             Text("Name: ${support.name ?: "N/A"}")
                             Text("User Type: ${support.typeofUser ?: "N/A"}")
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Title: ${support.title ?: "N/A"}",
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text("Title: ${support.title ?: "N/A"}", fontWeight = FontWeight.SemiBold)
                             Text("Message: ${support.message ?: "N/A"}")
-
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Reply input
                             OutlinedTextField(
                                 value = adminReply,
                                 onValueChange = { adminReply = it },
                                 placeholder = { Text("Type your reply here") },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(100.dp),
+                                modifier = Modifier.fillMaxWidth().height(100.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = customTextFieldColors
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Reply button
                             Button(
                                 onClick = {
                                     if (adminReply.isNotEmpty()) {
                                         viewModel.replyToSupport(support.uid ?: "", adminReply)
-                                        adminReply = "" // clear input after reply
+                                        adminReply = ""
                                     }
                                 },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(45.dp),
+                                modifier = Modifier.fillMaxWidth().height(45.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(
-                                    text = "REPLY",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
+                                Text("REPLY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                         }
                     }
                 }
             }
+
         } else {
             LazyColumn(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                item {
-                    Text("User type not recognized")
-                }
+                item { Text("User type not recognized") }
             }
         }
     }

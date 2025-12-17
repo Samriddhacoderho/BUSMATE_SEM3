@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
 class SupportRepositoryImpl : SupportRepositoryInterface {
+
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -14,13 +15,12 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
         callback: (String, Boolean) -> Unit
     ) {
         try {
-            val uid = auth.currentUser?.uid
-            if (uid == null) {
+            val uid = auth.currentUser?.uid ?: run {
                 callback("User not logged in", false)
                 return
             }
 
-            val updatedSupport=model.copy(uid = uid)
+            val updatedSupport = model.copy(uid = uid)
 
             firestore.collection("support")
                 .document(uid)
@@ -32,15 +32,25 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
             callback("Failed to submit: ${e.message}", false)
         }
     }
+
     override suspend fun fetchSupportMessages(callback: (List<SupportModel>) -> Unit) {
         try {
-            val snapshot = firestore.collection("support").get().await()
-            val list = snapshot.documents.mapNotNull { it.toObject(SupportModel::class.java) }
-            callback(list)
+            firestore.collection("support")
+                .addSnapshotListener { snapshot, exception ->
+                    if (exception != null) {
+                        callback(emptyList())
+                        return@addSnapshotListener
+                    }
+                    val list = snapshot?.documents
+                        ?.mapNotNull { it.toObject(SupportModel::class.java) }
+                        ?: emptyList()
+                    callback(list)
+                }
         } catch (e: Exception) {
             callback(emptyList())
         }
     }
+
     override suspend fun replyToSupport(
         supportId: String,
         replyMessage: String,
@@ -60,7 +70,4 @@ class SupportRepositoryImpl : SupportRepositoryInterface {
             callback("Error: ${e.message}", false)
         }
     }
-
-
-
 }

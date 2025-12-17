@@ -50,7 +50,6 @@ class ParentDashboardActivity : ComponentActivity() {
         }
     }
 }
-
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
 fun ParentDashboardScreen(

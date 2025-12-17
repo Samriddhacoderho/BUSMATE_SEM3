@@ -8,33 +8,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel(){
+class SupportViewModel(private val repository: SupportRepositoryInterface) : ViewModel() {
+
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
     private val _supportMessages = MutableStateFlow<List<SupportModel>>(emptyList())
     val supportMessages: StateFlow<List<SupportModel>> = _supportMessages
 
-    fun writeReport(name: String, typeofUser: String?, title: String, mess_age: String){
+    fun writeReport(name: String, typeofUser: String?, title: String, mess_age: String) {
         viewModelScope.launch {
-            _message.value="Loading"
+            _message.value = "Loading"
             try {
-                val support= SupportModel(
-                    name =name,
-                    typeofUser =typeofUser,
-                    title =title,
+                val support = SupportModel(
+                    name = name,
+                    typeofUser = typeofUser,
+                    title = title,
                     message = mess_age
                 )
-
-                repository.writeSupport(support) { responseMessage, success ->
+                repository.writeSupport(support) { responseMessage, _ ->
                     _message.value = responseMessage
                 }
-
-            }catch (e: Exception){
+            } catch (e: Exception) {
                 _message.value = e.toString()
             }
         }
     }
+
     fun fetchSupportMessages() {
         viewModelScope.launch {
             repository.fetchSupportMessages { messages ->
@@ -42,14 +42,15 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
             }
         }
     }
+
     fun replyToSupport(supportId: String, replyMessage: String) {
         viewModelScope.launch {
             _message.value = "Sending reply..."
             try {
                 repository.replyToSupport(supportId, replyMessage) { response, success ->
                     _message.value = response
-                    if(success){
-                        fetchSupportMessages() // refresh list after reply
+                    if (success) {
+                        fetchSupportMessages() // real-time refresh
                     }
                 }
             } catch (e: Exception) {
@@ -57,5 +58,4 @@ class SupportViewModel(val repository: SupportRepositoryInterface) : ViewModel()
             }
         }
     }
-
 }
