@@ -7,69 +7,67 @@ import com.google.firebase.database.*
 class SupportRepositoryImpl : SupportRepositoryInterface {
 
     private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseDatabase.getInstance()
-    private val supportRef = db.getReference("support")
+    private val database = FirebaseDatabase.getInstance()
+    private val supportRef = database.getReference("support")
 
-    override fun writeSupport(
+    override suspend fun writeSupport(
         model: SupportModel,
-        callback: (Boolean, String) -> Unit
+        callback: (String, Boolean) -> Unit
     ) {
         val uid = auth.currentUser?.uid
         if (uid == null) {
-            callback(false, "User not logged in")
+            callback("User not logged in", false)
             return
         }
 
-        val updatedModel = model.copy(uid = uid)
+        val supportId = supportRef.push().key
+        if (supportId == null) {
+            callback("Failed to generate support ID", false)
+            return
+        }
 
-        supportRef.child(uid)
-            .setValue(updatedModel)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Support request submitted")
-                } else {
-                    callback(false, it.exception?.message ?: "Failed to submit support")
-                }
+        val updatedSupport = model.copy(uid = uid)
+
+        supportRef.child(supportId)
+            .setValue(updatedSupport)
+            .addOnSuccessListener {
+                callback("Support request submitted", true)
+            }
+            .addOnFailureListener {
+                callback(it.message ?: "Failed to submit support", false)
             }
     }
 
-    override fun fetchSupportMessages(
-        callback: (Boolean, String, List<SupportModel>) -> Unit
+    override suspend fun fetchSupportMessages(
+        callback: (List<SupportModel>) -> Unit
     ) {
-        supportRef.addListenerForSingleValueEvent(object : ValueEventListener {
+        supportRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val list = mutableListOf<SupportModel>()
-
-                for (child in snapshot.children) {
-                    val support = child.getValue(SupportModel::class.java)
-                    if (support != null) list.add(support)
+                val list = snapshot.children.mapNotNull {
+                    it.getValue(SupportModel::class.java)
                 }
-
-                callback(true, "Support messages loaded", list)
+                callback(list)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                callback(false, error.message, emptyList())
+                callback(emptyList())
             }
         })
     }
 
-    override fun replyToSupport(
+    override suspend fun replyToSupport(
         supportId: String,
         replyMessage: String,
-        callback: (Boolean, String) -> Unit
+        callback: (String, Boolean) -> Unit
     ) {
         supportRef.child(supportId)
             .child("reply")
             .setValue(replyMessage)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Reply sent successfully")
-                } else {
-                    callback(false, it.exception?.message ?: "Failed to send reply")
-                }
+            .addOnSuccessListener {
+                callback("Reply sent successfully", true)
+            }
+            .addOnFailureListener {
+                callback(it.message ?: "Failed to send reply", false)
             }
     }
 }
-
-//testing repo after clone

@@ -4,20 +4,18 @@ import com.example.busmate.model.SupportModel
 import javax.security.auth.callback.Callback
 
 interface SupportRepositoryInterface {
-    fun writeSupport(
+    suspend fun writeSupport(
         model: SupportModel,
-        callback: (Boolean, String) -> Unit
+        callback: (String, Boolean) -> Unit
     )
 
-    fun fetchSupportMessages(
-        callback: (Boolean, String, List<SupportModel>) -> Unit
+    suspend fun fetchSupportMessages(
+        callback: (List<SupportModel>) -> Unit
     )
 
-    fun replyToSupport(
+    suspend fun replyToSupport(
         supportId: String,
         replyMessage: String,
-        callback: (Boolean, String) -> Unit
+        callback: (String, Boolean) -> Unit
     )
-
-
 }
