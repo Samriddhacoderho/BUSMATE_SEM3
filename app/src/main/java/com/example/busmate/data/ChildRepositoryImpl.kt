@@ -2,60 +2,66 @@ package com.example.busmate.data
 
 import com.example.busmate.model.ChildModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.FirebaseDatabase
 
+class ChildRepositoryImpl : ChildRepositoryInterface {
 
-class ChildRepositoryImpl : ChildRepositoryInterface{
     private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseDatabase.getInstance()
 
-    override suspend fun addChild(model: ChildModel, callback: (String, Boolean) -> Unit) {
+    private val usersRef = db.getReference("users")
+    private val studentIndexRef = db.getReference("studentIdIndex")
+
+    override fun addChild(
+        model: ChildModel,
+        callback: (String, Boolean) -> Unit
+    ) {
+
         val parentUid = auth.currentUser?.uid
         if (parentUid == null) {
-            callback("User not logged in (Parent UID missing)", false)
+            callback("User not logged in", false)
             return
         }
 
+        // 1️⃣ Check uniqueness of Student ID
+        studentIndexRef.child(model.studentId)
+            .get()
+            .addOnSuccessListener { snapshot ->
 
-        try {
-            val uniqueIndexDoc = firestore.collection("studentIdIndex")
-                .document(model.studentId)
-                .get()
-                .await()
+                if (snapshot.exists()) {
+                    callback(
+                        "Registration failed: Student ID ${model.studentId} already exists",
+                        false
+                    )
+                    return@addOnSuccessListener
+                }
 
-            if (uniqueIndexDoc.exists()) {
-                callback("Registration failed: Student ID ${model.studentId} is already registered.", false)
-                return
-            }
-
-            // 2. Perform Atomic Write (Transaction)
-            firestore.runTransaction { transaction ->
-
-                // 2a. Add the child to the Parent's nested map
-                val parentRef = firestore.collection("users").document(parentUid)
-
-                transaction.update(
-                    parentRef,
-                    "children.${model.studentId}",
-                    model.toMap()
+                // 2️⃣ Atomic multi-path update
+                val updates = hashMapOf<String, Any>(
+                    "/users/$parentUid/children/${model.studentId}" to model,
+                    "/studentIdIndex/${model.studentId}" to mapOf(
+                        "parentUid" to parentUid,
+                        "timestamp" to System.currentTimeMillis()
+                    )
                 )
 
-
-                val indexRef = firestore.collection("studentIdIndex").document(model.studentId)
-                transaction.set(indexRef, mapOf(
-                    "parentUid" to parentUid,
-                    "timestamp" to FieldValue.serverTimestamp()
-                ))
-
-                null // Transaction completes successfully
-            }.await()
-
-            callback("Child ${model.firstName} successfully added", true)
-
-        } catch (e: Exception) {
-            callback("Failed to add child: ${e.message}", false)
-        }
+                db.reference.updateChildren(updates)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            callback(
+                                "Child ${model.firstName} successfully added",
+                                true
+                            )
+                        } else {
+                            callback(
+                                "Failed to add child: ${task.exception?.message}",
+                                false
+                            )
+                        }
+                    }
+            }
+            .addOnFailureListener {
+                callback("Failed to verify Student ID", false)
+            }
     }
 }
