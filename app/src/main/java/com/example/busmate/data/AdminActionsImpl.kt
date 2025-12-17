@@ -424,39 +424,6 @@ class AdminActionsImpl : AdminActionsInterface {
             })
     }
 
-//    override fun assignBusToDriver(
-//        busId: String,
-//        driverId: String,
-//        callback: (Boolean, String) -> Unit
-//    ) {
-//        usersRef.orderByChild("schoolId").equalTo(driverId)
-//            .addListenerForSingleValueEvent(object : ValueEventListener {
-//
-//                override fun onDataChange(driverSnap: DataSnapshot) {
-//                    if (!driverSnap.exists()) {
-//                        callback(false, "Driver Not Found")
-//                        return
-//                    }
-//
-//                    val driver = driverSnap.children.first().getValue(UserModel::class.java)
-//
-//                    busesRef.child(busId)
-//                        .child("driver")
-//                        .setValue(driver)
-//                        .addOnCompleteListener {
-//                            if (it.isSuccessful)
-//                                callback(true, "Driver Assigned Successfully")
-//                            else
-//                                callback(false, "Failed to Assign Driver")
-//                        }
-//                }
-//
-//                override fun onCancelled(error: DatabaseError) {
-//                    callback(false, error.message)
-//                }
-//            })
-//    }
-
     override fun assignBusToDriver(
         busId: String,
         driverId: String,
