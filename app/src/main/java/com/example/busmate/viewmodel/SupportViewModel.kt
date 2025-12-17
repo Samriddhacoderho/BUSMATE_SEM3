@@ -1,14 +1,14 @@
 package com.example.busmate.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.SupportRepositoryInterface
 import com.example.busmate.model.SupportModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
-class SupportViewModel(private val repository: SupportRepositoryInterface) : ViewModel() {
+class SupportViewModel(
+    private val repository: SupportRepositoryInterface
+) : ViewModel() {
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
@@ -16,45 +16,44 @@ class SupportViewModel(private val repository: SupportRepositoryInterface) : Vie
     private val _supportMessages = MutableStateFlow<List<SupportModel>>(emptyList())
     val supportMessages: StateFlow<List<SupportModel>> = _supportMessages
 
-    fun writeReport(name: String, typeofUser: String?, title: String, mess_age: String) {
-        viewModelScope.launch {
-            _message.value = "Loading"
-            try {
-                val support = SupportModel(
-                    name = name,
-                    typeofUser = typeofUser,
-                    title = title,
-                    message = mess_age
-                )
-                repository.writeSupport(support) { responseMessage, _ ->
-                    _message.value = responseMessage
-                }
-            } catch (e: Exception) {
-                _message.value = e.toString()
-            }
+    fun writeReport(
+        name: String,
+        typeofUser: String?,
+        title: String,
+        mess_age: String
+    ) {
+        _message.value = "Loading..."
+
+        val support = SupportModel(
+            name = name,
+            typeofUser = typeofUser,
+            title = title,
+            message = mess_age
+        )
+
+        repository.writeSupport(support) { success, msg ->
+            _message.value = msg
         }
     }
 
     fun fetchSupportMessages() {
-        viewModelScope.launch {
-            repository.fetchSupportMessages { messages ->
-                _supportMessages.value = messages
+        _message.value = "Loading..."
+
+        repository.fetchSupportMessages { success, msg, list ->
+            _message.value = msg
+            if (success) {
+                _supportMessages.value = list
             }
         }
     }
 
     fun replyToSupport(supportId: String, replyMessage: String) {
-        viewModelScope.launch {
-            _message.value = "Sending reply..."
-            try {
-                repository.replyToSupport(supportId, replyMessage) { response, success ->
-                    _message.value = response
-                    if (success) {
-                        fetchSupportMessages() // real-time refresh
-                    }
-                }
-            } catch (e: Exception) {
-                _message.value = e.message ?: "Failed to send reply"
+        _message.value = "Sending reply..."
+
+        repository.replyToSupport(supportId, replyMessage) { success, msg ->
+            _message.value = msg
+            if (success) {
+                fetchSupportMessages()
             }
         }
     }

@@ -59,7 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.ui)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.foundation) //added by keshab for material icons
+    implementation(libs.androidx.foundation)
+    implementation(libs.firebase.database.ktx) //added by keshab for material icons
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,6 +71,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-database")
     implementation("com.airbnb.android:lottie-compose:6.6.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.multidex:multidex:2.0.1")

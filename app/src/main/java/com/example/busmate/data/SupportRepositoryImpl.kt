@@ -2,72 +2,72 @@ package com.example.busmate.data
 
 import com.example.busmate.model.SupportModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.*
 
 class SupportRepositoryImpl : SupportRepositoryInterface {
 
     private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseDatabase.getInstance()
+    private val supportRef = db.getReference("support")
 
-    override suspend fun writeSupport(
+    override fun writeSupport(
         model: SupportModel,
-        callback: (String, Boolean) -> Unit
+        callback: (Boolean, String) -> Unit
     ) {
-        try {
-            val uid = auth.currentUser?.uid ?: run {
-                callback("User not logged in", false)
-                return
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            callback(false, "User not logged in")
+            return
+        }
+
+        val updatedModel = model.copy(uid = uid)
+
+        supportRef.child(uid)
+            .setValue(updatedModel)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "Support request submitted")
+                } else {
+                    callback(false, it.exception?.message ?: "Failed to submit support")
+                }
+            }
+    }
+
+    override fun fetchSupportMessages(
+        callback: (Boolean, String, List<SupportModel>) -> Unit
+    ) {
+        supportRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<SupportModel>()
+
+                for (child in snapshot.children) {
+                    val support = child.getValue(SupportModel::class.java)
+                    if (support != null) list.add(support)
+                }
+
+                callback(true, "Support messages loaded", list)
             }
 
-            val updatedSupport = model.copy(uid = uid)
-
-            firestore.collection("support")
-                .document(uid)
-                .set(updatedSupport.toMap())
-                .await()
-
-            callback("Support request submitted", true)
-        } catch (e: Exception) {
-            callback("Failed to submit: ${e.message}", false)
-        }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, emptyList())
+            }
+        })
     }
 
-    override suspend fun fetchSupportMessages(callback: (List<SupportModel>) -> Unit) {
-        try {
-            firestore.collection("support")
-                .addSnapshotListener { snapshot, exception ->
-                    if (exception != null) {
-                        callback(emptyList())
-                        return@addSnapshotListener
-                    }
-                    val list = snapshot?.documents
-                        ?.mapNotNull { it.toObject(SupportModel::class.java) }
-                        ?: emptyList()
-                    callback(list)
-                }
-        } catch (e: Exception) {
-            callback(emptyList())
-        }
-    }
-
-    override suspend fun replyToSupport(
+    override fun replyToSupport(
         supportId: String,
         replyMessage: String,
-        callback: (String, Boolean) -> Unit
+        callback: (Boolean, String) -> Unit
     ) {
-        try {
-            firestore.collection("support")
-                .document(supportId)
-                .update("reply", replyMessage)
-                .addOnSuccessListener {
-                    callback("Reply sent successfully", true)
+        supportRef.child(supportId)
+            .child("reply")
+            .setValue(replyMessage)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "Reply sent successfully")
+                } else {
+                    callback(false, it.exception?.message ?: "Failed to send reply")
                 }
-                .addOnFailureListener { e ->
-                    callback("Failed to send reply: ${e.message}", false)
-                }
-        } catch (e: Exception) {
-            callback("Error: ${e.message}", false)
-        }
+            }
     }
 }
