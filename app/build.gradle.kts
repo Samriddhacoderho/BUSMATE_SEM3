@@ -85,5 +85,6 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
 //    implementation("com.baato:baato-android:1.1.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.6")
 }
 
