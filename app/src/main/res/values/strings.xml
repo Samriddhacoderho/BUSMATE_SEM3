@@ -28,5 +28,6 @@
     <!--    DO NOT SHARE THIS API KOILAI PANI HAI!!!-->
     <string name="google_maps_api_key">AIzaSyD3AGMHKSR2Eq1tlnFg5d3H3csR1v7K3PY</string>
     <string name="title_activity_dark_mood_setting">DarkMoodSettingActivity</string>
+    <string name="title_activity_trip">TripActivity</string>
 
 </resources>
