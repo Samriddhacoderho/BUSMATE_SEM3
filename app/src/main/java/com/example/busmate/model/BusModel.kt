@@ -5,19 +5,16 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class BusModel(
-    val uid: String="",
-    val busNumber: String = "", // Internal Bus ID (e.g., "Bus 15")
-    val licensePlate: String = "",
-
-    val routeId: String = "",
-    val capacity: Int = 0,
-    val maintenanceStatus: String = "Good",
-    val currentLocation: String = "Depot",
-    val speed: Double = 0.0,
-    val driver: UserModel? = null,
-
-
-    ) : Parcelable {
+    var uid: String = "",
+    var busNumber: String = "",
+    var licensePlate: String = "",
+    var routeId: String = "",
+    var capacity: Int = 0,
+    var maintenanceStatus: String = "Good",
+    var currentLocation: String = "Depot",
+    var speed: Double = 0.0,
+    var driver: UserModel? = null  // nullable for Realtime DB safety
+) : Parcelable {
     fun toMap(): Map<String, Any?> {
         return mapOf(
             "uid" to uid,
@@ -28,7 +25,7 @@ data class BusModel(
             "maintenanceStatus" to maintenanceStatus,
             "currentLocation" to currentLocation,
             "speed" to speed,
-            "driver" to driver?.toMap() // nullable OK
+            "driver" to driver?.toMap()
         )
     }
 }
