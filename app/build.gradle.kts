@@ -59,7 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.ui)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.foundation) //added by keshab for material icons
+    implementation(libs.androidx.foundation)
+    implementation(libs.firebase.database) //added by keshab for material icons
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -84,5 +85,6 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
 //    implementation("com.baato:baato-android:1.1.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.6")
 }
 
