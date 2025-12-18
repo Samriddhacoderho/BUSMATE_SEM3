@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -26,12 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.model.ChildModel
 import com.example.busmate.model.UserModel
-import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
+import androidx.compose.foundation.lazy.items
 
 @Composable
 fun HomeScreen() {
@@ -44,81 +44,79 @@ fun HomeScreen() {
     }
 
     val navigateToAddChild: () -> Unit = {
-        val intent = Intent(context, AddChildActivity::class.java)
-        context.startActivity(intent)
+        context.startActivity(Intent(context, AddChildActivity::class.java))
     }
+
     val navigateToAddBus: () -> Unit = {
-        val intent = Intent(context, BusScreen::class.java)
-        context.startActivity(intent)
+        context.startActivity(Intent(context, BusScreen::class.java))
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background   // ✔ Dark mode support
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
 
         LazyColumn(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        )
-        {
+        ) {
+
+            // 🔹 HEADER
             item {
+                if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
+                    WelcomeCardScreen(
+                        parentName = "${model?.firstName} ${model?.lastName}",
+                        model = model
+                    )
+                } else {
+                    WelcomeCardAdmin("${model?.firstName} ${model?.lastName}")
+                }
 
-
-                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") WelcomeCardScreen(model?.firstName + " " + model?.lastName,model) else (WelcomeCardAdmin(model?.firstName + " " + model?.lastName))
-
-                MyChildrenHeaderScreen(model, onAddChildClick = navigateToAddChild)
-
-                ChildTrackingCardScreen(
-                    childName =
-                        if (model?.typeofUser == "Parent") "Swikrit Ghimire"
-                        else if (model?.typeofUser == "Driver") "Bus No: 1522"
-                        else "Harwinder Singh",
-
-                    statusText =
-                        if (model?.typeofUser == "Parent") "Reached School"
-                        else if (model?.typeofUser == "Driver") "Duty Completed"
-                        else "Reached School",
-
-                    subText =
-                        if (model?.typeofUser == "Parent") "Bus No: 1511\n2 min ago"
-                        else if (model?.typeofUser == "Driver") "Helper Name: Sandip"
-                        else "Bus No: 1511\n9812668800",
-
-                    statusColor = BusMateGreen,
-                    imageResource =
-                        if (model?.typeofUser == "Parent") R.drawable.boy
-                        else if (model?.typeofUser == "Driver") R.drawable.schoolbus
-                        else R.drawable.driver,
-
-                    mapImageResource = R.drawable.school
+                MyChildrenHeaderScreen(
+                    model = model,
+                    onAddChildClick = navigateToAddChild
                 )
+            }
 
-                ChildTrackingCardScreen(
-                    childName =
-                        if (model?.typeofUser == "Parent") "Shahana Katwal"
-                        else if (model?.typeofUser == "Driver") "Bus No: 1543"
-                        else "Ramesh Pathak",
+            // 🔹 CHILD LIST (DYNAMIC)
+            if (model?.typeofUser == "Parent") {
 
-                    statusText =
-                        if (model?.typeofUser == "Parent") "In Bus"
-                        else if (model?.typeofUser == "Driver") "Duty on 2:00 PM"
-                        else "Driving",
+                val childrenList: List<ChildModel> =
+                    model?.children?.values?.toList().orEmpty()
 
-                    subText =
-                        if (model?.typeofUser == "Parent") "Bus No: 1533\n8 min ago"
-                        else if (model?.typeofUser == "Driver") "Helper Name: Raju"
-                        else "Bus No: 1533\n9800112236",
+                if (childrenList.isEmpty()) {
 
-                    statusColor = BusMateOrange,
-                    imageResource =
-                        if (model?.typeofUser == "Parent") R.drawable.girl
-                        else if (model?.typeofUser == "Driver") R.drawable.schoolbus
-                        else R.drawable.driver,
+                    item {
+                        Text(
+                            text = "No children added yet",
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                    mapImageResource = R.drawable.map
-                )
-                if(model?.typeofUser=="Parent" || model?.typeofUser=="Driver") NotificationsAlertHeaderScreen() else NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+                } else {
+
+                    items(childrenList) { child ->
+
+                        ChildTrackingCardScreen(
+                            childName = "${child.firstName} ${child.lastName}",
+                            statusText = "On Route",
+                            subText = "Student ID: ${child.studentId}\nRoute: ${child.busRouteId}",
+                            statusColor = BusMateGreen,
+                            imageResource = R.drawable.boy,
+                            mapImageResource = R.drawable.map
+                        )
+                    }
+                }
+            }
+
+            // 🔹 FOOTER
+            item {
+                if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
+                    NotificationsAlertHeaderScreen()
+                } else {
+                    NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+                }
             }
         }
     }
