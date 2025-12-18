@@ -1,12 +1,13 @@
-package com.example.busmate.model
+package com.example.busmate.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import com.example.busmate.data.AccelerometerRepository
 import com.example.busmate.data.AccelerometerRepositoryImpl
+import com.example.busmate.model.AccelerometerModel
 
-class AccelRecieverModel(application: Application): AndroidViewModel(application) {
+class AccelRecieverViewModel(application: Application): AndroidViewModel(application) {
     private val repository: AccelerometerRepository =
         AccelerometerRepositoryImpl(application.applicationContext)
 

@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.busmate.model.AccelRecieverModel
+import com.example.busmate.viewmodel.AccelRecieverViewModel
 import com.example.busmate.model.AccelerometerModel
 
 class ChildTripDetails : ComponentActivity() {
@@ -38,7 +38,7 @@ class ChildTripDetails : ComponentActivity() {
 @Composable
 fun ChildTripDetailsScreen(
     childName: String,
-    viewModel: AccelRecieverModel = viewModel()
+    viewModel: AccelRecieverViewModel = viewModel()
 ) {
     // Observe live accelerometer data
     val remoteData by viewModel.firebaseReading.observeAsState(AccelerometerModel())
