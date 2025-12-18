@@ -11,9 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,10 +30,11 @@ import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
+import com.example.busmate.view.TripActivity
 
 @Composable
 fun HomeScreen(
-    children: List<ChildModel>
+    children: List<ChildModel> = emptyList()
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -44,12 +43,19 @@ fun HomeScreen(
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
-    val navigateToAddChild: () -> Unit = {
+    val navigateToAddChild = {
         context.startActivity(Intent(context, AddChildActivity::class.java))
     }
 
-    val navigateToAddBus: () -> Unit = {
+    val navigateToAddBus = {
         context.startActivity(Intent(context, BusScreen::class.java))
+    }
+
+    val navigateToTrip = {
+        val intent = Intent(context, TripActivity::class.java).apply {
+            putExtra("EXTRA_DRIVER_UID", model?.uid)
+        }
+        context.startActivity(intent)
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
@@ -78,7 +84,10 @@ fun HomeScreen(
 
             // CHILD LIST
             if (model?.typeofUser == "Parent") {
-                val childrenList = children
+
+                val childrenList =
+                    if (children.isNotEmpty()) children
+                    else model?.children?.values?.toList().orEmpty()
 
                 if (childrenList.isEmpty()) {
                     item {
@@ -102,12 +111,38 @@ fun HomeScreen(
                 }
             }
 
-            // FOOTER
+            // FOOTER (NOTIFICATIONS)
             item {
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
                     NotificationsAlertHeaderScreen()
                 } else {
                     NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+                }
+            }
+
+            // DRIVER → GO TO TRIP
+            if (model?.typeofUser == "Driver") {
+                item {
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    Button(
+                        onClick = navigateToTrip,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Go to Trip",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
@@ -164,11 +199,7 @@ fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
+                Icon(Icons.Filled.LocationOn, contentDescription = null)
                 Spacer(Modifier.width(5.dp))
                 Text(
                     "Tracking Live",
