@@ -6,7 +6,7 @@ import androidx.lifecycle.LiveData
 import com.example.busmate.data.AccelerometerRepository
 import com.example.busmate.data.AccelerometerRepositoryImpl
 
-class AccelRecieverViewModel(application: Application): AndroidViewModel(application) {
+class AccelRecieverModel(application: Application): AndroidViewModel(application) {
     private val repository: AccelerometerRepository =
         AccelerometerRepositoryImpl(application.applicationContext)
 
