@@ -36,7 +36,6 @@ import com.example.busmate.view.TripActivity
 fun HomeScreen(
     children: List<ChildModel> = emptyList()
 ) {
-
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -60,7 +59,6 @@ fun HomeScreen(
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,7 +120,7 @@ fun HomeScreen(
                 }
             }
 
-            // DRIVER → GO TO TRIP BUTTON
+            // DRIVER → GO TO TRIP
             if (model?.typeofUser == "Driver") {
                 item {
                     Spacer(modifier = Modifier.height(30.dp))
@@ -201,11 +199,7 @@ fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
+                Icon(Icons.Filled.LocationOn, contentDescription = null)
                 Spacer(Modifier.width(5.dp))
                 Text(
                     "Tracking Live",
@@ -227,7 +221,6 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Text(
             text = when (model?.typeofUser) {
                 "Parent" -> "My Children"
@@ -235,7 +228,8 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
                 else -> "View Buses"
             },
             fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         if (model?.typeofUser == "Parent") {
@@ -244,7 +238,7 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.height(35.dp)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.Add, contentDescription = "Add Child", modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Add Child", fontSize = 14.sp)
             }
@@ -274,7 +268,6 @@ fun ChildTrackingCardScreen(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Row(
                 modifier = Modifier.weight(0.8f),
                 verticalAlignment = Alignment.CenterVertically
@@ -291,7 +284,11 @@ fun ChildTrackingCardScreen(
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
-                    Text(childName, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = childName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -303,6 +300,7 @@ fun ChildTrackingCardScreen(
                         Text(
                             text = statusText,
                             color = Color.White,
+                            fontSize = 12.sp,
                             modifier = Modifier.padding(8.dp)
                         )
                     }
@@ -364,7 +362,6 @@ fun NotificationItemScreen(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -411,7 +408,6 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Text(
             text = "Notifications & Alerts",
             fontSize = 18.sp,
