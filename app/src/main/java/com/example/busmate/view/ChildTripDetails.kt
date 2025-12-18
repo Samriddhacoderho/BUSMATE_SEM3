@@ -8,8 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +27,11 @@ class ChildTripDetails : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Get child name from intent or use default
-            val childName = intent.getStringExtra("CHILD_NAME") ?: "Swikrit"
-            ChildTripDetailsScreen(childName = childName)
+            // 1. Get child details and the CRITICAL Bus UID from the intent
+            val childName = intent.getStringExtra("CHILD_NAME") ?: "Student"
+            val busUid = intent.getStringExtra("BUS_UID") ?: ""
+
+            ChildTripDetailsScreen(childName = childName, busUid = busUid)
         }
     }
 }
@@ -38,12 +39,17 @@ class ChildTripDetails : ComponentActivity() {
 @Composable
 fun ChildTripDetailsScreen(
     childName: String,
+    busUid: String,
     viewModel: AccelRecieverViewModel = viewModel()
 ) {
+    // 2. Trigger the sync as soon as the screen opens
+    LaunchedEffect(busUid) {
+        viewModel.startTrackingBus(busUid)
+    }
+
     // Observe live accelerometer data
     val remoteData by viewModel.firebaseReading.observeAsState(AccelerometerModel())
 
-    // Modern Blue to Purple Gradient
     val bluePurpleGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF2196F3), Color(0xFF673AB7))
     )
@@ -55,7 +61,6 @@ fun ChildTripDetailsScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Main Information Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -76,7 +81,6 @@ fun ChildTripDetailsScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Header
                     Text(
                         text = "Real-time Trip Details",
                         color = Color.White.copy(alpha = 0.8f),
@@ -84,10 +88,9 @@ fun ChildTripDetailsScreen(
                         fontWeight = FontWeight.Medium
                     )
 
-                    // Unified Data Rows
                     TripDetailRow(label = "Student Name", value = childName)
 
-                    // Speed Data (Now same size as other fields)
+                    // Displays the live speed from Firebase
                     TripDetailRow(
                         label = "Current Speed",
                         value = "${"%.1f".format(remoteData.speedMps)} KM/H"
@@ -95,9 +98,8 @@ fun ChildTripDetailsScreen(
 
                     HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
 
-                    // Static Placeholder Data
-                    TripDetailRow(label = "Bus Plate", value = "BA PAA 1234")
-                    TripDetailRow(label = "Driver", value = "Ram Bahadur")
+                    TripDetailRow(label = "Bus ID", value = busUid.take(8)) // showing part of ID for debug
+                    TripDetailRow(label = "Status", value = "Live")
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -111,13 +113,11 @@ fun ChildTripDetailsScreen(
             }
         }
 
-        // Text below the card
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Map Card below",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
+            text = "Tracking Bus: $busUid",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+            fontSize = 12.sp
         )
     }
 }
@@ -129,17 +129,7 @@ fun TripDetailRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.9f),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal
-        )
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = label, color = Color.White.copy(alpha = 0.9f), fontSize = 16.sp)
+        Text(text = value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }

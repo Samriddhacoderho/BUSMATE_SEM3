@@ -1,4 +1,5 @@
 package com.example.busmate.data
+
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -7,55 +8,51 @@ import android.hardware.SensorManager
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.busmate.model.AccelerometerModel
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import kotlin.math.sqrt
 
 class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, SensorEventListener {
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-    private val liveReadingRef: DatabaseReference =
-        database.getReference("live_speedometer_data").child("current_reading")
-
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    private var isSensorRegistered = false
 
-    private val ALPHA = 0.8f
-    private val SHAKE_THRESHOLD = 0.5f
-    private val SCALING_FACTOR = 10.0f
-    private val UPLOAD_INTERVAL_MS = 500L
-    private var lastUploadTime = 0L
+    private var activeBusUid: String? = null
+    private var isSensorRegistered = false
 
     private val _currentSpeedMps = MutableLiveData(0f)
     override val currentSpeedMps: LiveData<Float> = _currentSpeedMps
 
-    // NEW: LiveData and Listener for Retrieval
     private val _firebaseData = MutableLiveData<AccelerometerModel>()
     override val firebaseData: LiveData<AccelerometerModel> = _firebaseData
-    private var firebaseListener: ValueEventListener? = null
 
     private var gravity = floatArrayOf(0f, 0f, 0f)
+    private val ALPHA = 0.8f
+    private val SHAKE_THRESHOLD = 0.5f
+    private val SCALING_FACTOR = 10.0f
+    private var lastUploadTime = 0L
 
-    override fun startSyncingFromFirebase() {
-        firebaseListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val data = snapshot.getValue(AccelerometerModel::class.java)
-                data?.let { _firebaseData.postValue(it) }
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        }
-        liveReadingRef.addValueEventListener(firebaseListener!!)
+    override fun startListening(driverUid: String) {
+        // Step 1: Query buses to find the one where this driver is assigned
+        database.getReference("buses")
+            .orderByChild("driver/uid")
+            .equalTo(driverUid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Get the first bus found (the key like -OgeXRJ...)
+                        val busNode = snapshot.children.first()
+                        activeBusUid = busNode.key
+
+                        // Step 2: Register hardware sensors
+                        registerSensors()
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
-    override fun stopSyncingFromFirebase() {
-        firebaseListener?.let { liveReadingRef.removeEventListener(it) }
-    }
-
-    override fun startListening() {
-        if (accelerometer == null) return
+    private fun registerSensors() {
+        if (accelerometer == null || isSensorRegistered) return
         gravity = floatArrayOf(0f, 0f, 0f)
         lastUploadTime = System.currentTimeMillis()
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
@@ -67,8 +64,9 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
             sensorManager.unregisterListener(this)
             isSensorRegistered = false
         }
+        sendDataToFirebase(0f, isFinal = true)
+        activeBusUid = null
         _currentSpeedMps.postValue(0f)
-        sendDataToFirebase(scaledValue = 0f, isFinal = true)
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -87,19 +85,25 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
                     Math.pow((az - gravity[2]).toDouble(), 2.0)
         ).toFloat()
 
-        val finalDisplayValue = if (movementMagnitude < SHAKE_THRESHOLD) 0f else movementMagnitude * SCALING_FACTOR
-        _currentSpeedMps.postValue(finalDisplayValue)
-        sendDataToFirebase(finalDisplayValue)
+        val finalValue = if (movementMagnitude < SHAKE_THRESHOLD) 0f else movementMagnitude * SCALING_FACTOR
+        _currentSpeedMps.postValue(finalValue)
+        sendDataToFirebase(finalValue)
     }
 
-    private fun sendDataToFirebase(scaledValue: Float, isFinal: Boolean = false) {
+    private fun sendDataToFirebase(value: Float, isFinal: Boolean = false) {
+        val busId = activeBusUid ?: return
         val currentTime = System.currentTimeMillis()
-        if (isFinal || currentTime - lastUploadTime >= UPLOAD_INTERVAL_MS) {
-            val reading = AccelerometerModel(timestamp = currentTime, speedMps = scaledValue)
-            liveReadingRef.setValue(reading)
+
+        if (isFinal || currentTime - lastUploadTime >= 500L) {
+            // Target: buses -> {busId} -> speed
+            database.getReference("buses").child(busId).child("speed")
+                .setValue(value.toDouble())
+
             if (!isFinal) lastUploadTime = currentTime
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    override fun startSyncingFromFirebase(busUid: String) {} // Implementation as needed for Parent
+    override fun stopSyncingFromFirebase() {}
 }

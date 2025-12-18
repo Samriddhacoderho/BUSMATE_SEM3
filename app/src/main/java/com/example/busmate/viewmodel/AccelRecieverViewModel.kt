@@ -14,9 +14,15 @@ class AccelRecieverViewModel(application: Application): AndroidViewModel(applica
     // Expose the Firebase LiveData to the UI
     val firebaseReading: LiveData<AccelerometerModel> = repository.firebaseData
 
-    init {
-        // Start listening to Firebase immediately
-        repository.startSyncingFromFirebase()
+    // REMOVED: repository.startSyncingFromFirebase() from init
+    // because we need the busUid first.
+
+    /**
+     * Call this from your Screen/Activity (like ChildTripDetails)
+     * once you have the busUid.
+     */
+    fun startTrackingBus(busUid: String) {
+        repository.startSyncingFromFirebase(busUid)
     }
 
     override fun onCleared() {

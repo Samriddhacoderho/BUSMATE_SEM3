@@ -7,12 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +33,7 @@ import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
-import androidx.compose.foundation.lazy.items
+import com.example.busmate.view.TripActivity
 
 @Composable
 fun HomeScreen() {
@@ -49,6 +51,16 @@ fun HomeScreen() {
 
     val navigateToAddBus: () -> Unit = {
         context.startActivity(Intent(context, BusScreen::class.java))
+    }
+
+    // Navigation logic for the Trip Activity
+    val navigateToTrip: () -> Unit = {
+        val intent = Intent(context, TripActivity::class.java).apply {
+            // Passing the Driver's UID (Shyam's UID)
+            // This allows the TripActivity to find the bus assigned to this UID
+            putExtra("EXTRA_DRIVER_UID", model?.uid)
+        }
+        context.startActivity(intent)
     }
 
     Scaffold(
@@ -110,7 +122,7 @@ fun HomeScreen() {
                 }
             }
 
-            // 🔹 FOOTER
+            // 🔹 FOOTER (Notifications)
             item {
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
                     NotificationsAlertHeaderScreen()
@@ -118,23 +130,58 @@ fun HomeScreen() {
                     NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
                 }
             }
+
+            // 🔹 "GO TO TRIP" BUTTON (ONLY FOR DRIVERS)
+            if (model?.typeofUser == "Driver") {
+                item {
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    Button(
+                        onClick = navigateToTrip,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Go to Trip",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(40.dp)) // Padding at the very bottom
+                }
+            }
         }
     }
 }
 
 @Composable
-fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
+fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
     Column(
         Modifier
             .fillMaxWidth()
             .padding(16.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary) // ✔
+            .background(MaterialTheme.colorScheme.primary)
             .padding(16.dp)
     ) {
         Text(
             text = "Welcome, $parentName!",
-            color = MaterialTheme.colorScheme.onPrimary, // ✔
+            color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
@@ -144,7 +191,7 @@ fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
                 .padding(top = 20.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant) // ✔
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .height(40.dp)
         ) {
             Row(
@@ -158,7 +205,7 @@ fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
                 Icon(Icons.Filled.Home, contentDescription = null)
                 Spacer(Modifier.width(5.dp))
                 Text("School",
-                    color = MaterialTheme.colorScheme.onPrimary, // ✔
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 19.sp
                 )
@@ -174,12 +221,12 @@ fun WelcomeCardScreen(parentName: String?,model: UserModel?) {
                 Icon(
                     Icons.Filled.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary // ✔
+                    tint = MaterialTheme.colorScheme.tertiary
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
                     "Tracking Live",
-                    color = MaterialTheme.colorScheme.onSurface, // ✔
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )
@@ -207,7 +254,7 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
 
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground // ✔
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         if (model?.typeofUser == "Parent")
@@ -215,7 +262,7 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
                 onClick = onAddChildClick,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary // ✔
+                    contentColor = MaterialTheme.colorScheme.primary
                 ),
                 border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -251,7 +298,7 @@ fun ChildTrackingCardScreen(
             .padding(horizontal = 16.dp, vertical = 5.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface // ✔
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -274,7 +321,7 @@ fun ChildTrackingCardScreen(
                     modifier = Modifier
                         .size(70.dp)
                         .clip(CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape) // ✔
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -285,7 +332,7 @@ fun ChildTrackingCardScreen(
                         text = childName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface // ✔
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -309,7 +356,7 @@ fun ChildTrackingCardScreen(
 
                     Text(
                         text = subText,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, // ✔
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         lineHeight = 14.sp
                     )
@@ -341,7 +388,7 @@ fun NotificationsAlertHeaderScreen() {
             text = "Notifications & Alerts",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground // ✔
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 
@@ -364,7 +411,7 @@ fun NotificationItemScreen(initial: String, message: String, indicatorColor: Col
             .height(70.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface // ✔
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
 
@@ -400,14 +447,14 @@ fun NotificationItemScreen(initial: String, message: String, indicatorColor: Col
                     text = message,
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface // ✔
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Icon(
                 painter = painterResource(id = R.drawable.outline_arrow_forward_ios_24),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary // ✔
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -421,13 +468,13 @@ fun WelcomeCardAdmin(adminName: String?) {
             .fillMaxWidth()
             .padding(16.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary) // ✔
+            .background(MaterialTheme.colorScheme.primary)
             .padding(16.dp)
     ) {
 
         Text(
             text = "Welcome, $adminName!",
-            color = MaterialTheme.colorScheme.onPrimary, // ✔
+            color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
@@ -437,7 +484,7 @@ fun WelcomeCardAdmin(adminName: String?) {
                 .padding(top = 20.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant) // ✔
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .height(40.dp)
         ) {
 
@@ -453,7 +500,7 @@ fun WelcomeCardAdmin(adminName: String?) {
                 Spacer(Modifier.width(5.dp))
                 Text(
                     "School",
-                    color = MaterialTheme.colorScheme.onPrimary, // ✔
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
@@ -470,7 +517,7 @@ fun WelcomeCardAdmin(adminName: String?) {
                 Spacer(Modifier.width(5.dp))
                 Text(
                     "Tracking Live",
-                    color = MaterialTheme.colorScheme.onSurface, // ✔
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
@@ -490,14 +537,14 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit){
             text = "Notifications & Alerts",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground // ✔
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         OutlinedButton(
             onClick = onAddBusClick,
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary // ✔
+                contentColor = MaterialTheme.colorScheme.primary
             ),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),

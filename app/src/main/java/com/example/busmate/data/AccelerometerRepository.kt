@@ -4,15 +4,14 @@ import androidx.lifecycle.LiveData
 import com.example.busmate.model.AccelerometerModel
 
 interface AccelerometerRepository {
+    // 1. Local data (For the Driver's UI)
     val currentSpeedMps: LiveData<Float>
-
-    // NEW: LiveData to observe data coming FROM Firebase
     val firebaseData: LiveData<AccelerometerModel>
 
-    fun startListening()
+    // Pass the DRIVER'S UID here
+    fun startListening(driverUid: String)
     fun stopListening()
 
-    // NEW: Methods to handle Firebase data sync
-    fun startSyncingFromFirebase()
+    fun startSyncingFromFirebase(busUid: String)
     fun stopSyncingFromFirebase()
 }
