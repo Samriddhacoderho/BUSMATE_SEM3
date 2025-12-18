@@ -1,12 +1,11 @@
 package com.example.busmate.viewmodel
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.ChildRepositoryInterface
 import com.example.busmate.model.ChildModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class ChildViewModel(
     private val repository: ChildRepositoryInterface
@@ -17,6 +16,10 @@ class ChildViewModel(
 
     private val _isSuccess = MutableStateFlow(false)
     val isSuccess: StateFlow<Boolean> = _isSuccess
+
+    // ✅ EXPOSE children as Compose State
+    private val _children = MutableStateFlow<List<ChildModel>>(emptyList())
+    val children: StateFlow<List<ChildModel>> = _children
 
     fun addChild(
         firstName: String,
@@ -29,28 +32,24 @@ class ChildViewModel(
         _message.value = ""
         _isSuccess.value = false
 
-        viewModelScope.launch {
+        val child = ChildModel(
+            firstName = firstName,
+            lastName = lastName,
+            studentId = studentId,
+            busRouteId = busRouteId,
+            pickUpLocation = pickUpLocation,
+            dropOffLocation = dropOffLocation
+        )
 
-            // Validation
-            if (firstName.isBlank() || studentId.isBlank() || busRouteId.isBlank()) {
-                _message.value =
-                    "First Name, Student ID, and Bus Route ID are required."
-                return@launch
-            }
+        repository.addChild(child) { responseMessage, success ->
+            _message.value = responseMessage
+            _isSuccess.value = success
+        }
+    }
 
-            val child = ChildModel(
-                firstName = firstName,
-                lastName = lastName,
-                studentId = studentId,
-                busRouteId = busRouteId,
-                pickUpLocation = pickUpLocation,
-                dropOffLocation = dropOffLocation
-            )
-
-            repository.addChild(child) { responseMessage, success ->
-                _message.value = responseMessage
-                _isSuccess.value = success
-            }
+    fun observeChildren(parentUid: String) {
+        repository.observeChildren(parentUid) { list ->
+            _children.value = list   // 🔥 THIS triggers recomposition
         }
     }
 

@@ -2,7 +2,10 @@ package com.example.busmate.data
 
 import com.example.busmate.model.ChildModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class ChildRepositoryImpl : ChildRepositoryInterface {
 
@@ -64,4 +67,27 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                 callback("Failed to verify Student ID", false)
             }
     }
+
+    override fun observeChildren(
+        parentUid: String,
+        callback: (List<ChildModel>) -> Unit
+    ) {
+        FirebaseDatabase.getInstance()
+            .getReference("users")
+            .child(parentUid)
+            .child("children")
+            .addValueEventListener(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val children = snapshot.children.mapNotNull {
+                        it.getValue(ChildModel::class.java)
+                    }
+                    callback(children)
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
 }
+

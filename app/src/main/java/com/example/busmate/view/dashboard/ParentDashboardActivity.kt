@@ -1,7 +1,6 @@
 package com.example.busmate.view.dashboard
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,12 +24,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.busmate.R
+import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.data.SupportRepositoryImpl
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.view.EditActivity
-import com.example.busmate.view.ProfileScreen
+import com.example.busmate.viewmodel.ChildViewModel
 import com.example.busmate.viewmodel.SupportViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -59,6 +59,19 @@ fun ParentDashboardScreen(
 ) {
     val context = LocalContext.current
     val supportViewModel = SupportViewModel(repository = SupportRepositoryImpl())
+    val childViewModel = remember {
+        ChildViewModel(repository = ChildRepositoryImpl())
+    }
+
+    val children by childViewModel.children.collectAsState()
+
+    LaunchedEffect(Unit) {
+        val parentUid = FirebaseAuth.getInstance().currentUser?.uid
+        parentUid?.let {
+            childViewModel.observeChildren(it)
+        }
+    }
+
 
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(
@@ -160,7 +173,9 @@ fun ParentDashboardScreen(
                 .padding(paddingValues)
         ) {
             when (selectedItem) {
-                0 -> HomeScreen()
+                0 -> HomeScreen(
+                    children = children
+                )
                 1 -> SupportScreen(viewModel = supportViewModel)
                 2 -> LiveLocationScreen()
                 3 -> ProfileEditScreen()
