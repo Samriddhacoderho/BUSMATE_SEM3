@@ -27,6 +27,7 @@ data class UserModel(
             "typeofUser" to typeofUser,
             "status" to status,
             "profileImageUrl" to (profileImageUrl ?: ""),
+            "children" to children
         )
     }
 }
