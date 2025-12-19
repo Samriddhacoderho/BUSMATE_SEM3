@@ -3,11 +3,39 @@ package com.example.busmate.data
 import android.util.Log
 import com.example.busmate.model.BusModel
 import com.google.firebase.database.*
+import com.google.android.gms.maps.model.LatLng
 
 class BusRepositoryImpl : BusRepositoryInterface {
 
     private val db = FirebaseDatabase.getInstance()
     private val busesRef = db.getReference("buses")
+
+    override fun updateLocationByDriver(driverUid: String, latLng: LatLng) {
+        // Query: Look into "buses" where the nested "driver/uid" matches our driverUid
+        busesRef.orderByChild("driver/uid").equalTo(driverUid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Firebase returns a Map; we take the first (and only) bus matching this driver
+                        val busSnapshot = snapshot.children.first()
+                        val busUid = busSnapshot.key ?: return
+
+                        // Convert LatLng to String "latitude,longitude" to match BusModel
+                        val locationString = "${latLng.latitude},${latLng.longitude}"
+
+                        // Update the specific bus's currentLocation field
+                        busesRef.child(busUid).child("currentLocation").setValue(locationString)
+                            .addOnFailureListener { e ->
+                                Log.e("Firebase", "Failed to update location: ${e.message}")
+                            }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("Firebase", "Query cancelled: ${error.message}")
+                }
+            })
+    }
 
     override fun registerBus(
         bus: BusModel,
@@ -85,6 +113,20 @@ class BusRepositoryImpl : BusRepositoryInterface {
                     callback(error.message, false)
                 }
             })
+    }
+    override fun updateBusLocation(
+        busUid: String,
+        latLng: com.google.android.gms.maps.model.LatLng,
+        callback: (Boolean) -> Unit
+    ) {
+        // Formatting LatLng as a string "lat,long" to match your BusModel's currentLocation type
+        val locationString = "${latLng.latitude},${latLng.longitude}"
+
+        // Target the specific bus by UID and update only the currentLocation field
+        busesRef.child(busUid).child("currentLocation").setValue(locationString)
+            .addOnCompleteListener { task ->
+                callback(task.isSuccessful)
+            }
     }
 }
 //testing the current location of driver
