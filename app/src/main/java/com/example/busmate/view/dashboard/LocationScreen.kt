@@ -201,7 +201,8 @@ fun cardMap(cardColor: Color,modifier: Modifier,context: Context){
     }
 
     LaunchedEffect(Unit) {
-        viewModel.startTracking { latLng: LatLng, _: Boolean ->}
+//        viewModel.startTracking { latLng: LatLng, _: Boolean ->}
+        viewModel.startTracking(driverUid = null)
     }
 
     DisposableEffect(Unit) {
