@@ -118,6 +118,22 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
             )
         }
 
+        IconButton(
+            onClick = {
+                // This triggers the standard activity back navigation
+                (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
+            },
+            modifier = Modifier
+                .padding(top = 40.dp, start = 12.dp) // Adjust padding to avoid status bar
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.outline_arrow_back_24),
+                contentDescription = "Back",
+                tint = Color.White,
+                modifier = Modifier.size(30.dp)
+            )
+        }
         // ⚪ WHITE CARD THAT OVERLAPS (same shape as login)
         Card(
             modifier = Modifier

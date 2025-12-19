@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -118,24 +119,28 @@ fun SingleDriverProfile(
                 .fillMaxWidth()
                 .height(260.dp)
                 .background(BusMateBlue)
-                .padding(top = 16.dp),
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            // --- IMPROVED BACK BUTTON ---
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Start
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White,
-                    modifier = Modifier.clickable { (context as Activity).finish() }
-                )
+                IconButton(onClick = { (context as Activity).finish() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Standard back icon
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
+            // Adjust spacing after back button
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${driver.firstName} ${driver.lastName}",
                 color = Color.White,

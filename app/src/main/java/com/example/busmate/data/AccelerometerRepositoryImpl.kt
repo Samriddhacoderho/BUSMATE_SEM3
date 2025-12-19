@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.busmate.model.AccelerometerModel
@@ -16,8 +17,13 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+    // Variables for Driver Mode (Sending)
     private var activeBusUid: String? = null
     private var isSensorRegistered = false
+    private var lastUploadTime = 0L
+
+    // Variables for Receiver Mode (Fetching)
+    private var firebaseSpeedListener: ValueEventListener? = null
 
     private val _currentSpeedMps = MutableLiveData(0f)
     override val currentSpeedMps: LiveData<Float> = _currentSpeedMps
@@ -29,25 +35,25 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
     private val ALPHA = 0.8f
     private val SHAKE_THRESHOLD = 0.5f
     private val SCALING_FACTOR = 10.0f
-    private var lastUploadTime = 0L
+
+
+    // DRIVER LOGIC (SENSING & SENDING)
 
     override fun startListening(driverUid: String) {
-        // Step 1: Query buses to find the one where this driver is assigned
         database.getReference("buses")
             .orderByChild("driver/uid")
             .equalTo(driverUid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        // Get the first bus found (the key like -OgeXRJ...)
                         val busNode = snapshot.children.first()
                         activeBusUid = busNode.key
-
-                        // Step 2: Register hardware sensors
                         registerSensors()
                     }
                 }
-                override fun onCancelled(error: DatabaseError) {}
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("AccelerometerRepo", "Query failed: ${error.message}")
+                }
             })
     }
 
@@ -95,15 +101,50 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
         val currentTime = System.currentTimeMillis()
 
         if (isFinal || currentTime - lastUploadTime >= 500L) {
-            // Target: buses -> {busId} -> speed
             database.getReference("buses").child(busId).child("speed")
-                .setValue(value.toDouble())
-
+                .setValue(value.toDouble()) // Store as double for precision
             if (!isFinal) lastUploadTime = currentTime
         }
     }
 
+
+    // RECEIVER LOGIC (FETCHING FOR BUS PROFILE)
+
+
+    override fun startSyncingFromFirebase(busUid: String) {
+        // Stop previous listener if switching buses in HorizontalPager
+        stopSyncingFromFirebase()
+
+        val speedRef = database.getReference("buses").child(busUid).child("speed")
+
+        firebaseSpeedListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Ensure data is read as Double (matching how it's sent)
+                val speedValue = snapshot.getValue(Double::class.java) ?: 0.0
+
+                // Update the LiveData which AccelRecieverViewModel observes
+                _firebaseData.postValue(AccelerometerModel(
+                    speedMps = speedValue.toFloat(),
+                    isRunning = speedValue > 0.1
+                ))
+                Log.d("AccelerometerRepo", "Fetched Speed: $speedValue for Bus: $busUid")
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("AccelerometerRepo", "Fetch error: ${error.message}")
+            }
+        }
+
+        speedRef.addValueEventListener(firebaseSpeedListener!!)
+    }
+
+    override fun stopSyncingFromFirebase() {
+        firebaseSpeedListener?.let { listener ->
+            database.getReference("buses").removeEventListener(listener)
+            firebaseSpeedListener = null
+            Log.d("AccelerometerRepo", "Stopped syncing speed data.")
+        }
+    }
+
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    override fun startSyncingFromFirebase(busUid: String) {} // Implementation as needed for Parent
-    override fun stopSyncingFromFirebase() {}
 }
