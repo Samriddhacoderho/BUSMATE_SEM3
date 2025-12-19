@@ -30,7 +30,7 @@ import com.example.busmate.data.SupportRepositoryImpl
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.view.* // Ensure all view activities are accessible
+import com.example.busmate.view.*
 import com.example.busmate.viewmodel.ChildViewModel
 import com.example.busmate.viewmodel.SupportViewModel
 import com.example.busmate.viewmodel.UserViewModel
@@ -107,7 +107,7 @@ fun ParentDashboardScreen(
             NavItem("Add Bus", Icons.Default.DirectionsBus),
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
-            NavItem("Deactivate Account", Icons.Default.PersonOff),
+            NavItem("Manage Account", Icons.Default.PersonOff),
             NavItem("Schedules", Icons.Default.Event),
             NavItem("Reports", Icons.Default.Assessment),
             NavItem("Logs", Icons.Default.History),
@@ -154,7 +154,7 @@ fun ParentDashboardScreen(
                                     "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
                                     "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
                                     "View Driver" -> context.startActivity(Intent(context, DriverProfileScreen::class.java))
-                                    "Deactivate Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                                    "Manage Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
                                 }
                             }
                         },
