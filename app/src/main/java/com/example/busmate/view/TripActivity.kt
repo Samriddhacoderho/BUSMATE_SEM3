@@ -8,24 +8,30 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.busmate.data.BusRepositoryImpl
+import com.example.busmate.data.LocationImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.viewmodel.AccelerometerViewModel
+import com.example.busmate.viewmodel.LocationViewModel
 
 class TripActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Retrieve the Driver UID (Shyam's UID) passed from HomeScreen
+        // Retrieve the Driver UID passed from HomeScreen
         val driverUid = intent.getStringExtra("EXTRA_DRIVER_UID") ?: ""
 
         setContent {
@@ -37,11 +43,34 @@ class TripActivity : ComponentActivity() {
 }
 
 @Composable
-fun TripScreen(driverUid: String, viewModel: AccelerometerViewModel = viewModel()) {
-    val state by viewModel.state
+fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel = viewModel()) {
+    val state by accelerometerViewModel.state
+    val context = LocalContext.current
+
+    // Initialize LocationViewModel manually to follow MVVM/Repo pattern without a factory
+    val locationViewModel = remember {
+        LocationViewModel(
+            repo = LocationImpl(context),
+            busRepo = BusRepositoryImpl()
+        )
+    }
+
+    //
+    // Effect to start/stop live location tracking based on the trip's running state
+    LaunchedEffect(state.isRunning) {
+        if (state.isRunning) {
+            // This triggers the GPS loop and starts updating the BusModel in Firebase
+            locationViewModel.startTracking(driverUid = driverUid)
+        } else {
+            // Stops GPS and synchronization to save battery
+            locationViewModel.stopLocationUpdates()
+        }
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -53,6 +82,7 @@ fun TripScreen(driverUid: String, viewModel: AccelerometerViewModel = viewModel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Live speed from Accelerometer
         Text(
             text = "%.1f".format(state.speedMps),
             fontSize = 100.sp,
@@ -64,10 +94,15 @@ fun TripScreen(driverUid: String, viewModel: AccelerometerViewModel = viewModel(
 
         Button(
             onClick = {
-                if (state.isRunning) viewModel.stopMeasurement()
-                else viewModel.startMeasurement(driverUid)
+                if (state.isRunning) {
+                    accelerometerViewModel.stopMeasurement()
+                } else {
+                    accelerometerViewModel.startMeasurement(driverUid)
+                }
             },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (state.isRunning) BusMateOrange else BusMateBlue

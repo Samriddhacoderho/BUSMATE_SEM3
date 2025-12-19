@@ -28,7 +28,7 @@ class LocationImpl(private val context: Context): LocationInterface {
         }
         val request = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            5000L
+            30000L
         ).build()
         fusedClient.requestLocationUpdates(
             request,
