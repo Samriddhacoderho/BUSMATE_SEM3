@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,10 +33,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.R
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.viewmodel.AccelRecieverViewModel
 import com.example.busmate.viewmodel.AdminActionsViewModel
 
 class BusProfileScreen : ComponentActivity() {
@@ -100,6 +103,14 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
 fun SingleBusProfile(bus: BusModel) {
 
     val context = LocalContext.current
+
+    val accelViewModel: AccelRecieverViewModel = viewModel()
+    val liveReading by accelViewModel.firebaseReading.observeAsState()
+
+    LaunchedEffect(bus.uid) {
+        accelViewModel.startTrackingBus(bus.uid)
+    }
+
     var currentDriver by remember {
         mutableStateOf(
             bus.driver?.let {
@@ -205,7 +216,12 @@ fun SingleBusProfile(bus: BusModel) {
 
                 BusProfileItem(Icons.Default.Info, "Maintenance: ${bus.maintenanceStatus}")
                 BusProfileItem(Icons.Default.Route, "Route: ${bus.routeId}")
-                BusProfileItem(Icons.Default.Speed, "Speed: ${bus.speed} km/h")
+//               BusProfileItem(Icons.Default.Speed, "Speed: ${bus.speed} km/h")
+                val displaySpeed = liveReading?.speedMps ?: bus.speed.toFloat()
+                BusProfileItem(
+                    icon = Icons.Default.Speed,
+                    text = "Speed: ${"%.1f".format(displaySpeed)} km/h"
+                )
             }
         }
     }

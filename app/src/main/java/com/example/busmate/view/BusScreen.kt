@@ -11,6 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,23 +47,19 @@ fun BusScreenUI(
     onBackClick: () -> Unit,
     viewModel: BusViewModel = viewModel()
 ) {
-    // --- 1. LOCAL STATE FOR ONLY BUS FIELDS ---
     var busNumber by remember { mutableStateOf("") }
     var licensePlate by remember { mutableStateOf("") }
     var routeId by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
 
-    // --- 2. VIEWMODEL STATE & SNACKBAR SETUP ---
     val message by viewModel.message.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val isLoading = message == "Loading"
 
-    // Show Snackbar for messages
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
             scope.launch { snackbarHostState.showSnackbar(message) }
-            // Optional: Clear fields on SUCCESS
             if (message.contains("success", ignoreCase = true)) {
                 busNumber = ""; licensePlate = ""; routeId = ""; capacity = "";
             }
@@ -78,30 +76,51 @@ fun BusScreenUI(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            //  TOP LOGO SECTION
-            Column(
+            //  --- FIXED TOP LOGO SECTION ---
+            // We use a Box here so we can use .align(Alignment.TopStart)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.30f)
-                    .background(BusMateBlue),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .fillMaxHeight(0.35f)
+                    .background(BusMateBlue)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "BusMate Logo",
-                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                    modifier = Modifier.size(100.dp)
-                )
-                Text(
-                    text = "New Bus Registration", // Simplified Title
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black
-                )
+                // 1. BACK BUTTON
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(start = 8.dp, top = 8.dp)
+                        .align(Alignment.TopStart) // Now this works inside the Box!
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+
+                // 2. LOGO AND TITLE (Centered in the Box)
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "BusMate Logo",
+                        colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                        modifier = Modifier.size(100.dp)
+                    )
+                    Text(
+                        text = "New Bus Registration",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
 
-            //  CARD SECTION
+            //  --- CARD SECTION ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -109,9 +128,9 @@ fun BusScreenUI(
                     .padding(horizontal = 24.dp)
                     .align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
@@ -133,7 +152,6 @@ fun BusScreenUI(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // REGISTER BUTTON WITH VALIDATION
                     Button(
                         onClick = {
                             val capacityInt = capacity.toIntOrNull()
