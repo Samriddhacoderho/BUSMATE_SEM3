@@ -17,6 +17,10 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
     private val _user = MutableStateFlow<UserModel?>(null)
     val user: StateFlow<UserModel?> = _user
 
+    fun clearMessage() {
+        _message.value = ""
+    }
+
     fun register(
         firstName: String,
         lastName: String,
