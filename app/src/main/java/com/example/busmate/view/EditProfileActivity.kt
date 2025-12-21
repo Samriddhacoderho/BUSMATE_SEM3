@@ -127,17 +127,17 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     }
 
     LaunchedEffect(user) {
-        if (user != null) {
-            firstName = user?.firstName ?: ""
-            lastName = user?.lastName ?: ""
-            phone = user?.phone ?: ""
+        user?.let {
+            firstName = it.firstName
+            lastName = it.lastName
+            phone = it.phone
         }
     }
     LaunchedEffect(message) {
+        // We only show snackbar if it's an actual result (not a loading state)
         if (message.isNotEmpty() && !message.contains("Updating") && !message.contains("Loading")) {
             snackbarHostState.showSnackbar(message)
-
-            // Clear message in ViewModel so it doesn't repeat on rotation
+            // We clear message in ViewModel AFTER showing to prevent repeat triggers
             viewModel.clearMessage()
         }
     }
@@ -154,19 +154,19 @@ fun EditProfileScreen(viewModel: UserViewModel) {
 //            }
 //        }
     Scaffold(
-        // --- ADDED: SnackbarHost with Color Logic ---
+        modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val isSuccess = data.visuals.message.contains("successfully", ignoreCase = true) ||
-                        data.visuals.message.contains("Saved", ignoreCase = true)
+                // CALLBACK METHOD: Check message content for color
+                val isSuccess = message.contains("successfully", ignoreCase = true) ||
+                        message.contains("Saved", ignoreCase = true)
 
                 Snackbar(
+                    snackbarData = data,
                     containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFD32F2F),
                     contentColor = Color.White,
                     shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(data.visuals.message)
-                }
+                )
             }
         },
         topBar = {

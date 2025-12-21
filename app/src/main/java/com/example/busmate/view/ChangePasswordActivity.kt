@@ -77,46 +77,28 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     }
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty() && message != "Loading") {
-            // Calling the Snackbar
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Short
-            )
-
-            if (message == "Password successfully changed!") {
-                oldPass = ""
-                newPass = ""
-                confirmPass = ""
-            }
-
-            // Important: Clear message state in ViewModel so it doesn't
-            // trigger again on configuration changes
-            viewModel.clearMessage()
+        if (message.isNotEmpty() && message != "Loading...") {
+            snackbarHostState.showSnackbar(message)
         }
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val isSuccess = data.visuals.message.contains("successfully", ignoreCase = true)
-                val backgroundColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336) // Green or Red
-
                 Snackbar(
-                    containerColor = backgroundColor,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(12.dp)
-                ) {
-                    Text(data.visuals.message)
-                }
+                    snackbarData = data,
+                    // Direct state check inside the callback
+                    containerColor = if (message == "Password successfully changed!") Color(0xFF4CAF50) else Color.Red,
+                    contentColor = Color.White
+                )
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Respect scaffold padding
+                .padding(padding) // Respect scaffold padding
         ) {
 
         //  BLUE TOP SECTION (same as login screen)
