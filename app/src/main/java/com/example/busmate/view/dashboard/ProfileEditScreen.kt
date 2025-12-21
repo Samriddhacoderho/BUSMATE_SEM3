@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.view.BackgroundWhite
 import com.example.busmate.view.ButtonGray
+import com.example.busmate.view.ChangePasswordScreen
 import com.example.busmate.view.EditProfileActivity
 import com.example.busmate.view.IconGray
 import com.example.busmate.view.LoginScreen
@@ -113,7 +114,8 @@ fun ProfileEditScreen() {
                 ProfileMenuItem(
                     icon = Icons.Default.Lock,
                     label = "Change Password",
-                    onClick = { /* Handle click */ }
+                    onClick = { val intent = Intent(context, ChangePasswordScreen::class.java)
+                        context.startActivity(intent) }
                 )
                 ProfileMenuItem(
                     icon = Icons.Default.DarkMode,

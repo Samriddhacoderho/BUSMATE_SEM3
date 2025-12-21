@@ -74,6 +74,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import com.example.busmate.data.UserRepositoryImpl
@@ -110,6 +113,9 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     val context = LocalContext.current
 
     val user by viewModel.user.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
     var firstName by remember { mutableStateOf(user?.firstName ?: "") }
     var lastName by remember { mutableStateOf(user?.lastName ?: "") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
@@ -121,16 +127,18 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     }
 
     LaunchedEffect(user) {
-        if (user != null) {
-            firstName = user?.firstName ?: ""
-            lastName = user?.lastName ?: ""
-            phone = user?.phone ?: ""
+        user?.let {
+            firstName = it.firstName
+            lastName = it.lastName
+            phone = it.phone
         }
     }
     LaunchedEffect(message) {
-        if (message.isNotEmpty()) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT)
-                .show() // Show success or error message
+        // We only show snackbar if it's an actual result (not a loading state)
+        if (message.isNotEmpty() && !message.contains("Updating") && !message.contains("Loading")) {
+            snackbarHostState.showSnackbar(message)
+            // We clear message in ViewModel AFTER showing to prevent repeat triggers
+            viewModel.clearMessage()
         }
     }
 
@@ -146,6 +154,21 @@ fun EditProfileScreen(viewModel: UserViewModel) {
 //            }
 //        }
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                // CALLBACK METHOD: Check message content for color
+                val isSuccess = message.contains("successfully", ignoreCase = true) ||
+                        message.contains("Saved", ignoreCase = true)
+
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {

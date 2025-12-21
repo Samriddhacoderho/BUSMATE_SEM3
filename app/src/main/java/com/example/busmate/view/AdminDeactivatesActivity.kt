@@ -1,5 +1,7 @@
 package com.example.busmate.view
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,7 +17,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.viewmodel.AdminActionsViewModel
@@ -47,9 +54,11 @@ class AdminDeactivatesActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("ContextCastToActivity")
 @Composable
 fun AdminManageAccountScreen() {
     val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val context = LocalContext.current as Activity
 
     // -------------------- State Variables --------------------
     var schoolId by remember { mutableStateOf("") }
@@ -165,10 +174,30 @@ fun AdminManageAccountScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.45f)
-                    .background(BusMateBlue),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .background(BusMateBlue)
+                    .statusBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Back Button and Title Row
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, start = 8.dp)
+                ) {
+                    IconButton(
+                        onClick = { context.finish() },
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(40.dp)) // Adjust spacing
                 Text(
                     "Manage User Accounts",
                     color = Color.White,
