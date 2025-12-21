@@ -51,19 +51,15 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @Composable
 fun LiveLocationScreen(viewModel: LocationViewModel, busId: String) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
-
     val bg = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
     val cardOrange = MaterialTheme.colorScheme.primaryContainer
     val cardGreen = MaterialTheme.colorScheme.secondaryContainer
-
     val context = LocalContext.current
     val activity = context as Activity
-
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
-
     LaunchedEffect(busId) {
         viewModel.fetchBusLocation(busId)
     }
@@ -222,22 +218,18 @@ fun MapPrototype(
 fun cardMap(cardColor: Color, modifier: Modifier, context: Context) {
     val viewModel = remember { LocationViewModel(LocationImpl(context)) }
     val currentLocation by viewModel.location.collectAsState()
-
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             currentLocation ?: LatLng(27.7172, 85.3240), // Default location
             16f
         )
     }
-
     LaunchedEffect(Unit) {
         viewModel.startTracking(driverUid = null)
     }
-
     DisposableEffect(Unit) {
         onDispose { viewModel.stopLocationUpdates() }
     }
-
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),

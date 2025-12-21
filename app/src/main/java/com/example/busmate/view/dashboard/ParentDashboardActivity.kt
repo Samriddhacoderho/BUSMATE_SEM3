@@ -66,25 +66,19 @@ fun ParentDashboardScreen(
     val locationViewModel = remember {
         LocationViewModel(LocationImpl(context))
     }
-
     val busId = "-OgeXRJhRkVNMonROQYL" // replace with real bus id
-
     val children by childViewModel.children.collectAsState()
-
     LaunchedEffect(Unit) {
         val parentUid = FirebaseAuth.getInstance().currentUser?.uid
         parentUid?.let {
             childViewModel.observeChildren(it)
         }
     }
-
-
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(
         val label: String,
         val icon: ImageVector
     )
-
     var selectedItem by remember { mutableStateOf(0) }
 
     /* ---------- NAV ITEMS ---------- */
@@ -94,7 +88,6 @@ fun ParentDashboardScreen(
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
 
@@ -135,7 +128,6 @@ fun ParentDashboardScreen(
                 }
             }
         },
-
         /* ---------- BOTTOM NAV ---------- */
         bottomBar = {
             NavigationBar(
