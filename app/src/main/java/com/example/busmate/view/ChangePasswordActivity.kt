@@ -70,23 +70,36 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val context = LocalContext.current
     val message by viewModel.message.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     fun handleChangePassword() {
         viewModel.changePassword(oldPass, newPass, confirmPass)
     }
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty() && message != "Loading") {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            // Clear fields on successful password change
-            if (message == "Password successfully changed!") {
-                oldPass = ""
-                newPass = ""
-                confirmPass = ""
-            }
+        if (message.isNotEmpty() && message != "Loading...") {
+            snackbarHostState.showSnackbar(message)
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    // Direct state check inside the callback
+                    containerColor = if (message == "Password successfully changed!") Color(0xFF4CAF50) else Color.Red,
+                    contentColor = Color.White
+                )
+            }
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding) // Respect scaffold padding
+        ) {
 
         //  BLUE TOP SECTION (same as login screen)
         Column(
@@ -301,7 +314,7 @@ fun PasswordIndicators(password: String) {
         }
     }
 }
-
+}
 @Composable
 fun Requirement(text: String, passed: Boolean) {
     Row(
@@ -321,6 +334,22 @@ fun Requirement(text: String, passed: Boolean) {
             color = if (passed) Color.Gray else Color.Red,
             fontSize = 14.sp
         )
+    }
+}
+@Composable
+fun PasswordIndicators(password: String) {
+    val requirements = listOf(
+        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
+        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
+        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
+        "One number" to { it: String -> it.any(Char::isDigit) }
+    )
+
+    Column {
+        requirements.forEach { (text, rule) ->
+            Requirement(text = text, passed = rule(password))
+        }
     }
 }
 @SuppressLint("ViewModelConstructorInComposable")
