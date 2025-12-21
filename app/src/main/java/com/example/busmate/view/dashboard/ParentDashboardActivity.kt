@@ -1,6 +1,7 @@
 package com.example.busmate.view.dashboard
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,30 +10,28 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.busmate.R
-import com.example.busmate.data.ChildRepositoryImpl
-import com.example.busmate.data.LocationImpl
-import com.example.busmate.data.SupportRepositoryImpl
+import com.example.busmate.data.*
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.viewmodel.ChildViewModel
-import com.example.busmate.viewmodel.LocationViewModel
-import com.example.busmate.viewmodel.SupportViewModel
+import com.example.busmate.view.*
+import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -52,6 +51,8 @@ class ParentDashboardActivity : ComponentActivity() {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
 fun ParentDashboardScreen(
@@ -59,33 +60,33 @@ fun ParentDashboardScreen(
     onThemeChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val supportViewModel = SupportViewModel(repository = SupportRepositoryImpl())
-    val childViewModel = remember {
-        ChildViewModel(repository = ChildRepositoryImpl())
-    }
-    val locationViewModel = remember {
-        LocationViewModel(LocationImpl(context))
-    }
 
-    val busId = "-OgeXRJhRkVNMonROQYL" // replace with real bus id
+    /* ---------- VIEW MODELS ---------- */
+    val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
+    val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
+    val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
+    val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
+
+    val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
+    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
+
+    /* ---------- DRAWER STATE ---------- */
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var selectedItem by remember { mutableStateOf(0) }
+
     LaunchedEffect(Unit) {
-        val parentUid = FirebaseAuth.getInstance().currentUser?.uid
-        parentUid?.let {
+        FirebaseAuth.getInstance().currentUser?.uid?.let {
+            userViewModel.loadUserProfile(it)
             childViewModel.observeChildren(it)
         }
     }
 
     /* ---------- NAV ITEM MODEL ---------- */
-    data class NavItem(
-        val label: String,
-        val icon: ImageVector
-    )
+    data class NavItem(val label: String, val icon: ImageVector)
 
-    var selectedItem by remember { mutableStateOf(0) }
-
-    /* ---------- NAV ITEMS ---------- */
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Support", Icons.Filled.SupportAgent),
@@ -93,94 +94,135 @@ fun ParentDashboardScreen(
         NavItem("Profile", Icons.Filled.Person)
     )
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+    val drawerItems = when (user?.typeofUser?.lowercase()) {
+        "admin" -> listOf(
+            NavItem("Create Account", Icons.Default.PersonAdd),
+            NavItem("Add Bus", Icons.Default.DirectionsBus),
+            NavItem("View Bus", Icons.Default.DirectionsBus),
+            NavItem("View Driver", Icons.Default.Badge),
+            NavItem("Manage Account", Icons.Default.PersonOff)
+        )
+        "driver" -> listOf(
+            NavItem("My Trips", Icons.Default.Route)
+        )
+        else -> listOf(
+            NavItem("About Us", Icons.Default.Info)
+        )
+    }
 
-        /* ---------- TOP BAR ---------- */
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = null,
-                    colorFilter = if (isDarkModeEnabled)
-                        ColorFilter.tint(PlaceholderBusColor)
-                    else null,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(horizontalArrangement = Arrangement.End) {
-//                    IconButton(onClick = {
-//                        selectedItem = 3   // Profile tab
-//                    }) {
-//                    Icon(
-//                            imageVector = Icons.Filled.Person,
-//                            contentDescription = "Profile",
-//                            tint = MaterialTheme.colorScheme.onSurface
-//                        )
-//                    }
-                    IconButton(onClick = {}) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(Modifier.width(300.dp)) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(24.dp)
+                ) {
+                    Column {
                         Icon(
-                            imageVector = Icons.Filled.Notifications,
-                            contentDescription = "Notifications",
-                            tint = MaterialTheme.colorScheme.error
+                            Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            user?.firstName ?: "Loading...",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            user?.typeofUser ?: "",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 12.sp
                         )
                     }
                 }
-            }
-        },
 
-        /* ---------- BOTTOM NAV ---------- */
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                navList.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        selected = selectedItem == index,
-                        onClick = { selectedItem = index},
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                                tint = if (selectedItem == index)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        },
-                        label = {
-                            Text(
-                                item.label,
-                                color = if (selectedItem == index)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
+                drawerItems.forEach { item ->
+                    NavigationDrawerItem(
+                        icon = { Icon(item.icon, null) },
+                        label = { Text(item.label) },
+                        selected = false,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                when (item.label) {
+                                    "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
+                                    "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
+                                    "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
+                                    "View Driver" -> context.startActivity(Intent(context, DriverProfileScreen::class.java))
+                                    "Manage Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                                }
+                            }
                         }
                     )
                 }
             }
         }
-    ) { paddingValues ->
-        /* ---------- SCREEN SWITCHER ---------- */
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (selectedItem) {
-                0 -> HomeScreen(
-                    children = children
-                )
-                1 -> SupportScreen(viewModel = supportViewModel)
-                2 -> LiveLocationScreen( viewModel = locationViewModel,
-                    busId = busId)
-                3 -> ProfileEditScreen()
+    ) {
+        Scaffold(
+            topBar = {
+                Surface(shadowElevation = 4.dp) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = null)
+                        }
+
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(R.drawable.logo),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                colorFilter = if (isDarkModeEnabled)
+                                    ColorFilter.tint(PlaceholderBusColor)
+                                else null,
+                                modifier = Modifier.height(70.dp)
+                            )
+                        }
+
+                        IconButton(onClick = {}) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            },
+
+            bottomBar = {
+                NavigationBar {
+                    navList.forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            selected = selectedItem == index,
+                            onClick = { selectedItem = index },
+                            icon = { Icon(item.icon, null) },
+                            label = { Text(item.label) }
+                        )
+                    }
+                }
+            }
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+                when (selectedItem) {
+                    0 -> HomeScreen(children)
+                    1 -> SupportScreen(supportViewModel)
+                    2 -> LiveLocationScreen(
+                        viewModel = locationViewModel,
+                        busId = busId
+                    )
+                    3 -> ProfileEditScreen()
+                }
             }
         }
     }
