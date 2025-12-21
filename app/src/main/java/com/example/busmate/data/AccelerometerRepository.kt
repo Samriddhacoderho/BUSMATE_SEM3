@@ -14,4 +14,6 @@ interface AccelerometerRepository {
 
     fun startSyncingFromFirebase(busUid: String)
     fun stopSyncingFromFirebase()
+    fun updateTripRunning(routeId: String, isRunning: Boolean)
+
 }

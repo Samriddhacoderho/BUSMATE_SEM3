@@ -2,6 +2,8 @@ package com.example.busmate.view.dashboard
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
+import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.model.ChildModel
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateGreen
@@ -31,11 +34,15 @@ import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
 import com.example.busmate.view.TripActivity
+import com.example.busmate.viewmodel.BusViewModel
 
 @Composable
 fun HomeScreen(
-    children: List<ChildModel> = emptyList()
-) {
+    children: List<ChildModel> = emptyList(),
+    onOpenLiveLocation: (busRouteId: String) -> Unit   // ✅ NEW
+)
+ {
+    val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -105,7 +112,46 @@ fun HomeScreen(
                             subText = "Student ID: ${child.studentId}\nRoute: ${child.busRouteId}",
                             statusColor = BusMateGreen,
                             imageResource = R.drawable.boy,
-                            mapImageResource = R.drawable.map
+                            mapImageResource = R.drawable.map,
+                            onClick = {
+                                busViewModel.getBusByRouteId(child.busRouteId) { bus ->
+                                    if (bus == null) {
+                                        Toast.makeText(
+                                            context,
+                                            "No bus linked to this route",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        return@getBusByRouteId
+                                    }
+
+                                    val isDriverMissing = bus.driver == null
+                                    val isTripRunning = bus.speed > 1.0
+
+                                    when {
+                                        isDriverMissing -> {
+                                            Toast.makeText(
+                                                context,
+                                                "Driver not assigned yet",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+
+                                        !isTripRunning -> {
+                                            Toast.makeText(
+                                                context,
+                                                "Trip has not started yet",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+
+                                        else -> {
+                                            onOpenLiveLocation(bus.uid)
+                                        }
+                                    }
+                                }
+
+                            }
+
                         )
                     }
                 }
@@ -238,7 +284,11 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.height(35.dp)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Child", modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Add Child",
+                    modifier = Modifier.size(16.dp)
+                )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Add Child", fontSize = 14.sp)
             }
@@ -253,14 +303,16 @@ fun ChildTrackingCardScreen(
     subText: String,
     statusColor: Color,
     imageResource: Int,
-    mapImageResource: Int
+    mapImageResource: Int,
+    onClick: () -> Unit        // ✅ ADD THIS
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
             .padding(horizontal = 16.dp, vertical = 5.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

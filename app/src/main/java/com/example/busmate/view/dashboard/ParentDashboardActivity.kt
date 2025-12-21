@@ -66,11 +66,13 @@ fun ParentDashboardScreen(
     val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
+    var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
+
 
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
-    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
+//    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
 
     /* ---------- DRAWER STATE ---------- */
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -215,12 +217,20 @@ fun ParentDashboardScreen(
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
-                    0 -> HomeScreen(children)
+                    0 -> HomeScreen(
+                        children = children,
+                        onOpenLiveLocation = { routeId ->
+                            selectedBusRouteId = routeId
+                            selectedItem = 2   // ✅ Switch to Location tab
+                        }
+                    )
+
                     1 -> SupportScreen(supportViewModel)
                     2 -> LiveLocationScreen(
                         viewModel = locationViewModel,
-                        busId = busId
+                        busId = selectedBusRouteId ?: "No bus selected"
                     )
+
                     3 -> ProfileEditScreen()
                 }
             }
