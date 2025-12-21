@@ -19,4 +19,5 @@ interface BusRepositoryInterface {
         latLng: com.google.android.gms.maps.model.LatLng,
         callback: (Boolean) -> Unit
     )
+     fun getLiveBusLocation(busId: String, callback: (String) -> Unit)
 }

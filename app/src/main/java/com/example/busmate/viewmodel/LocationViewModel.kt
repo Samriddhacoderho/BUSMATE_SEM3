@@ -15,6 +15,8 @@ class LocationViewModel(
 
     private val _location = MutableStateFlow<LatLng?>(null)
     val location: StateFlow<LatLng?> = _location
+    private val _currentBusCoordinates = MutableStateFlow("Fetching...")
+    val currentBusCoordinates: StateFlow<String> = _currentBusCoordinates
 
     /**
      * Starts live tracking.
@@ -39,5 +41,11 @@ class LocationViewModel(
      */
     fun stopLocationUpdates() {
         repo.stopLocationUpdates()
+    }
+    // In LocationViewModel.kt
+    fun fetchBusLocation(busId: String) {
+        busRepo.getLiveBusLocation(busId) { coords ->
+            _currentBusCoordinates.value = coords
+        }
     }
 }
