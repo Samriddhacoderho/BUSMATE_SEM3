@@ -70,28 +70,30 @@ fun AddChildScreenUI() {
     val isLoading = message == "Loading"
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(message, isSuccess) {
-        if (message.isNotBlank() && !isLoading) {
-            // Show snackbar (suspending function)
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Short
-            )
-
-            if (isSuccess) {
-                activity.finish()
-            }
-            viewModel.clearMessage()
+    LaunchedEffect(message) {
+        if (message.isNotEmpty() && message != "Loading") {
+            snackbarHostState.showSnackbar(message)
         }
     }
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    // Specific callback logic for color
+                    containerColor = if (message.contains("successfully", true)) Color(0xFF4CAF50) else Color.Red,
+                    contentColor = Color.White
+                )
+            }
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .background(Color(0xFFF0F0F0))
         ) {
