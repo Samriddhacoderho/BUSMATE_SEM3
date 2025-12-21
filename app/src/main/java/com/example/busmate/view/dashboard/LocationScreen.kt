@@ -49,7 +49,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun LiveLocationScreen(viewModel: LocationViewModel, busId: String) {
+fun LiveLocationScreen(viewModel:LocationViewModel, busId: String) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
     val bg = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
@@ -63,7 +63,6 @@ fun LiveLocationScreen(viewModel: LocationViewModel, busId: String) {
     LaunchedEffect(busId) {
         viewModel.fetchBusLocation(busId)
     }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = bg
