@@ -70,23 +70,54 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val context = LocalContext.current
     val message by viewModel.message.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     fun handleChangePassword() {
         viewModel.changePassword(oldPass, newPass, confirmPass)
     }
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            // Clear fields on successful password change
+            // Calling the Snackbar
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+
             if (message == "Password successfully changed!") {
                 oldPass = ""
                 newPass = ""
                 confirmPass = ""
             }
+
+            // Important: Clear message state in ViewModel so it doesn't
+            // trigger again on configuration changes
+            viewModel.clearMessage()
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                val isSuccess = data.visuals.message.contains("successfully", ignoreCase = true)
+                val backgroundColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336) // Green or Red
+
+                Snackbar(
+                    containerColor = backgroundColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    Text(data.visuals.message)
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues) // Respect scaffold padding
+        ) {
 
         //  BLUE TOP SECTION (same as login screen)
         Column(
@@ -301,7 +332,7 @@ fun PasswordIndicators(password: String) {
         }
     }
 }
-
+}
 @Composable
 fun Requirement(text: String, passed: Boolean) {
     Row(
@@ -321,6 +352,22 @@ fun Requirement(text: String, passed: Boolean) {
             color = if (passed) Color.Gray else Color.Red,
             fontSize = 14.sp
         )
+    }
+}
+@Composable
+fun PasswordIndicators(password: String) {
+    val requirements = listOf(
+        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
+        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
+        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
+        "One number" to { it: String -> it.any(Char::isDigit) }
+    )
+
+    Column {
+        requirements.forEach { (text, rule) ->
+            Requirement(text = text, passed = rule(password))
+        }
     }
 }
 @SuppressLint("ViewModelConstructorInComposable")

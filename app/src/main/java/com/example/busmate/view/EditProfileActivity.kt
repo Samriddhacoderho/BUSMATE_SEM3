@@ -74,6 +74,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import com.example.busmate.data.UserRepositoryImpl
@@ -110,6 +113,9 @@ fun EditProfileScreen(viewModel: UserViewModel) {
     val context = LocalContext.current
 
     val user by viewModel.user.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
     var firstName by remember { mutableStateOf(user?.firstName ?: "") }
     var lastName by remember { mutableStateOf(user?.lastName ?: "") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
@@ -128,9 +134,11 @@ fun EditProfileScreen(viewModel: UserViewModel) {
         }
     }
     LaunchedEffect(message) {
-        if (message.isNotEmpty()) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT)
-                .show() // Show success or error message
+        if (message.isNotEmpty() && !message.contains("Updating") && !message.contains("Loading")) {
+            snackbarHostState.showSnackbar(message)
+
+            // Clear message in ViewModel so it doesn't repeat on rotation
+            viewModel.clearMessage()
         }
     }
 
@@ -146,6 +154,21 @@ fun EditProfileScreen(viewModel: UserViewModel) {
 //            }
 //        }
     Scaffold(
+        // --- ADDED: SnackbarHost with Color Logic ---
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                val isSuccess = data.visuals.message.contains("successfully", ignoreCase = true) ||
+                        data.visuals.message.contains("Saved", ignoreCase = true)
+
+                Snackbar(
+                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(data.visuals.message)
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
