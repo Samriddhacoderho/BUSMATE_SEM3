@@ -4,6 +4,12 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Bundle
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -12,6 +18,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,18 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
@@ -47,9 +48,9 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 
-
 @Composable
-fun LiveLocationScreen() {
+fun LiveLocationScreen(viewModel: LocationViewModel, busId: String) {
+    val coordinates by viewModel.currentBusCoordinates.collectAsState()
 
     val bg = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
@@ -61,6 +62,10 @@ fun LiveLocationScreen() {
 
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
+    }
+
+    LaunchedEffect(busId) {
+        viewModel.fetchBusLocation(busId)
     }
 
     Scaffold(
@@ -86,6 +91,29 @@ fun LiveLocationScreen() {
                     .padding(horizontal = 16.dp)
                     .align(Alignment.Start)
             )
+
+            // Display Current Fetch LatLng as Text
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Current LatLng: ",
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                    Text(
+                        text = coordinates,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             // Map
             MapPrototype(
@@ -117,7 +145,6 @@ fun LiveLocationScreen() {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 item {
                     ETACard(
                         modifier = Modifier.width(280.dp),
@@ -137,7 +164,6 @@ fun LiveLocationScreen() {
         }
     }
 }
-
 
 @Composable
 fun MapPrototype(
@@ -167,8 +193,9 @@ fun MapPrototype(
                     result[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
     }
 
-    LaunchedEffect(Unit) {
-        if (model?.typeofUser == "Driver") {
+    // Request permissions only for Driver or Parent user types
+    LaunchedEffect(model?.typeofUser) {
+        if (model?.typeofUser == "Driver" || model?.typeofUser == "Parent") {
             if (!permissionGranted) {
                 launcher.launch(
                     arrayOf(
@@ -179,17 +206,20 @@ fun MapPrototype(
             }
         }
     }
+
+    // If permission is granted, show the map
     if (permissionGranted) {
-        cardMap(cardColor,modifier,context)
+        cardMap(cardColor, modifier, context)
     } else {
-        Toast.makeText(context, "Please enable location permission.", Toast.LENGTH_SHORT).show()
+        // If the permission is not granted and the user is a Driver or Parent, show a Toast
+        if (model?.typeofUser == "Driver" || model?.typeofUser == "Parent") {
+            Toast.makeText(context, "Please enable location permission.", Toast.LENGTH_SHORT).show()
+        }
     }
-
-
 }
 
 @Composable
-fun cardMap(cardColor: Color,modifier: Modifier,context: Context){
+fun cardMap(cardColor: Color, modifier: Modifier, context: Context) {
     val viewModel = remember { LocationViewModel(LocationImpl(context)) }
     val currentLocation by viewModel.location.collectAsState()
 
@@ -201,7 +231,6 @@ fun cardMap(cardColor: Color,modifier: Modifier,context: Context){
     }
 
     LaunchedEffect(Unit) {
-//        viewModel.startTracking { latLng: LatLng, _: Boolean ->}
         viewModel.startTracking(driverUid = null)
     }
 
@@ -233,10 +262,8 @@ fun cardMap(cardColor: Color,modifier: Modifier,context: Context){
     }
 }
 
-
 @Composable
 fun ETACard(modifier: Modifier = Modifier, cardColor: Color) {
-
     val textWhite = MaterialTheme.colorScheme.onPrimaryContainer
 
     Card(
@@ -301,9 +328,8 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color) {
     }
 }
 
+//task 1 check if child is assigned to bus/driver if both have same routeid. for example: child has routeId:10 and driver/bus has routeID:10. Are they linked.
 
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun previewLocation() {
-    LiveLocationScreen()
-}
+// task 2 i have tested with static driverUid, now fetch data of location of driver. take reference to BusProfile.kt
+// as reference how i fetched data of driver/bus. And then implement location by fetching driverUid from
+// firebase. Parent should see live location of bus where location.

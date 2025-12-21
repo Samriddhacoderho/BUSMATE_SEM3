@@ -25,10 +25,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.busmate.R
 import com.example.busmate.data.ChildRepositoryImpl
+import com.example.busmate.data.LocationImpl
 import com.example.busmate.data.SupportRepositoryImpl
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.viewmodel.ChildViewModel
+import com.example.busmate.viewmodel.LocationViewModel
 import com.example.busmate.viewmodel.SupportViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -61,6 +63,11 @@ fun ParentDashboardScreen(
     val childViewModel = remember {
         ChildViewModel(repository = ChildRepositoryImpl())
     }
+    val locationViewModel = remember {
+        LocationViewModel(LocationImpl(context))
+    }
+
+    val busId = "-OgeXRJhRkVNMonROQYL" // replace with real bus id
 
     val children by childViewModel.children.collectAsState()
 
@@ -176,7 +183,8 @@ fun ParentDashboardScreen(
                     children = children
                 )
                 1 -> SupportScreen(viewModel = supportViewModel)
-                2 -> LiveLocationScreen()
+                2 -> LiveLocationScreen( viewModel = locationViewModel,
+                    busId = busId)
                 3 -> ProfileEditScreen()
             }
         }

@@ -128,5 +128,20 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 callback(task.isSuccessful)
             }
     }
+    // In BusRepositoryImpl.kt
+    override fun getLiveBusLocation(busId: String, callback: (String) -> Unit) {
+        // Reference the specific bus and its currentLocation field
+        busesRef.child(busId).child("currentLocation")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val location = snapshot.getValue(String::class.java) ?: "0.0,0.0"
+                    callback(location)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Handle error
+                }
+            })
+    }
 }
 //testing the current location of driver
