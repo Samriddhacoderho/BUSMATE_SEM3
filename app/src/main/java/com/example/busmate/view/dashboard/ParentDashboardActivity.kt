@@ -115,7 +115,6 @@ fun ParentDashboardScreen(
                     else null,
                     modifier = Modifier.weight(1f)
                 )
-
                 Row(horizontalArrangement = Arrangement.End) {
 //                    IconButton(onClick = {
 //                        selectedItem = 3   // Profile tab
@@ -126,7 +125,6 @@ fun ParentDashboardScreen(
 //                            tint = MaterialTheme.colorScheme.onSurface
 //                        )
 //                    }
-
                     IconButton(onClick = {}) {
                         Icon(
                             imageVector = Icons.Filled.Notifications,
@@ -171,7 +169,6 @@ fun ParentDashboardScreen(
             }
         }
     ) { paddingValues ->
-
         /* ---------- SCREEN SWITCHER ---------- */
         Box(
             modifier = Modifier
