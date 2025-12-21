@@ -70,10 +70,10 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
             sensorManager.unregisterListener(this)
             isSensorRegistered = false
         }
-        sendDataToFirebase(0f, isFinal = true)
         activeBusUid = null
         _currentSpeedMps.postValue(0f)
     }
+
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
@@ -147,4 +147,12 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    override fun updateTripRunning(routeId: String, isRunning: Boolean) {
+        database.getReference("buses")
+            .child(routeId)
+            .child("isTripRunning")
+            .setValue(isRunning)
+    }
+
 }
