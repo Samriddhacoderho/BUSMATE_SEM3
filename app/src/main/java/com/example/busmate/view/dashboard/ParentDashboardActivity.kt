@@ -72,12 +72,12 @@ fun ParentDashboardScreen(
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
-//    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
 
     /* ---------- DRAWER STATE ---------- */
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
+    var showDigitalId by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -104,10 +104,13 @@ fun ParentDashboardScreen(
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff)
         )
+
         "driver" -> listOf(
             NavItem("My Trips", Icons.Default.Route)
         )
+
         else -> listOf(
+            NavItem("Digital Student ID", Icons.Default.QrCode),
             NavItem("About Us", Icons.Default.Info)
         )
     }
@@ -152,11 +155,44 @@ fun ParentDashboardScreen(
                             scope.launch {
                                 drawerState.close()
                                 when (item.label) {
-                                    "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
-                                    "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
-                                    "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
-                                    "View Driver" -> context.startActivity(Intent(context, DriverProfileScreen::class.java))
-                                    "Manage Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                                    "Digital Student ID" -> {
+                                        showDigitalId = true
+                                    }
+
+                                    "Create Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            CreateAccountScreenActivity::class.java
+                                        )
+                                    )
+
+                                    "Add Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusScreen::class.java
+                                        )
+                                    )
+
+                                    "View Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "View Driver" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            DriverProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "Manage Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            AdminDeactivatesActivity::class.java
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -207,7 +243,10 @@ fun ParentDashboardScreen(
                     navList.forEachIndexed { index, item ->
                         NavigationBarItem(
                             selected = selectedItem == index,
-                            onClick = { selectedItem = index },
+                            onClick = {
+                                selectedItem = index
+                                showDigitalId = false
+                            },
                             icon = { Icon(item.icon, null) },
                             label = { Text(item.label) }
                         )
@@ -216,22 +255,32 @@ fun ParentDashboardScreen(
             }
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                when (selectedItem) {
-                    0 -> HomeScreen(
-                        children = children,
-                        onOpenLiveLocation = { routeId ->
-                            selectedBusRouteId = routeId
-                            selectedItem = 2   // ✅ Switch to Location tab
-                        }
+                // STUDENT ID WORK: Check if Digital ID screen should be shown
+                if (showDigitalId) {
+                    StudentIdRoute(
+                        userViewModel = userViewModel,
+                        childViewModel = childViewModel,
+                        studentId = null, // null tells the route to show the Pager/Horizontal scroll
+                        onBack = { showDigitalId = false }
                     )
+                } else {
+                    when (selectedItem) {
+                        0 -> HomeScreen(
+                            children = children,
+                            onOpenLiveLocation = { routeId ->
+                                selectedBusRouteId = routeId
+                                selectedItem = 2   // ✅ Switch to Location tab
+                            }
+                        )
 
-                    1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(
-                        viewModel = locationViewModel,
-                        busId = selectedBusRouteId ?: "No bus selected"
-                    )
+                        1 -> SupportScreen(supportViewModel)
+                        2 -> LiveLocationScreen(
+                            viewModel = locationViewModel,
+                            busId = selectedBusRouteId ?: "No bus selected"
+                        )
 
-                    3 -> ProfileEditScreen()
+                        3 -> ProfileEditScreen()
+                    }
                 }
             }
         }
