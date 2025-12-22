@@ -70,6 +70,7 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
             sensorManager.unregisterListener(this)
             isSensorRegistered = false
         }
+        sendDataToFirebase(0f, isFinal = true)
         activeBusUid = null
         _currentSpeedMps.postValue(0f)
     }
