@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
@@ -35,17 +37,11 @@ import com.example.busmate.viewmodel.ChildViewModel
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
-/**
- * 1. ACTIVITY WRAPPER
- * This allows you to launch this UI as a standalone screen if needed.
- */
 class StudentIdCard : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         val studentId = intent.getStringExtra("STUDENT_ID")
-
         setContent {
             BusMateTheme {
                 val userViewModel: UserViewModel = viewModel { UserViewModel(UserRepositoryImpl()) }
@@ -71,10 +67,6 @@ class StudentIdCard : ComponentActivity() {
     }
 }
 
-/**
- * 2. THE ROUTE (Stateful)
- * Logic to decide between showing a single card or a horizontal pager.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentIdRoute(
@@ -88,28 +80,30 @@ fun StudentIdRoute(
     val message by userViewModel.message.collectAsState()
 
     val isLoading = message.contains("Loading") || userState == null
-    val busMateBlue = Color(0xFF1A237E)
+    val busMateBlue = Color(0xFF2567E8) // Updated color
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Simple Top Bar logic
-        TopAppBar(
-            title = { Text("Digital Student ID", color = Color.White) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
-        )
-
-        Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Digital Student ID", color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
+            )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = busMateBlue)
             } else if (childrenList.isEmpty()) {
                 Text("No children data found.", modifier = Modifier.align(Alignment.Center))
             } else {
                 if (!studentId.isNullOrEmpty()) {
-                    // Scenario A: View specific child
                     val selectedChild = childrenList.find { it.studentId == studentId }
                     if (selectedChild != null) {
                         DigitalStudentIdContent(child = selectedChild, parent = userState)
@@ -117,21 +111,15 @@ fun StudentIdRoute(
                         Text("Child not found.", modifier = Modifier.align(Alignment.Center))
                     }
                 } else {
-                    // Scenario B: Horizontal Scroll Pager (Multi-child)
                     val pagerState = rememberPagerState(pageCount = { childrenList.size })
-
                     Column {
                         Text(
                             text = "Swipe to view children (${pagerState.currentPage + 1}/${childrenList.size})",
-                            modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally),
+                            modifier = Modifier.padding(12.dp).align(Alignment.CenterHorizontally),
                             fontSize = 12.sp,
                             color = Color.Gray
                         )
-
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { page ->
+                        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                             DigitalStudentIdContent(child = childrenList[page], parent = userState)
                         }
                     }
@@ -141,16 +129,11 @@ fun StudentIdRoute(
     }
 }
 
-/**
- * 3. THE UI (Stateless)
- * Pure design logic.
- */
 @Composable
-fun DigitalStudentIdContent(
-    child: ChildModel,
-    parent: UserModel?
-) {
-    val busMateBlue = Color(0xFF1A237E)
+fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
+    val busMateBlue = Color(0xFF2567E8) // Updated color
+    val scrollState = rememberScrollState()
+
     val qrBitmap = remember(child, parent) {
         if (parent != null) {
             val content = QRCodeGenerator.generateFullDataString(child, parent)
@@ -158,21 +141,42 @@ fun DigitalStudentIdContent(
         } else null
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
-        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(busMateBlue))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5))
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Blue Header Section
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .background(busMateBlue)
+        )
 
+        // White Profile Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .align(Alignment.Center)
-                .offset(y = (-40).dp),
+                .offset(y = (-60).dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(6.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFFE0E0E0)), contentAlignment = Alignment.Center) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE0E0E0)),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(Icons.Default.Person, null, modifier = Modifier.size(40.dp), tint = Color.Gray)
                 }
                 Spacer(Modifier.height(10.dp))
@@ -182,15 +186,31 @@ fun DigitalStudentIdContent(
                 IdInfoRow("Name", "${child.firstName} ${child.lastName}")
                 IdInfoRow("ID", child.studentId)
                 IdInfoRow("Route", child.busRouteId)
-                IdInfoRow("Parent", "${parent?.firstName} ${parent?.lastName}")
+                IdInfoRow("Parent", "${parent?.firstName ?: ""} ${parent?.lastName ?: ""}")
                 IdInfoRow("Contact", parent?.phone ?: "N/A")
             }
         }
 
+        // QR Code Section
         if (qrBitmap != null) {
-            Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(bitmap = qrBitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.size(160.dp))
-                Text("Scan for Verification", fontSize = 11.sp, color = busMateBlue, modifier = Modifier.padding(top = 8.dp))
+            Column(
+                modifier = Modifier
+                    .padding(bottom = 40.dp)
+                    .offset(y = (-30).dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    bitmap = qrBitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.size(180.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Scan for Verification",
+                    fontSize = 12.sp,
+                    color = busMateBlue,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }

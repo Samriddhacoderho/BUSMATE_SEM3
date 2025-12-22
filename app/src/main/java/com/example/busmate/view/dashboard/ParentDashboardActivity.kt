@@ -77,7 +77,7 @@ fun ParentDashboardScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
-    var showDigitalId by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -156,7 +156,7 @@ fun ParentDashboardScreen(
                                 drawerState.close()
                                 when (item.label) {
                                     "Digital Student ID" -> {
-                                        showDigitalId = true
+                                        context.startActivity(Intent(context, StudentIdCard::class.java))
                                     }
 
                                     "Create Account" -> context.startActivity(
@@ -245,7 +245,7 @@ fun ParentDashboardScreen(
                             selected = selectedItem == index,
                             onClick = {
                                 selectedItem = index
-                                showDigitalId = false
+
                             },
                             icon = { Icon(item.icon, null) },
                             label = { Text(item.label) }
@@ -255,15 +255,6 @@ fun ParentDashboardScreen(
             }
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                // STUDENT ID WORK: Check if Digital ID screen should be shown
-                if (showDigitalId) {
-                    StudentIdRoute(
-                        userViewModel = userViewModel,
-                        childViewModel = childViewModel,
-                        studentId = null, // null tells the route to show the Pager/Horizontal scroll
-                        onBack = { showDigitalId = false }
-                    )
-                } else {
                     when (selectedItem) {
                         0 -> HomeScreen(
                             children = children,
@@ -285,4 +276,3 @@ fun ParentDashboardScreen(
             }
         }
     }
-}

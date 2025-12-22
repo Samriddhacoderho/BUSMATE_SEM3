@@ -6,19 +6,20 @@ import com.example.busmate.model.ChildModel
 import com.example.busmate.model.UserModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
+import org.json.JSONObject // Import JSON utility
 
 object QRCodeGenerator {
-    // Encodes all required data into one string for the QR code
+    // FIX: Generate a JSON string instead of a plain text string
     fun generateFullDataString(child: ChildModel, parent: UserModel?): String {
-        return """
-            Name: ${child.firstName} ${child.lastName}
-            Student ID: ${child.studentId}
-            Route: ${child.busRouteId}
-            Pickup: ${child.pickUpLocation}
-            Drop-off: ${child.dropOffLocation}
-            Parent: ${parent?.firstName ?: "N/A"} ${parent?.lastName ?: ""}
-            Contact: ${parent?.phone ?: "N/A"}
-        """.trimIndent()
+        val json = JSONObject()
+        json.put("type", "STUDENT_ID") // Identifies this as a BusMate ID
+        json.put("studentId", child.studentId)
+        json.put("fullName", "${child.firstName} ${child.lastName}")
+        json.put("busRouteId", child.busRouteId)
+        json.put("parentId", parent?.uid ?: "N/A")
+        json.put("contact", parent?.phone ?: "N/A")
+
+        return json.toString() // Returns {"studentId":"123", "fullName":"John Doe", ...}
     }
 
     fun createQRCode(content: String, size: Int = 512): Bitmap? {
