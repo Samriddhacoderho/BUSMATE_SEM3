@@ -227,10 +227,13 @@ fun ParentDashboardScreen(
                     // Get the route ID from the first child assigned to the parent
                     val routeId = children.firstOrNull()?.busRouteId
                     if (routeId != null) {
-                        BusDetailsScreen(viewModel = busViewModel, routeId = routeId)
+                        BusDetailsScreen(
+                            viewModel = busViewModel,
+                            children = children
+                        )
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No child/bus route found for this account.")
+                            Text("No children registered to this account.")
                         }
                     }
                 } else {
