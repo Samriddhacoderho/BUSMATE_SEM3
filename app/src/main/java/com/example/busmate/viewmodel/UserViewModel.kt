@@ -1,5 +1,7 @@
 package com.example.busmate.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.UserRepositoryImpl
@@ -10,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel() {
-
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
@@ -156,6 +157,9 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 
 
     }
+//    fun uploadImage(context: Context,imageUri: Uri,callback:(String?)-> Unit) {
+//        repository.uploadImage(context,imageUri,callback)
+//    }
 }
 
 

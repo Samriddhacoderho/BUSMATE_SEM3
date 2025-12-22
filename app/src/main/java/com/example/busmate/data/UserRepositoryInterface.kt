@@ -1,5 +1,7 @@
 package com.example.busmate.data
 
+import android.content.Context
+import android.net.Uri
 import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 
@@ -48,6 +50,7 @@ interface UserRepositoryInterface {
         callback: (Boolean, String) -> Unit
     )
     fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit)
-
-
+//    fun uploadImage(context: Context,imageUri: Uri,callback:(String?)-> Unit)
+//
+//    fun getFileNameFromURI(context: Context,imageUri: Uri): String?
 }
