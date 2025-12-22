@@ -20,4 +20,16 @@ interface BusRepositoryInterface {
         callback: (Boolean) -> Unit
     )
      fun getLiveBusLocation(busId: String, callback: (String) -> Unit)
+
+    fun checkBusRouteExists(
+        busRouteId: String,
+        callback: (Boolean, String) -> Unit
+    )
+
+    fun getBusByRouteId(
+        busRouteId: String,
+        callback: (BusModel?) -> Unit
+    )
+
+
 }

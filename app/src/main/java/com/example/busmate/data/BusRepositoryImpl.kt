@@ -143,5 +143,56 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 }
             })
     }
+
+    override fun checkBusRouteExists(
+        busRouteId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        busesRef
+            .orderByChild("routeId")
+            .equalTo(busRouteId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        callback(true, "Bus route linked successfully")
+                    } else {
+                        callback(false, "No bus found for route ID: $busRouteId")
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message)
+                }
+            })
+    }
+
+    override fun getBusByRouteId(
+        busRouteId: String,
+        callback: (BusModel?) -> Unit
+    ) {
+        busesRef
+            .orderByChild("routeId") // ⚠️ must match Firebase field
+            .equalTo(busRouteId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (!snapshot.exists()) {
+                        callback(null)
+                        return
+                    }
+
+                    val busSnapshot = snapshot.children.first()
+                    val bus = busSnapshot.getValue(BusModel::class.java)
+                    callback(bus)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(null)
+                }
+            })
+    }
+
+
 }
 //testing the current location of driver

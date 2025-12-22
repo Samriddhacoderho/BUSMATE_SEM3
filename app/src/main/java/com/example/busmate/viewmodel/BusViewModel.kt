@@ -40,4 +40,16 @@ class BusViewModel(
                 e.message ?: "An unexpected error occurred during bus registration."
         }
     }
+
+    fun checkBusRouteExists(busrouteId: String,callback:(Boolean, String)-> Unit){
+        repository.checkBusRouteExists(busrouteId,callback)
+    }
+
+    fun getBusByRouteId(
+        routeId: String,
+        callback: (BusModel?) -> Unit
+    ) {
+        repository.getBusByRouteId(routeId, callback)
+    }
+
 }
