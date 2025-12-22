@@ -86,6 +86,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 //    implementation("com.baato:baato-android:1.1.0")
     implementation("androidx.compose.runtime:runtime-livedata:1.7.6")
+    implementation("com.google.zxing:core:3.5.1")
 //    implementation("com.cloudinary:cloudinary-android:2.1.0")
 //    implementation("com.squareup.picasso:picasso:2.8")
 

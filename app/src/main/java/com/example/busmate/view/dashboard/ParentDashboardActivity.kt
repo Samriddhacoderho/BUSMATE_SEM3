@@ -106,7 +106,9 @@ fun ParentDashboardScreen(
         )
         else -> listOf(
             NavItem("About Us", Icons.Default.Info) ,
-            NavItem("Bus Details", Icons.Default.DirectionsBus)
+            NavItem("Bus Details", Icons.Default.DirectionsBus),
+            NavItem("Digital Student ID", Icons.Default.QrCode)
+
         )
     }
     ModalNavigationDrawer(
@@ -152,6 +154,9 @@ fun ParentDashboardScreen(
                                         isViewingBusDetails = true
                                     }
                                     "About Us" -> { /* Handle About Us */ }
+                                    "Digital Student ID" -> {
+                                        context.startActivity(Intent(context, StudentIdCard::class.java))
+                                    }
                                     "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
                                     "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
                                     "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
