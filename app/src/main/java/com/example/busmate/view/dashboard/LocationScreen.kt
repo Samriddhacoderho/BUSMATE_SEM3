@@ -318,6 +318,9 @@ fun ETACard(modifier: Modifier = Modifier, cardColor: Color) {
         }
     }
 }
+//testing live location
+
+
 
 //task 1 check if child is assigned to bus/driver if both have same routeid. for example: child has routeId:10 and driver/bus has routeID:10. Are they linked.
 
