@@ -292,6 +292,15 @@ class UserRepositoryImpl : UserRepositoryInterface {
                 }
             }
     }
+    override fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            callback(false, "No logged in user", null)
+            return
+        }
+        getUserProfile(uid, callback)
+    }
+
 
 
 }
