@@ -1,5 +1,11 @@
 package com.example.busmate.data
 
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.OpenableColumns
 import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 import com.google.firebase.auth.EmailAuthProvider
@@ -14,14 +20,23 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-
+//import com.cloudinary.Cloudinary
+//import com.cloudinary.utils.ObjectUtils
+import java.io.InputStream
+import java.util.concurrent.Executors
 class UserRepositoryImpl : UserRepositoryInterface {
-
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseDatabase.getInstance()
 
     private val adminRef = db.getReference("user")   // pre-created by admin
     private val usersRef = db.getReference("users")  // registered users
+//    private val cloudinary = Cloudinary(
+//        mapOf(
+//            "cloud_name" to "dithceay5",
+//            "api_key" to 242833732537939,
+//            "api_secret" to "qQvbql8xsRUmWuyP2xR-rutoxx0"
+//        )
+//    )
 
     override fun registerUser(
         user: UserModel,
@@ -292,6 +307,58 @@ class UserRepositoryImpl : UserRepositoryInterface {
                 }
             }
     }
-
-
+    override fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            callback(false, "No logged in user", null)
+            return
+        }
+        getUserProfile(uid, callback)
+    }
+//    override fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit) {
+//        val executor = Executors.newSingleThreadExecutor()
+//        executor.execute {
+//            try {
+//                val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+//                var fileName = getFileNameFromURI(context, imageUri)
+//
+//                fileName = fileName?.substringBeforeLast(".") ?: "uploaded_image"
+//
+//                val response = cloudinary.uploader().upload(
+//                    inputStream, ObjectUtils.asMap(
+//                        "public_id", fileName,
+//                        "resource_type", "image"
+//                    )
+//                )
+//
+//                var imageUrl = response["url"] as String?
+//
+//                imageUrl = imageUrl?.replace("http://", "https://")
+//
+//                Handler(Looper.getMainLooper()).post {
+//                    callback(imageUrl)
+//                }
+//
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//                Handler(Looper.getMainLooper()).post {
+//                    callback(null)
+//                }
+//            }
+//        }
+//    }
+//
+//    override fun getFileNameFromURI(context: Context, uri: Uri): String? {
+//        var fileName: String? = null
+//        val cursor: Cursor? = context.contentResolver.query(uri, null, null, null, null)
+//        cursor?.use {
+//            if (it.moveToFirst()) {
+//                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+//                if (nameIndex != -1) {
+//                    fileName = it.getString(nameIndex)
+//                }
+//            }
+//        }
+//        return fileName
+//    }
 }
