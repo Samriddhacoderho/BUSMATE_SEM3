@@ -291,17 +291,25 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = fullName,
-            fontSize = 18.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = PrimaryBlack
-        )
-        Text(
-            text = lastName,
-            fontSize = 14.sp,
-            color = TextGray
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = fullName,
+                fontSize = 18.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = PrimaryBlack
+            )
+            Spacer(modifier = Modifier.width(8.dp)) // Add space between names
+            Text(
+                text = lastName,
+                fontSize = 18.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = PrimaryBlack
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = onEditClick,
