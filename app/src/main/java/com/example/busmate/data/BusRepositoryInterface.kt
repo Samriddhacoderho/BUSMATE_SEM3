@@ -2,6 +2,7 @@ package com.example.busmate.data
 
 import com.example.busmate.model.BusModel
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.flow.Flow
 
 interface BusRepositoryInterface {
 
@@ -30,6 +31,8 @@ interface BusRepositoryInterface {
         busRouteId: String,
         callback: (BusModel?) -> Unit
     )
+
+    fun getBusStreamByRouteId(routeId: String): Flow<BusModel?>
 
 
 }

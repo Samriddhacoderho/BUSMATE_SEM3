@@ -96,8 +96,10 @@ fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel
             onClick = {
                 if (state.isRunning) {
                     accelerometerViewModel.stopMeasurement()
+                    accelerometerViewModel.updateTripStatus(driverUid, false)
                 } else {
                     accelerometerViewModel.startMeasurement(driverUid)
+                    accelerometerViewModel.updateTripStatus(driverUid, true)
                 }
             },
             modifier = Modifier
