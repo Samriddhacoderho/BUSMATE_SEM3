@@ -47,6 +47,7 @@ interface UserRepositoryInterface {
         phone: String,
         callback: (Boolean, String) -> Unit
     )
+    fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit)
 
 
 }
