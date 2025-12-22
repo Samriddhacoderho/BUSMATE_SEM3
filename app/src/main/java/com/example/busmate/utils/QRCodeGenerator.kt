@@ -9,7 +9,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import org.json.JSONObject // Import JSON utility
 
 object QRCodeGenerator {
-    // FIX: Generate a JSON string instead of a plain text string
+    // Generate a JSON string
     fun generateFullDataString(child: ChildModel, parent: UserModel?): String {
         val json = JSONObject()
         json.put("type", "STUDENT_ID") // Identifies this as a BusMate ID
