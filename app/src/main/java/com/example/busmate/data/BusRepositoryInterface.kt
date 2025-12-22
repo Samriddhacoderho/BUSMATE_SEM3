@@ -31,5 +31,7 @@ interface BusRepositoryInterface {
         callback: (BusModel?) -> Unit
     )
 
+    fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit)
+
 
 }

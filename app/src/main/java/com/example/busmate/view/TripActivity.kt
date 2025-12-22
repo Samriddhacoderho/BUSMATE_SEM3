@@ -31,23 +31,29 @@ class TripActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Retrieve the Driver UID passed from HomeScreen
+        // Retrieve the Driver UID AND the Bus  ID passed from the previous screen
         val driverUid = intent.getStringExtra("EXTRA_DRIVER_UID") ?: ""
+        val busId = intent.getStringExtra("EXTRA_BUS_ID") ?: ""
+
 
         setContent {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                TripScreen(driverUid = driverUid)
+                // Pass both IDs to the screen
+                TripScreen(driverUid = driverUid, busId = busId)
             }
         }
     }
 }
 
 @Composable
-fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel = viewModel()) {
+fun TripScreen(
+    driverUid: String,
+    busId: String,
+    accelerometerViewModel: AccelerometerViewModel = viewModel()
+) {
     val state by accelerometerViewModel.state
     val context = LocalContext.current
 
-    // Initialize LocationViewModel manually to follow MVVM/Repo pattern without a factory
     val locationViewModel = remember {
         LocationViewModel(
             repo = LocationImpl(context),
@@ -55,14 +61,10 @@ fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel
         )
     }
 
-    //
-    // Effect to start/stop live location tracking based on the trip's running state
     LaunchedEffect(state.isRunning) {
         if (state.isRunning) {
-            // This triggers the GPS loop and starts updating the BusModel in Firebase
             locationViewModel.startTracking(driverUid = driverUid)
         } else {
-            // Stops GPS and synchronization to save battery
             locationViewModel.stopLocationUpdates()
         }
     }
@@ -82,7 +84,6 @@ fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Live speed from Accelerometer
         Text(
             text = "%.1f".format(state.speedMps),
             fontSize = 100.sp,
@@ -95,9 +96,11 @@ fun TripScreen(driverUid: String, accelerometerViewModel: AccelerometerViewModel
         Button(
             onClick = {
                 if (state.isRunning) {
-                    accelerometerViewModel.stopMeasurement()
+                    // Update: Passing busRouteId to tell Firebase to set isTripRunning to false
+                    accelerometerViewModel.stopMeasurement(busId)
                 } else {
-                    accelerometerViewModel.startMeasurement(driverUid)
+                    // Update: Passing both IDs to tell Firebase to set isTripRunning to true
+                    accelerometerViewModel.startMeasurement(driverUid, busId)
                 }
             },
             modifier = Modifier
