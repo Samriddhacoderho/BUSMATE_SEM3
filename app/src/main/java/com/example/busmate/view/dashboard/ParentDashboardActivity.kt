@@ -32,6 +32,7 @@ import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Search
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -251,7 +252,13 @@ fun ParentDashboardScreen(
                                 modifier = Modifier.height(70.dp)
                             )
                         }
-
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color.Black
+                            )
+                        }
                         IconButton(onClick = {}) {
                             Icon(
                                 Icons.Default.Notifications,
