@@ -31,5 +31,6 @@
     <string name="title_activity_trip">TripActivity</string>
     <string name="title_activity_child_trip_details">ChildTripDetails</string>
     <string name="title_activity_student_id_card">StudentIdCard</string>
+    <string name="title_activity_bus_details">BusDetailsActivity</string>
 
 </resources>

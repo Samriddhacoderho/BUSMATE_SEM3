@@ -32,6 +32,7 @@ import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Search
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -87,6 +88,7 @@ fun ParentDashboardScreen(
 
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(val label: String, val icon: ImageVector)
+
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Support", Icons.Filled.SupportAgent),
@@ -101,14 +103,16 @@ fun ParentDashboardScreen(
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff)
         )
+
         "driver" -> listOf(
             NavItem("My Trips", Icons.Default.Route)
         )
-        else -> listOf(
-            NavItem("About Us", Icons.Default.Info) ,
-            NavItem("Bus Details", Icons.Default.DirectionsBus),
-            NavItem("Digital Student ID", Icons.Default.QrCode)
 
+        else -> listOf(
+            NavItem("About Us", Icons.Default.Info),
+            NavItem("Bus Details", Icons.Default.DirectionsBus),
+            NavItem("Digital Student ID", Icons.Default.QrCode),
+            NavItem("Driver Profile", Icons.Default.Badge)
         )
     }
     ModalNavigationDrawer(
@@ -151,17 +155,70 @@ fun ParentDashboardScreen(
                                 drawerState.close()
                                 when (item.label) {
                                     "Bus Details" -> {
-                                        isViewingBusDetails = true
+                                        // ✅ Launch as Activity now
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                BusDetailsActivity::class.java
+                                            )
+                                        )
                                     }
-                                    "About Us" -> { /* Handle About Us */ }
+
+                                    "About Us" -> { /* Handle About Us */
+                                    }
+
                                     "Digital Student ID" -> {
-                                        context.startActivity(Intent(context, StudentIdCard::class.java))
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                StudentIdCard::class.java
+                                            )
+                                        )
                                     }
-                                    "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
-                                    "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
-                                    "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
-                                    "View Driver" -> context.startActivity(Intent(context, DriverProfileScreen::class.java))
-                                    "Manage Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                                    // ... inside your drawer onClick logic ...
+                                    "Driver Profile" -> {
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                DriverProfileActivity::class.java
+                                            )
+                                        )
+                                    }
+
+                                    "Create Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            CreateAccountScreenActivity::class.java
+                                        )
+                                    )
+
+                                    "Add Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusScreen::class.java
+                                        )
+                                    )
+
+                                    "View Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "View Driver" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            DriverProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "Manage Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            AdminDeactivatesActivity::class.java
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -195,7 +252,13 @@ fun ParentDashboardScreen(
                                 modifier = Modifier.height(70.dp)
                             )
                         }
-
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color.Black
+                            )
+                        }
                         IconButton(onClick = {}) {
                             Icon(
                                 Icons.Default.Notifications,
@@ -222,30 +285,20 @@ fun ParentDashboardScreen(
                 }
             }
         ) { padding ->
+            // ... inside Scaffold { padding -> ...
             Box(Modifier.fillMaxSize().padding(padding)) {
-                if (isViewingBusDetails) {
-                    // Get the route ID from the first child assigned to the parent
-                    val routeId = children.firstOrNull()?.busRouteId
-                    if (routeId != null) {
-                        BusDetailsScreen(viewModel = busViewModel, routeId = routeId)
-                    } else {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No child/bus route found for this account.")
-                        }
-                    }
-                } else {
-                    when (selectedItem) {
-                        0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
-                            selectedBusRouteId = id
-                            selectedItem = 2
-                        })
+                when (selectedItem) {
+                    0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
+                        selectedBusRouteId = id
+                        selectedItem = 2
+                    })
 
-                        1 -> SupportScreen(supportViewModel)
-                        2 -> LiveLocationScreen(locationViewModel, selectedBusRouteId ?: "")
-                        3 -> ProfileEditScreen()
-                    }
+                    1 -> SupportScreen(supportViewModel)
+                    2 -> LiveLocationScreen(locationViewModel, selectedBusRouteId ?: "")
+                    3 -> ProfileEditScreen()
                 }
             }
         }
     }
 }
+
