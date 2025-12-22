@@ -52,4 +52,8 @@ class BusViewModel(
         repository.getBusByRouteId(routeId, callback)
     }
 
+    fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit) {
+        repository.getBusByDriverUid(driverUid, callback)
+    }
+
 }

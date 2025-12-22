@@ -193,6 +193,25 @@ class BusRepositoryImpl : BusRepositoryInterface {
             })
     }
 
+    override fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit) {
+        // We query the "buses" node and look for the nested "driver/uid" field
+        busesRef.orderByChild("driver/uid").equalTo(driverUid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Get the first bus that matches this driver
+                        val bus = snapshot.children.first().getValue(BusModel::class.java)
+                        callback(bus)
+                    } else {
+                        callback(null)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(null)
+                }
+            })
+    }
+
 
 }
 //testing the current location of driver

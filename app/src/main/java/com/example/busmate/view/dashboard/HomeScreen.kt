@@ -58,12 +58,20 @@ fun HomeScreen(
         context.startActivity(Intent(context, BusScreen::class.java))
     }
 
-    val navigateToTrip = {
-        val intent = Intent(context, TripActivity::class.java).apply {
-            putExtra("EXTRA_DRIVER_UID", model?.uid)
-        }
-        context.startActivity(intent)
-    }
+     val navigateToTrip = {
+         busViewModel.getBusByDriverUid(model?.uid ?: "") { bus ->
+             if (bus != null) {
+                 val intent = Intent(context, TripActivity::class.java).apply {
+                     putExtra("EXTRA_DRIVER_UID", model?.uid)
+                     // USE bus.uid because that is the name of the folder in Firebase
+                     putExtra("EXTRA_BUS_ID", bus.uid)
+                 }
+                 context.startActivity(intent)
+             } else {
+                 Toast.makeText(context, "Bus not found", Toast.LENGTH_SHORT).show()
+             }
+         }
+     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         LazyColumn(
