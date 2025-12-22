@@ -51,7 +51,6 @@ class ParentDashboardActivity : ComponentActivity() {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -67,8 +66,7 @@ fun ParentDashboardScreen(
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
-
-
+    val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
@@ -78,6 +76,7 @@ fun ParentDashboardScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
+    var isViewingBusDetails by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -88,14 +87,12 @@ fun ParentDashboardScreen(
 
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(val label: String, val icon: ImageVector)
-
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Support", Icons.Filled.SupportAgent),
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
-
     val drawerItems = when (user?.typeofUser?.lowercase()) {
         "admin" -> listOf(
             NavItem("Create Account", Icons.Default.PersonAdd),
@@ -108,10 +105,10 @@ fun ParentDashboardScreen(
             NavItem("My Trips", Icons.Default.Route)
         )
         else -> listOf(
-            NavItem("About Us", Icons.Default.Info)
+            NavItem("About Us", Icons.Default.Info) ,
+            NavItem("Bus Details", Icons.Default.DirectionsBus)
         )
     }
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -142,7 +139,6 @@ fun ParentDashboardScreen(
                         )
                     }
                 }
-
                 drawerItems.forEach { item ->
                     NavigationDrawerItem(
                         icon = { Icon(item.icon, null) },
@@ -152,6 +148,10 @@ fun ParentDashboardScreen(
                             scope.launch {
                                 drawerState.close()
                                 when (item.label) {
+                                    "Bus Details" -> {
+                                        isViewingBusDetails = true
+                                    }
+                                    "About Us" -> { /* Handle About Us */ }
                                     "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
                                     "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
                                     "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
@@ -201,13 +201,15 @@ fun ParentDashboardScreen(
                     }
                 }
             },
-
             bottomBar = {
                 NavigationBar {
                     navList.forEachIndexed { index, item ->
                         NavigationBarItem(
-                            selected = selectedItem == index,
-                            onClick = { selectedItem = index },
+                            selected = (selectedItem == index && !isViewingBusDetails),
+                            onClick = {
+                                selectedItem = index
+                                isViewingBusDetails = false
+                            },
                             icon = { Icon(item.icon, null) },
                             label = { Text(item.label) }
                         )
@@ -216,22 +218,27 @@ fun ParentDashboardScreen(
             }
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                when (selectedItem) {
-                    0 -> HomeScreen(
-                        children = children,
-                        onOpenLiveLocation = { routeId ->
-                            selectedBusRouteId = routeId
-                            selectedItem = 2   // ✅ Switch to Location tab
+                if (isViewingBusDetails) {
+                    // Get the route ID from the first child assigned to the parent
+                    val routeId = children.firstOrNull()?.busRouteId
+                    if (routeId != null) {
+                        BusDetailsScreen(viewModel = busViewModel, routeId = routeId)
+                    } else {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No child/bus route found for this account.")
                         }
-                    )
+                    }
+                } else {
+                    when (selectedItem) {
+                        0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
+                            selectedBusRouteId = id
+                            selectedItem = 2
+                        })
 
-                    1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(
-                        viewModel = locationViewModel,
-                        busId = selectedBusRouteId ?: "No bus selected"
-                    )
-
-                    3 -> ProfileEditScreen()
+                        1 -> SupportScreen(supportViewModel)
+                        2 -> LiveLocationScreen(locationViewModel, selectedBusRouteId ?: "")
+                        3 -> ProfileEditScreen()
+                    }
                 }
             }
         }
