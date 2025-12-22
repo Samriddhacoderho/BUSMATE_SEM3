@@ -154,3 +154,4 @@ fun DetailText(label: String, value: String) {
         HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp, color = Color.LightGray)
     }
 }
+//delete the busdetailsscreen.kt
