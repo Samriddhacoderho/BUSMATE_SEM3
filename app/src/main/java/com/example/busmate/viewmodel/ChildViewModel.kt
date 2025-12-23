@@ -1,6 +1,5 @@
 package com.example.busmate.viewmodel
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.ChildRepositoryInterface
 import com.example.busmate.model.ChildModel
@@ -62,6 +61,24 @@ class ChildViewModel(
     }
 
     fun clearMessage() {
+        _message.value = ""
+    }
+    // ChildViewModel.kt
+    fun observeAllChildren() {
+        repository.observeAllChildren { list ->
+            _children.value = list // Updates the StateFlow for the UI
+        }
+    }
+    fun updateChild(child: ChildModel) {
+        _message.value = "Saving changes..."
+        _isSuccess.value = false
+        repository.updateChild(child) { response, success ->
+            _message.value = response
+            _isSuccess.value = success
+        }
+    }
+    fun resetStatus() {
+        _isSuccess.value = false
         _message.value = ""
     }
 }

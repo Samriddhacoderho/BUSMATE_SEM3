@@ -103,7 +103,8 @@ fun ParentDashboardScreen(
             NavItem("Add Bus", Icons.Default.DirectionsBus),
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
-            NavItem("Manage Account", Icons.Default.PersonOff)
+            NavItem("Manage Account", Icons.Default.PersonOff),
+            NavItem("Search Child", Icons.Default.Search)
         )
 
         "driver" -> listOf(
@@ -168,7 +169,9 @@ fun ParentDashboardScreen(
 
                                     "About Us" -> { /* Handle About Us */
                                     }
-
+                                    "Search Child" -> {
+                                        context.startActivity(Intent(context, AdminSearchChildActivity::class.java))
+                                    }
                                     "Digital Student ID" -> {
                                         context.startActivity(
                                             Intent(
