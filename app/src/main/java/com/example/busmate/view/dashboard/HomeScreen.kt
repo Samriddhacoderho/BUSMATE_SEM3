@@ -182,6 +182,41 @@ fun HomeScreen(
 
             // DRIVER BUTTON
             if (model?.typeofUser == "Driver") {
+                // Inside HomeScreen.kt -> LazyColumn -> if (model?.typeofUser == "Driver")
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // SOS Emergency Button
+                    Button(
+                        onClick = {
+                            // Logic for SOS (e.g., send location to Firebase or call emergency)
+                            Toast.makeText(context, "Emergency Alert Sent!", Toast.LENGTH_LONG).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(65.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE53935), // Vibrant Emergency Red
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "SOS",
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "EMERGENCY SOS",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
                 item {
                     Spacer(modifier = Modifier.height(30.dp))
 
