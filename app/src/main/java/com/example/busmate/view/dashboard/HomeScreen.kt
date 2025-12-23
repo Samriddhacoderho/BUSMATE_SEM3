@@ -35,19 +35,44 @@ import com.example.busmate.view.AddChildActivity
 import com.example.busmate.view.BusScreen
 import com.example.busmate.view.TripActivity
 import com.example.busmate.viewmodel.BusViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.busmate.data.UserRepositoryImpl
+
 
 @Composable
 fun HomeScreen(
     children: List<ChildModel> = emptyList(),
-    onOpenLiveLocation: (busRouteId: String) -> Unit   // ✅ NEW
-)
- {
+    onOpenLiveLocation: (busRouteId: String) -> Unit
+) {
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
+    val userRepository = remember { UserRepositoryImpl() }
+
     val context = LocalContext.current
     val activity = context as Activity
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    // 🔹 User state (THIS WILL TRIGGER RECOMPOSITION)
     var model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
+    }
+
+    // 🔹 RELOAD USER WHEN SCREEN RESUMES
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                userRepository.getCurrentUserProfile { success, _, user ->
+                    if (success && user != null) {
+                        model = user   // 🔥 THIS FIXES IT
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val navigateToAddChild = {
@@ -58,20 +83,19 @@ fun HomeScreen(
         context.startActivity(Intent(context, BusScreen::class.java))
     }
 
-     val navigateToTrip = {
-         busViewModel.getBusByDriverUid(model?.uid ?: "") { bus ->
-             if (bus != null) {
-                 val intent = Intent(context, TripActivity::class.java).apply {
-                     putExtra("EXTRA_DRIVER_UID", model?.uid)
-                     // USE bus.uid because that is the name of the folder in Firebase
-                     putExtra("EXTRA_BUS_ID", bus.uid)
-                 }
-                 context.startActivity(intent)
-             } else {
-                 Toast.makeText(context, "Bus not found", Toast.LENGTH_SHORT).show()
-             }
-         }
-     }
+    val navigateToTrip = {
+        busViewModel.getBusByDriverUid(model?.uid ?: "") { bus ->
+            if (bus != null) {
+                val intent = Intent(context, TripActivity::class.java).apply {
+                    putExtra("EXTRA_DRIVER_UID", model?.uid)
+                    putExtra("EXTRA_BUS_ID", bus.uid)
+                }
+                context.startActivity(intent)
+            } else {
+                Toast.makeText(context, "Bus not found", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         LazyColumn(
@@ -99,7 +123,6 @@ fun HomeScreen(
 
             // CHILD LIST
             if (model?.typeofUser == "Parent") {
-
                 val childrenList =
                     if (children.isNotEmpty()) children
                     else model?.children?.values?.toList().orEmpty()
@@ -132,40 +155,23 @@ fun HomeScreen(
                                         return@getBusByRouteId
                                     }
 
-                                    val isDriverMissing = bus.driver == null
-                                    val isTripRunning = bus.speed > 1.0
-
                                     when {
-                                        isDriverMissing -> {
-                                            Toast.makeText(
-                                                context,
-                                                "Driver not assigned yet",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
+                                        bus.driver == null ->
+                                            Toast.makeText(context, "Driver not assigned yet", Toast.LENGTH_LONG).show()
 
-                                        !isTripRunning -> {
-                                            Toast.makeText(
-                                                context,
-                                                "Trip has not started yet",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
+                                        bus.speed <= 1.0 ->
+                                            Toast.makeText(context, "Trip has not started yet", Toast.LENGTH_LONG).show()
 
-                                        else -> {
-                                            onOpenLiveLocation(bus.uid)
-                                        }
+                                        else -> onOpenLiveLocation(bus.uid)
                                     }
                                 }
-
                             }
-
                         )
                     }
                 }
             }
 
-            // FOOTER (NOTIFICATIONS)
+            // FOOTER
             item {
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
                     NotificationsAlertHeaderScreen()
@@ -174,7 +180,7 @@ fun HomeScreen(
                 }
             }
 
-            // DRIVER → GO TO TRIP
+            // DRIVER BUTTON
             if (model?.typeofUser == "Driver") {
                 item {
                     Spacer(modifier = Modifier.height(30.dp))
@@ -189,11 +195,7 @@ fun HomeScreen(
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Go to Trip",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("Go to Trip", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(40.dp))
@@ -202,6 +204,7 @@ fun HomeScreen(
         }
     }
 }
+
 
 @Composable
 fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
