@@ -66,6 +66,8 @@ fun ParentDashboardScreen(
     val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
+    val application = context.applicationContext as android.app.Application
+    val accelViewModel = remember { AccelRecieverViewModel(application) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
@@ -294,7 +296,10 @@ fun ParentDashboardScreen(
                     })
 
                     1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(locationViewModel, selectedBusRouteId ?: "")
+                    2 -> LiveLocationScreen(viewModel = locationViewModel,
+                        childViewModel = childViewModel,
+                        accelViewModel = accelViewModel,
+                        busId = selectedBusRouteId ?: "")
                     3 -> ProfileEditScreen()
                 }
             }
