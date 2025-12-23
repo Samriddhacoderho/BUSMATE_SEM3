@@ -12,5 +12,7 @@ interface ChildRepositoryInterface {
         parentUid: String,
         callback: (List<ChildModel>) -> Unit
     )
+    fun observeAllChildren(callback: (List<ChildModel>) -> Unit)
+    fun updateChild(model: ChildModel, callback: (String, Boolean) -> Unit)
 
 }
