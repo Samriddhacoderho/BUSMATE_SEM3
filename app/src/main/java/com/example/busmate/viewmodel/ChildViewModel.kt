@@ -27,7 +27,11 @@ class ChildViewModel(
         studentId: String,
         busRouteId: String,
         pickUpLocation: String,
-        dropOffLocation: String
+        dropOffLocation: String,
+        pLat: Double,
+        pLng: Double,
+        dLat: Double,
+        dLng: Double
     ) {
         _message.value = ""
         _isSuccess.value = false
@@ -38,7 +42,11 @@ class ChildViewModel(
             studentId = studentId,
             busRouteId = busRouteId,
             pickUpLocation = pickUpLocation,
-            dropOffLocation = dropOffLocation
+            dropOffLocation = dropOffLocation,
+            pickUpLat = pLat,
+            pickUpLng = pLng,
+            dropOffLat = dLat,
+            dropOffLng = dLng
         )
 
         repository.addChild(child) { responseMessage, success ->
