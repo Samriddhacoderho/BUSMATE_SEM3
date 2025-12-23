@@ -23,19 +23,31 @@ class AccelerometerViewModel(application: Application) : AndroidViewModel(applic
         repository.currentSpeedMps.observeForever(speedObserver)
     }
 
-    fun startMeasurement(driverUid: String) {
+    fun startMeasurement(driverUid: String, busRouteId: String) {
         _state.value = _state.value.copy(isRunning = true)
         repository.startListening(driverUid)
+        if (busRouteId.isNotEmpty()) {
+            repository.updateTripRunning(busRouteId, true)
+        }
     }
 
-    fun stopMeasurement() {
+    fun stopMeasurement(busRouteId: String) {
         repository.stopListening()
         _state.value = _state.value.copy(isRunning = false, speedMps = 0f)
+        if (busRouteId.isNotEmpty()) {
+            repository.updateTripRunning(busRouteId, false)
+        }
+
     }
 
     override fun onCleared() {
         super.onCleared()
         repository.stopListening()
         repository.currentSpeedMps.removeObserver(speedObserver)
+    }
+
+    fun updateTripStatus(driverUid: String, isRunning: Boolean) {
+        // We use the driverUid to find the bus and update the status
+        repository.updateTripRunning(driverUid, isRunning)
     }
 }

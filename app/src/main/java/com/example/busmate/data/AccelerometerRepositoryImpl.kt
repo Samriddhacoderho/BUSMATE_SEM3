@@ -149,9 +149,9 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    override fun updateTripRunning(routeId: String, isRunning: Boolean) {
+    override fun updateTripRunning(busId: String, isRunning: Boolean) {
         database.getReference("buses")
-            .child(routeId)
+            .child(busId)
             .child("isTripRunning")
             .setValue(isRunning)
     }

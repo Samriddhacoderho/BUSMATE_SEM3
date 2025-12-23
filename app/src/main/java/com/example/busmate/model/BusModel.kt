@@ -13,7 +13,8 @@ data class BusModel(
     var maintenanceStatus: String = "Good",
     var currentLocation: String = "Depot",
     var speed: Double = 0.0,
-    var driver: UserModel? = null  // nullable for Realtime DB safety
+    var driver: UserModel? = null, // nullable for Realtime DB safety
+    var isTripRunning:Boolean?=false
 ) : Parcelable {
     fun toMap(): Map<String, Any?> {
         return mapOf(
@@ -25,7 +26,8 @@ data class BusModel(
             "maintenanceStatus" to maintenanceStatus,
             "currentLocation" to currentLocation,
             "speed" to speed,
-            "driver" to driver?.toMap()
+            "driver" to driver?.toMap(),
+            "isTripRunning" to isTripRunning
         )
     }
 }
