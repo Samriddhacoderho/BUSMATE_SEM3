@@ -44,6 +44,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.view.BackgroundWhite
 import com.example.busmate.view.ButtonGray
 import com.example.busmate.view.ChangePasswordScreen
@@ -77,13 +82,31 @@ val TextGray = Color(0xFF6A6A6A)
 val IconGray = Color(0xFF4A4A4A)
 
 @Composable
-fun ProfileEditScreen() {
+fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl()) {
     // This state would typically be managed by a ViewModel
-    var fullName by remember { mutableStateOf("Sandip") }
+
+    var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
 //    var isDarkModeEnabled by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                userRepository.getCurrentUserProfile { success, _, user ->
+                    if (success && user != null) {
+                        firstName = user.firstName ?: ""
+                        lastName = user.lastName ?: ""
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Scaffold(
         containerColor = BackgroundWhite,
@@ -99,8 +122,7 @@ fun ProfileEditScreen() {
             item {
                 // 2. Profile Info Section
                 ProfileInfoCard(
-                    fullName = fullName,
-                    lastName = lastName,
+                    fullName = firstName,lastName = lastName,
                     onEditClick = {   val intent = Intent(context, EditProfileActivity::class.java)
                         context.startActivity(intent) }
                 )
@@ -269,17 +291,25 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = fullName,
-            fontSize = 18.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = PrimaryBlack
-        )
-        Text(
-            text = lastName,
-            fontSize = 14.sp,
-            color = TextGray
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = fullName,
+                fontSize = 18.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = PrimaryBlack
+            )
+            Spacer(modifier = Modifier.width(8.dp)) // Add space between names
+            Text(
+                text = lastName,
+                fontSize = 18.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = PrimaryBlack
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = onEditClick,
@@ -332,3 +362,4 @@ fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true,
         }
     }
 }
+//testing

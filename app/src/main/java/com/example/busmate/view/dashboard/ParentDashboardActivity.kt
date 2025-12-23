@@ -32,6 +32,7 @@ import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Search
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -51,7 +52,6 @@ class ParentDashboardActivity : ComponentActivity() {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -67,8 +67,7 @@ fun ParentDashboardScreen(
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
-
-
+    val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
@@ -78,6 +77,7 @@ fun ParentDashboardScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
+    var isViewingBusDetails by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -95,7 +95,6 @@ fun ParentDashboardScreen(
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
-
     val drawerItems = when (user?.typeofUser?.lowercase()) {
         "admin" -> listOf(
             NavItem("Create Account", Icons.Default.PersonAdd),
@@ -104,14 +103,18 @@ fun ParentDashboardScreen(
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff)
         )
+
         "driver" -> listOf(
             NavItem("My Trips", Icons.Default.Route)
         )
+
         else -> listOf(
-            NavItem("About Us", Icons.Default.Info)
+            NavItem("About Us", Icons.Default.Info),
+            NavItem("Bus Details", Icons.Default.DirectionsBus),
+            NavItem("Digital Student ID", Icons.Default.QrCode),
+            NavItem("Driver Profile", Icons.Default.Badge)
         )
     }
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -142,7 +145,6 @@ fun ParentDashboardScreen(
                         )
                     }
                 }
-
                 drawerItems.forEach { item ->
                     NavigationDrawerItem(
                         icon = { Icon(item.icon, null) },
@@ -152,11 +154,71 @@ fun ParentDashboardScreen(
                             scope.launch {
                                 drawerState.close()
                                 when (item.label) {
-                                    "Create Account" -> context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
-                                    "Add Bus" -> context.startActivity(Intent(context, BusScreen::class.java))
-                                    "View Bus" -> context.startActivity(Intent(context, BusProfileScreen::class.java))
-                                    "View Driver" -> context.startActivity(Intent(context, DriverProfileScreen::class.java))
-                                    "Manage Account" -> context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                                    "Bus Details" -> {
+                                        // ✅ Launch as Activity now
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                BusDetailsActivity::class.java
+                                            )
+                                        )
+                                    }
+
+                                    "About Us" -> { /* Handle About Us */
+                                    }
+
+                                    "Digital Student ID" -> {
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                StudentIdCard::class.java
+                                            )
+                                        )
+                                    }
+                                    // ... inside your drawer onClick logic ...
+                                    "Driver Profile" -> {
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                DriverProfileActivity::class.java
+                                            )
+                                        )
+                                    }
+
+                                    "Create Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            CreateAccountScreenActivity::class.java
+                                        )
+                                    )
+
+                                    "Add Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusScreen::class.java
+                                        )
+                                    )
+
+                                    "View Bus" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            BusProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "View Driver" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            DriverProfileScreen::class.java
+                                        )
+                                    )
+
+                                    "Manage Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            AdminDeactivatesActivity::class.java
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -190,7 +252,13 @@ fun ParentDashboardScreen(
                                 modifier = Modifier.height(70.dp)
                             )
                         }
-
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color.Black
+                            )
+                        }
                         IconButton(onClick = {}) {
                             Icon(
                                 Icons.Default.Notifications,
@@ -201,13 +269,15 @@ fun ParentDashboardScreen(
                     }
                 }
             },
-
             bottomBar = {
                 NavigationBar {
                     navList.forEachIndexed { index, item ->
                         NavigationBarItem(
-                            selected = selectedItem == index,
-                            onClick = { selectedItem = index },
+                            selected = (selectedItem == index && !isViewingBusDetails),
+                            onClick = {
+                                selectedItem = index
+                                isViewingBusDetails = false
+                            },
                             icon = { Icon(item.icon, null) },
                             label = { Text(item.label) }
                         )
@@ -215,25 +285,20 @@ fun ParentDashboardScreen(
                 }
             }
         ) { padding ->
+            // ... inside Scaffold { padding -> ...
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
-                    0 -> HomeScreen(
-                        children = children,
-                        onOpenLiveLocation = { routeId ->
-                            selectedBusRouteId = routeId
-                            selectedItem = 2   // ✅ Switch to Location tab
-                        }
-                    )
+                    0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
+                        selectedBusRouteId = id
+                        selectedItem = 2
+                    })
 
                     1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(
-                        viewModel = locationViewModel,
-                        busId = selectedBusRouteId ?: "No bus selected"
-                    )
-
+                    2 -> LiveLocationScreen(locationViewModel, selectedBusRouteId ?: "")
                     3 -> ProfileEditScreen()
                 }
             }
         }
     }
 }
+

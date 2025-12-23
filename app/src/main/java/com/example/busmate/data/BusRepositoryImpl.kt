@@ -4,9 +4,6 @@ import android.util.Log
 import com.example.busmate.model.BusModel
 import com.google.firebase.database.*
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 
 class BusRepositoryImpl : BusRepositoryInterface {
 
@@ -196,27 +193,23 @@ class BusRepositoryImpl : BusRepositoryInterface {
             })
     }
 
-    // Add this to your BusRepositoryImpl
-    // In BusRepositoryImpl.kt
-    override fun getBusStreamByRouteId(routeId: String): Flow<BusModel?> = callbackFlow {
-        val query = busesRef
-            .orderByChild("routeId") // Make sure this matches the key in Firebase exactly
-            .equalTo(routeId)
-
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                // Log this to see what's actually coming back
-                Log.d("BusRepo", "Snapshot exists: ${snapshot.exists()} for route: $routeId")
-
-                val bus = snapshot.children.firstOrNull()?.getValue(BusModel::class.java)
-                trySend(bus)
-            }
-            override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
-            }
-        }
-        query.addValueEventListener(listener)
-        awaitClose { query.removeEventListener(listener) }
+    override fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit) {
+        // We query the "buses" node and look for the nested "driver/uid" field
+        busesRef.orderByChild("driver/uid").equalTo(driverUid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Get the first bus that matches this driver
+                        val bus = snapshot.children.first().getValue(BusModel::class.java)
+                        callback(bus)
+                    } else {
+                        callback(null)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(null)
+                }
+            })
     }
 
 

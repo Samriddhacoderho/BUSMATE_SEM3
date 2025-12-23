@@ -1,13 +1,11 @@
 package com.example.busmate.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
 import com.example.busmate.model.BusModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class BusViewModel(
     private val repository: BusRepositoryInterface = BusRepositoryImpl()
@@ -15,8 +13,6 @@ class BusViewModel(
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
-    private val _busStatus = MutableStateFlow<BusModel?>(null)
-    val busStatus: StateFlow<BusModel?> = _busStatus
 
     fun registerBus(
         busNumber: String,
@@ -56,14 +52,8 @@ class BusViewModel(
         repository.getBusByRouteId(routeId, callback)
     }
 
-    fun observeBusByRoute(routeId: String) {
-        viewModelScope.launch {
-            repository.getBusStreamByRouteId(routeId).collect { bus ->
-                _busStatus.value = bus
-            }
-        }
+    fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit) {
+        repository.getBusByDriverUid(driverUid, callback)
     }
-
-
 
 }

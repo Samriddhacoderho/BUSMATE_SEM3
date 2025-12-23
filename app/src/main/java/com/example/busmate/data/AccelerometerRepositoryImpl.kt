@@ -149,33 +149,11 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    override fun updateTripRunning(driverUid: String, isRunning: Boolean) {
-        if (driverUid.isEmpty()) {
-            Log.e("AccelerometerRepo", "Cannot update trip: Driver UID is empty")
-            return
-        }
-
-        val busesRef = database.getReference("buses")
-
-        // This query looks for the bus where the nested driver object has a matching UID
-        busesRef.orderByChild("driver/uid").equalTo(driverUid)
-        .addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    for (busSnapshot in snapshot.children) {
-                        // Successfully found the bus assigned to this driver
-                        busSnapshot.ref.child("isTripRunning").setValue(isRunning)
-                    }
-                } else {
-                    // This happens if the bus has driver = null in Firebase
-                    Log.e("AccelerometerRepo", "Update failed: No bus is currently assigned to UID $driverUid")
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("AccelerometerRepo", "Query failed: ${error.message}")
-            }
-        })
+    override fun updateTripRunning(busId: String, isRunning: Boolean) {
+        database.getReference("buses")
+            .child(busId)
+            .child("isTripRunning")
+            .setValue(isRunning)
     }
 
 }
