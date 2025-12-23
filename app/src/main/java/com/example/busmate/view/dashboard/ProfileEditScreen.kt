@@ -61,14 +61,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.busmate.data.UserRepositoryImpl
-import com.example.busmate.view.BackgroundWhite
-import com.example.busmate.view.ButtonGray
 import com.example.busmate.view.ChangePasswordScreen
 import com.example.busmate.view.EditProfileActivity
-import com.example.busmate.view.IconGray
 import com.example.busmate.view.LoginScreen
-import com.example.busmate.view.PrimaryBlack
-import com.example.busmate.view.TextGray
 import com.google.firebase.auth.FirebaseAuth
 import com.example.busmate.view.DarkMoodSettingActivity
 
