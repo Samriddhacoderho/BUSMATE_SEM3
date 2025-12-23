@@ -17,6 +17,11 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.EmergencyAlertActivity"
+            android:exported="false"
+            android:label="@string/title_activity_emergency_alert"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.EditStudentActivity"
             android:exported="false"
             android:label="@string/title_activity_edit_student"
