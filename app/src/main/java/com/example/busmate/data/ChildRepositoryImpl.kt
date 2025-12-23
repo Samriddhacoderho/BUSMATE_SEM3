@@ -88,6 +88,48 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
+    // ChildRepositoryImpl.kt
+    override fun observeAllChildren(callback: (List<ChildModel>) -> Unit) {
+        FirebaseDatabase.getInstance().getReference("users")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val allChildren = mutableListOf<ChildModel>()
+                    // Loop through every user to find their 'children' node
+                    for (userSnapshot in snapshot.children) {
+                        val childrenNode = userSnapshot.child("children")
+                        for (childSnapshot in childrenNode.children) {
+                            childSnapshot.getValue(ChildModel::class.java)?.let {
+                                allChildren.add(it)
+                            }
+                        }
+                    }
+                    callback(allChildren)
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+    override fun updateChild(model: ChildModel, callback: (String, Boolean) -> Unit) {
+        // 1. Find which parent this student belongs to using the index
+        studentIndexRef.child(model.studentId).get().addOnSuccessListener { snapshot ->
+            val parentUid = snapshot.child("parentUid").getValue(String::class.java)
 
+            if (parentUid != null) {
+                // 2. Update the student details in the correct path
+                usersRef.child(parentUid).child("children").child(model.studentId)
+                    .setValue(model)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            callback("Student updated successfully", true)
+                        } else {
+                            callback("Update failed: ${task.exception?.message}", false)
+                        }
+                    }
+            } else {
+                callback("Error: Student index not found", false)
+            }
+        }.addOnFailureListener {
+            callback("Database error: ${it.message}", false)
+        }
+    }
 }
 
