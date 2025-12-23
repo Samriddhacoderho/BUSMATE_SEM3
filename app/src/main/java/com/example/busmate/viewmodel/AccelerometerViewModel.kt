@@ -45,4 +45,9 @@ class AccelerometerViewModel(application: Application) : AndroidViewModel(applic
         repository.stopListening()
         repository.currentSpeedMps.removeObserver(speedObserver)
     }
+
+    fun updateTripStatus(driverUid: String, isRunning: Boolean) {
+        // We use the driverUid to find the bus and update the status
+        repository.updateTripRunning(driverUid, isRunning)
+    }
 }
