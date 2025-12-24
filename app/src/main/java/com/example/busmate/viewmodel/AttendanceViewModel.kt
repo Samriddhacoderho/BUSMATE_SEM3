@@ -43,4 +43,35 @@ class AttendanceViewModel(
 
     // 🔹 FIXED SIGNATURE: 3 parameters to match the Activity call
 
+    fun submitAttendance(
+        driverUid: String,
+        selectedChildren: List<ChildModel>,
+        onResult: (Boolean) -> Unit
+    ) {
+        // If we don't have the busId yet, fetch it first
+        if (currentBusId == null) {
+            busRepo.getBusByDriverUid(driverUid) { bus ->
+                if (bus != null) {
+                    currentBusId = bus.uid
+                    performSubmit(bus.uid, selectedChildren, onResult)
+                } else {
+                    onResult(false)
+                }
+            }
+        } else {
+            performSubmit(currentBusId!!, selectedChildren, onResult)
+        }
+    }
+
+    private fun performSubmit(busId: String, children: List<ChildModel>, onResult: (Boolean) -> Unit) {
+        val attendanceData = children.map { child ->
+            mapOf(
+                "studentId" to child.studentId,
+                "childName" to "${child.firstName} ${child.lastName}",
+                "status" to "Present",
+                "timestamp" to ServerValue.TIMESTAMP
+            )
+        }
+        attendanceRepo.submitAttendance(busId, attendanceData, onResult)
+    }
 }
