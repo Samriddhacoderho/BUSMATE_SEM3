@@ -47,7 +47,8 @@ fun LiveLocationScreen(
     viewModel: LocationViewModel,
     childViewModel: ChildViewModel,
     accelViewModel: AccelRecieverViewModel,
-    busId: String
+    busId: String,
+    selectedChildId: String? = null
 ) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
     val childEtas by viewModel.childEtas.collectAsState()
@@ -70,8 +71,9 @@ fun LiveLocationScreen(
     }
 
     LaunchedEffect(coordinates, liveReading, children) {
+        val filteredChildren = children.filter { it.studentId == selectedChildId }
         viewModel.updateChildEtas(
-            children = children,
+            children = filteredChildren,
             currentCoords = coordinates,
             rawSpeedMps = liveReading?.speedMps ?: 0f
         )
