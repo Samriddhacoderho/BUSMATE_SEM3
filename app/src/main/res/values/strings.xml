@@ -34,5 +34,7 @@
     <string name="title_activity_bus_details">BusDetailsActivity</string>
     <string name="title_activity_admin_search_child">AdminSearchChildActivity</string>
     <string name="title_activity_edit_student">EditStudentActivity</string>
+    <string name="title_activity_emergency_alert">EmergencyAlertActivity</string>
+    <string name="title_activity_attendance">AttendanceActivity</string>
 
 </resources>

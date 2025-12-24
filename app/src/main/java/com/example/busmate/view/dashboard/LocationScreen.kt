@@ -11,11 +11,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +30,8 @@ import androidx.core.app.ActivityCompat
 import com.example.busmate.R
 import com.example.busmate.data.LocationImpl
 import com.example.busmate.model.UserModel
+import com.example.busmate.viewmodel.AccelRecieverViewModel
+import com.example.busmate.viewmodel.ChildViewModel
 import com.example.busmate.viewmodel.LocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
@@ -58,9 +62,15 @@ fun createBusMarkerIcon(context: Context): BitmapDescriptor {
 @Composable
 fun LiveLocationScreen(
     viewModel: LocationViewModel,
+    childViewModel: ChildViewModel,
+    accelViewModel: AccelRecieverViewModel,
     busId: String
 ) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
+    val childEtas by viewModel.childEtas.collectAsState() // Added: Observe calculated ETAs
+    val children by childViewModel.children.collectAsState() // Added: Observe children list
+    val liveReading by accelViewModel.firebaseReading.observeAsState() // Added: Observe live speed
+
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -70,6 +80,19 @@ fun LiveLocationScreen(
 
     LaunchedEffect(busId) {
         viewModel.fetchBusLocation(busId)
+        accelViewModel.startTrackingBus(busId) // Added: Start listening to bus speed
+        // Added: Fetch children for the logged-in parent
+        model?.uid?.let { parentUid ->
+            childViewModel.observeChildren(parentUid)
+        }
+    }
+
+    LaunchedEffect(coordinates, liveReading, children) {
+        viewModel.updateChildEtas(
+            children = children,
+            currentCoords = coordinates,
+            rawSpeedMps = liveReading?.speedMps ?: 0f
+        )
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
@@ -108,15 +131,30 @@ fun LiveLocationScreen(
                 context = context,
                 coordinates = coordinates
             )
+            // Added: Only show ETA section to Parents
+            if (model?.typeofUser == "Parent") {
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "Your Children's Arrival Info",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item { ETACard(MaterialTheme.colorScheme.primaryContainer) }
-                item { ETACard(MaterialTheme.colorScheme.secondaryContainer) }
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    // Added: Dynamic loop through calculated ETAs
+                    items(childEtas) { etaState ->
+                        ETACard(
+                            childName = etaState.childName,
+                            eta = etaState.etaMinutes,
+                            cardColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    }
+                }
             }
         }
     }
@@ -270,45 +308,43 @@ fun CardMap(
    ETA Card
 ------------------------------------------------------- */
 @Composable
-fun ETACard(cardColor: Color) {
+fun ETACard(childName: String, eta: Int, cardColor: Color) {
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        modifier = Modifier
-            .width(280.dp)
-            .height(110.dp)
+        modifier = Modifier.width(260.dp).height(100.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White),
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🚌", fontSize = 28.sp)
+                Text("👶", fontSize = 24.sp)
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text("ETA 15 minutes", fontWeight = FontWeight.Bold, color = Color.White)
+                // Added: Logic to show "Arriving Now" if ETA is very low
                 Text(
-                    "Bus No: 1533",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.8f)
+                    text = if (eta <= 1) "Arriving Now" else "$eta mins to arrival",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "For $childName",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
 
             Icon(
                 imageVector = Icons.Default.DirectionsBus,
                 contentDescription = null,
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
             )
         }
     }

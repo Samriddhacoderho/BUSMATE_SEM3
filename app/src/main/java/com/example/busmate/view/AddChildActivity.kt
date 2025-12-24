@@ -34,6 +34,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.data.ChildRepositoryImpl // <-- Crucial Import
 import androidx.lifecycle.ViewModel // Import needed for ChildViewModel signature
 import com.example.busmate.viewmodel.ChildViewModel
+import kotlinx.coroutines.launch
 
 
 // --- New Activity Definition ---
@@ -42,18 +43,16 @@ class AddChildActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AddChildScreenUI()
+            val repository = remember { ChildRepositoryImpl() }
+            val childViewModel = remember { ChildViewModel(repository) }
+            AddChildScreenUI(childViewModel)
         }
     }
 }
 
 
 @Composable
-fun AddChildScreenUI() {
-
-    val repository =
-        remember { ChildRepositoryImpl() }
-    val viewModel: ChildViewModel = remember { ChildViewModel(repository) }
+fun AddChildScreenUI(viewModel: ChildViewModel) {
 
     // 2. Context and State Setup
     val context = LocalContext.current
@@ -67,7 +66,8 @@ fun AddChildScreenUI() {
     var busRouteId by remember { mutableStateOf("") }
     var pickUpLocation by remember { mutableStateOf("") }
     var dropOffLocation by remember { mutableStateOf("") }
-    val isLoading = message == "Loading"
+    var isGeocoding by remember { mutableStateOf(false) }
+    val isLoading = message == "Loading" || isGeocoding
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -75,6 +75,7 @@ fun AddChildScreenUI() {
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
             snackbarHostState.showSnackbar(message)
+            if (isSuccess) activity.finish()
         }
     }
     Scaffold(
@@ -176,7 +177,7 @@ fun AddChildScreenUI() {
                         Icons.Default.DirectionsBus
                     )
 
-                    Divider(Modifier.padding(vertical = 16.dp))
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp)) // Updated from Divider
                     Text(
                         "Pickup/Dropoff Location",
                         style = MaterialTheme.typography.titleMedium,
@@ -201,59 +202,88 @@ fun AddChildScreenUI() {
                     // Submit Button
                     Button(
                         onClick = {
-                            // Correctly call the ViewModel function with individual parameters
-                            viewModel.addChild(
-                                firstName = firstName,
-                                lastName = lastName,
-                                studentId = studentId,
-                                busRouteId = busRouteId,
-                                pickUpLocation = pickUpLocation,
-                                dropOffLocation = dropOffLocation
-                            )
+                            scope.launch {
+                                isGeocoding = true
+                                val pAddr = getCoords(context, pickUpLocation)
+                                val dAddr = getCoords(context, dropOffLocation)
+
+                                if (pAddr != null && dAddr != null) {
+                                    viewModel.addChild(
+                                        firstName = firstName,
+                                        lastName = lastName,
+                                        studentId = studentId,
+                                        busRouteId = busRouteId,
+                                        pickUpLocation = pickUpLocation,
+                                        dropOffLocation = dropOffLocation,
+                                        // Ensure ChildViewModel.addChild is updated to accept these 4 parameters
+                                        pLat = pAddr.latitude,
+                                        pLng = pAddr.longitude,
+                                        dLat = dAddr.latitude,
+                                        dLng = dAddr.longitude
+                                    )
+                                } else {
+                                    Toast.makeText(context, "Invalid address. Please try again.", Toast.LENGTH_SHORT).show()
+                                }
+                                isGeocoding = false
+                            }
                         },
                         enabled = !isLoading && firstName.isNotBlank() && studentId.isNotBlank() && busRouteId.isNotBlank(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
-                        Text(
-                            text = if (isLoading) "Adding..." else "ADD CHILD",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                text = "ADD CHILD",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
-            // Additional spacer to compensate for the card offset
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
-    // Reusable Composable for Input Field (kept the same)
-    @Composable
-    fun AddChildInputField(
-        value: String,
-        onValueChange: (String) -> Unit,
-        label: String,
-        icon: ImageVector,
-        isOptional: Boolean = false,
-        keyboardType: KeyboardType = KeyboardType.Text
-    ) {
-        val BusMateBlue = Color(0xFF1976D2)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label + if (!isOptional) " *" else "") },
-            leadingIcon = { Icon(icon, contentDescription = null, tint = BusMateBlue) },
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BusMateBlue,
-                focusedLabelColor = BusMateBlue
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-        )
+// Reusable Composable for Input Field (Moved outside to fix nesting issue)
+@Composable
+fun AddChildInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    isOptional: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    val BusMateBlue = Color(0xFF1976D2)
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label + if (!isOptional) " *" else "") },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = BusMateBlue) },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = BusMateBlue,
+            focusedLabelColor = BusMateBlue
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    )
+}
+
+// Helper function (Moved outside to fix nesting issue)
+private suspend fun getCoords(context: android.content.Context, address: String): android.location.Address? {
+    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val geocoder = android.location.Geocoder(context)
+            // Adding ", Kathmandu" helps the prototype be more accurate
+            geocoder.getFromLocationName("$address, Kathmandu", 1)?.firstOrNull()
+        } catch (e: Exception) {
+            null
+        }
     }
+}
