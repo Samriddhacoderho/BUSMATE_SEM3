@@ -6,6 +6,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AttendanceRepositoryImpl: AttendanceRepository{
     // Add this to your UserRepositoryInterface and implementation
@@ -33,5 +36,27 @@ class AttendanceRepositoryImpl: AttendanceRepository{
             }
             override fun onCancelled(error: DatabaseError) { callback(emptyList()) }
         })
+    }
+
+    // Add to AttendanceRepository interface first, then implement:
+    override fun submitAttendance(
+        busId: String,
+        attendanceList: List<Map<String, Any?>>,
+        callback: (Boolean) -> Unit
+    ) {
+        val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val attendanceRef = FirebaseDatabase.getInstance().getReference("attendance")
+            .child(date)
+            .child(busId)
+
+        val updates = mutableMapOf<String, Any>()
+        attendanceList.forEach { record ->
+            val studentId = record["studentId"] as? String ?: return@forEach
+            updates[studentId] = record
+        }
+
+        attendanceRef.updateChildren(updates).addOnCompleteListener { task ->
+            callback(task.isSuccessful)
+        }
     }
 }
