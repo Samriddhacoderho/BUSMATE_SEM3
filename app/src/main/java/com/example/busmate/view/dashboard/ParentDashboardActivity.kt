@@ -108,7 +108,8 @@ fun ParentDashboardScreen(
         )
 
         "driver" -> listOf(
-            NavItem("My Trips", Icons.Default.Route)
+            NavItem("My Trips", Icons.Default.Route),
+            NavItem("Attendance",Icons.Default.ChildCare)
         )
 
         else -> listOf(
@@ -224,6 +225,14 @@ fun ParentDashboardScreen(
                                             AdminDeactivatesActivity::class.java
                                         )
                                     )
+
+                                    "Attendance" -> {
+                                        val intent = Intent(context, AttendanceActivity::class.java).apply {
+                                            // Use the 'user' object from your viewmodel to get the UID
+                                            putExtra("EXTRA_DRIVER_UID", user?.uid)
+                                        }
+                                        context.startActivity(intent)
+                                    }
                                 }
                             }
                         }
