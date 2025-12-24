@@ -299,7 +299,7 @@ fun ParentDashboardScreen(
                 }
             }
         ) { padding ->
-            // ... inside Scaffold { padding -> ...
+
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
                     0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
