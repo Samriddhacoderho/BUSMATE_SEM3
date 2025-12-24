@@ -3,6 +3,7 @@ package com.example.busmate.view.dashboard
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -226,12 +227,29 @@ fun ParentDashboardScreen(
                                         )
                                     )
 
+                                    // Inside ParentDashboardActivity.kt -> navigation drawer onClick logic
                                     "Attendance" -> {
-                                        val intent = Intent(context, AttendanceActivity::class.java).apply {
-                                            // Use the 'user' object from your viewmodel to get the UID
-                                            putExtra("EXTRA_DRIVER_UID", user?.uid)
+                                        val currentDriverUid = user?.uid ?: ""
+
+                                        if (currentDriverUid.isNotEmpty()) {
+                                            // Use the ViewModel to check if a bus is linked to this driver UID
+                                            busViewModel.getBusByDriverUid(currentDriverUid) { bus ->
+                                                if (bus != null) {
+                                                    // SUCCESS: Bus is assigned, proceed to Attendance
+                                                    val intent = Intent(context, AttendanceActivity::class.java).apply {
+                                                        putExtra("EXTRA_DRIVER_UID", currentDriverUid)
+                                                    }
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    // FAILURE: No bus assigned
+                                                    Toast.makeText(
+                                                        context,
+                                                        "You are not assigned to any bus yet.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
                                         }
-                                        context.startActivity(intent)
                                     }
                                 }
                             }
@@ -299,7 +317,7 @@ fun ParentDashboardScreen(
                 }
             }
         ) { padding ->
-            // ... inside Scaffold { padding -> ...
+
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
                     0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
