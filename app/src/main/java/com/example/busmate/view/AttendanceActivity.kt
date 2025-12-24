@@ -56,8 +56,8 @@ fun AttendanceScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
-    // This state tracks which children are currently checked
-    val checkedChildren = remember { mutableStateListOf<ChildModel>() }
+    // Tracks only the students the driver has manually "checked"
+    val checkedStudents = remember { mutableStateListOf<ChildModel>() }
 
     LaunchedEffect(driverUid) {
         if (driverUid.isNotEmpty()) {
@@ -77,24 +77,18 @@ fun AttendanceScreen(
             )
         },
         bottomBar = {
-            // Submit Button
+            // Submit Button Area
             Surface(tonalElevation = 8.dp) {
                 Button(
                     onClick = {
-                        if (checkedChildren.isEmpty()) {
-                            Toast.makeText(context, "Please select students", Toast.LENGTH_SHORT).show()
-                        } else {
-                            // This now matches the ViewModel function with 3 arguments:
-                            // 1. driverUid (String)
-                            // 2. checkedChildren.toList() (List)
-                            // 3. { success -> ... } (The lambda callback)
-                            viewModel.submitAttendance(driverUid, checkedChildren.toList()) { success ->
-                                if (success) {
-                                    Toast.makeText(context, "Attendance saved!", Toast.LENGTH_SHORT).show()
-                                    onBackClick()
-                                } else {
-                                    Toast.makeText(context, "Failed to save", Toast.LENGTH_SHORT).show()
-                                }
+                        // We pass the list of checked students.
+                        // The ViewModel will compare this against the full list to mark others as Absent.
+                        viewModel.submitAttendance(driverUid, checkedStudents.toList()) { success ->
+                            if (success) {
+                                Toast.makeText(context, "Attendance submitted successfully!", Toast.LENGTH_LONG).show()
+                                onBackClick()
+                            } else {
+                                Toast.makeText(context, "Failed to submit attendance", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -106,7 +100,7 @@ fun AttendanceScreen(
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Submit Attendance (${checkedChildren.size})", fontSize = 16.sp)
+                    Text("Submit Attendance", fontSize = 16.sp)
                 }
             }
         }
@@ -116,24 +110,25 @@ fun AttendanceScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (children.isEmpty()) {
                 Text(
-                    "No students assigned to this route.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                    "No students found for this route.",
+                    modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(children) { child ->
-                        val isChecked = checkedChildren.contains(child)
+                        // Check if this child is in our checkedStudents list
+                        val isChecked = checkedStudents.any { it.studentId == child.studentId }
+
                         StudentAttendanceCard(
                             child = child,
-                            isChecked = isChecked,
+                            isSelected = isChecked,
                             onCheckChanged = { checked ->
-                                if (checked) checkedChildren.add(child)
-                                else checkedChildren.remove(child)
+                                if (checked) checkedStudents.add(child)
+                                else checkedStudents.removeAll { it.studentId == child.studentId }
                             }
                         )
                     }
@@ -146,23 +141,23 @@ fun AttendanceScreen(
 @Composable
 fun StudentAttendanceCard(
     child: ChildModel,
-    isChecked: Boolean,
+    isSelected: Boolean,
     onCheckChanged: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isChecked) 4.dp else 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Profile Circle
+            // Profile Initial
             Box(
                 modifier = Modifier
                     .size(50.dp)
@@ -177,20 +172,12 @@ fun StudentAttendanceCard(
             }
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(
-                    text = "${child.firstName} ${child.lastName}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = "ID: ${child.studentId}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("${child.firstName} ${child.lastName}", fontWeight = FontWeight.Bold)
+                Text("ID: ${child.studentId}", fontSize = 12.sp, color = Color.Gray)
             }
 
             Checkbox(
-                checked = isChecked,
+                checked = isSelected,
                 onCheckedChange = { onCheckChanged(it) }
             )
         }

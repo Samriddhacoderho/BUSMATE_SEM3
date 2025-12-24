@@ -42,7 +42,6 @@ class AttendanceViewModel(
     }
 
     // 🔹 FIXED SIGNATURE: 3 parameters to match the Activity call
-
     fun submitAttendance(
         driverUid: String,
         selectedChildren: List<ChildModel>,
@@ -63,15 +62,22 @@ class AttendanceViewModel(
         }
     }
 
-    private fun performSubmit(busId: String, children: List<ChildModel>, onResult: (Boolean) -> Unit) {
-        val attendanceData = children.map { child ->
+    private fun performSubmit(busId: String, selectedChildren: List<ChildModel>, onResult: (Boolean) -> Unit) {
+        // Get the full list of students we loaded for this route
+        val allChildren = _children.value
+
+        val attendanceData = allChildren.map { child ->
+            // Check if this specific child was in the checked list
+            val isPresent = selectedChildren.any { it.studentId == child.studentId }
+
             mapOf(
                 "studentId" to child.studentId,
                 "childName" to "${child.firstName} ${child.lastName}",
-                "status" to "Present",
-                "timestamp" to ServerValue.TIMESTAMP
+                "status" to if (isPresent) "Present" else "Absent", // 🔹 Dynamic status
+                "timestamp" to com.google.firebase.database.ServerValue.TIMESTAMP
             )
         }
+
         attendanceRepo.submitAttendance(busId, attendanceData, onResult)
     }
 }
