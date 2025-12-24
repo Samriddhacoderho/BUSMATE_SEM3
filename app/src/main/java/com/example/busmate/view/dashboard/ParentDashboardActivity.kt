@@ -70,6 +70,7 @@ fun ParentDashboardScreen(
     val application = context.applicationContext as android.app.Application
     val accelViewModel = remember { AccelRecieverViewModel(application) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
+    var selectedChildId by remember { mutableStateOf<String?>(null) }
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
@@ -320,16 +321,20 @@ fun ParentDashboardScreen(
 
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
-                    0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
-                        selectedBusRouteId = id
+                    0 -> HomeScreen(children = children, onOpenLiveLocation = { busId, studentId ->
+                        selectedBusRouteId = busId
+                        selectedChildId = studentId
                         selectedItem = 2
                     })
 
                     1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(viewModel = locationViewModel,
+                    2 -> LiveLocationScreen(
+                        viewModel = locationViewModel,
                         childViewModel = childViewModel,
                         accelViewModel = accelViewModel,
-                        busId = selectedBusRouteId ?: "")
+                        busId = selectedBusRouteId ?: "",
+                        selectedChildId = selectedChildId // Correctly passed now
+                    )
                     3 -> ProfileEditScreen()
                 }
             }

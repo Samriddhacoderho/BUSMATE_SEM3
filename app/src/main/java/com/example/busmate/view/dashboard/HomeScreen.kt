@@ -44,7 +44,7 @@ import com.example.busmate.data.UserRepositoryImpl
 @Composable
 fun HomeScreen(
     children: List<ChildModel> = emptyList(),
-    onOpenLiveLocation: (busRouteId: String) -> Unit
+    onOpenLiveLocation: (busRouteId: String,studentId: String) -> Unit
 ) {
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val userRepository = remember { UserRepositoryImpl() }
@@ -162,7 +162,7 @@ fun HomeScreen(
                                         bus.speed <= 1.0 ->
                                             Toast.makeText(context, "Trip has not started yet", Toast.LENGTH_LONG).show()
 
-                                        else -> onOpenLiveLocation(bus.uid)
+                                        else -> {onOpenLiveLocation(bus.uid, child.studentId)}
                                     }
                                 }
                             }
