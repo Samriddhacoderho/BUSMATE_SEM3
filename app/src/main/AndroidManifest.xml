@@ -18,14 +18,21 @@
         tools:replace="android:fullBackupContent">
         <activity
             android:name=".view.EmergencyAlertActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_emergency_alert"
-            android:theme="@style/Theme.BUSMATE" />
-        <activity
-            android:name=".view.EditStudentActivity"
-            android:exported="false"
-            android:label="@string/title_activity_edit_student"
-            android:theme="@style/Theme.BUSMATE" />
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- <activity -->
+        <!-- android:name=".view.EmergencyAlertActivity" -->
+        <!-- android:exported="false" -->
+        <!-- android:label="@string/title_activity_emergency_alert" -->
+        <!-- android:theme="@style/Theme.BUSMATE" /> -->
+        <!-- <activity -->
         <activity
             android:name=".view.AdminSearchChildActivity"
             android:exported="false"
@@ -97,18 +104,16 @@
 
             <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
             <!-- </intent-filter> -->
-        </activity>
-        <activity
-            android:name=".view.EditActivity"
-            android:exported="true"
-            android:label="@string/title_activity_edit"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        </activity> <!-- <activity -->
+        <!-- android:name=".view.EditActivity" -->
+        <!-- android:exported="true" -->
+        <!-- android:label="@string/title_activity_edit" -->
+        <!-- android:theme="@style/Theme.BUSMATE"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="android.intent.action.MAIN" /> -->
+        <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
+        <!-- </intent-filter> -->
+        <!-- </activity> -->
         <activity
             android:name=".view.dashboard.ParentDashboardActivity"
             android:exported="true"
@@ -263,6 +268,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".service.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

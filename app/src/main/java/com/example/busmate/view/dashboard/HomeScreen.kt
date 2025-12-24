@@ -38,7 +38,9 @@ import com.example.busmate.viewmodel.BusViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.busmate.data.EmergencyRepositoryImpl
 import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.viewmodel.EmergencyViewModel
 
 
 @Composable
@@ -183,38 +185,24 @@ fun HomeScreen(
             // DRIVER BUTTON
             if (model?.typeofUser == "Driver") {
                 // Inside HomeScreen.kt -> LazyColumn -> if (model?.typeofUser == "Driver")
+                // Inside HomeScreen.kt -> LazyColumn -> if (model?.typeofUser == "Driver")
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    val viewModel = remember { EmergencyViewModel(EmergencyRepositoryImpl()) }
+                    val context = LocalContext.current
 
-                    // SOS Emergency Button
                     Button(
                         onClick = {
-                            // Logic for SOS (e.g., send location to Firebase or call emergency)
-                            Toast.makeText(context, "Emergency Alert Sent!", Toast.LENGTH_LONG).show()
+                            viewModel.triggerSOS("${model?.firstName} ${model?.lastName}", model?.uid ?: "") { success ->
+                                if (success) Toast.makeText(context, "SOS Sent to System Tray!", Toast.LENGTH_LONG).show()
+                            }
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(65.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE53935), // Vibrant Emergency Red
-                            contentColor = Color.White
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(16.dp).height(65.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "SOS",
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "EMERGENCY SOS",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("EMERGENCY SOS", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                     }
                 }
                 item {

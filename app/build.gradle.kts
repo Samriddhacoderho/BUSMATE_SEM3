@@ -45,6 +45,16 @@ android {
 }
 
 dependencies {
+    // 1. Use ONLY ONE Firebase BoM (Latest version is recommended)
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+
+    // 2. Firebase Libraries (Managed by BoM - No versions needed here)
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+
+    // 3. AndroidX and Compose Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -53,14 +63,25 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.ui)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.foundation)
-    implementation(libs.firebase.database) //added by keshab for material icons
+
+    // 4. Icons and UI Extras
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.airbnb.android:lottie-compose:6.0.0")
+
+    // 5. Google Maps & Location
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-maps:19.1.0")
+    implementation("com.google.maps.android:maps-compose:4.3.0")
+
+    // 6. Utils
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.6")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.zxing:core:3.5.1")
+
+    // 7. Test dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,27 +89,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-database")
-    implementation("com.airbnb.android:lottie-compose:6.6.6")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.multidex:multidex:2.0.1")
-    implementation("com.google.maps.android:maps-compose:4.3.0")
-
-    // Google Play Services Location (For GPS)
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-
-    // Core Maps SDK (Needed by Compose library)
-    implementation("com.google.android.gms:play-services-maps:19.1.0")
-
-    implementation("com.google.code.gson:gson:2.10.1")
-//    implementation("com.baato:baato-android:1.1.0")
-    implementation("androidx.compose.runtime:runtime-livedata:1.7.6")
-    implementation("com.google.zxing:core:3.5.1")
-//    implementation("com.cloudinary:cloudinary-android:2.1.0")
-//    implementation("com.squareup.picasso:picasso:2.8")
-
 }
 
