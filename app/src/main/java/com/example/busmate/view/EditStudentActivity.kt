@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +27,7 @@ import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.ChildViewModel
+import com.google.firebase.database.FirebaseDatabase
 
 class EditStudentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +62,9 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     val busMateBlue = Color(0xFF2567E8)
     val context = LocalContext.current
 
+    var parentName by remember { mutableStateOf("Fetching...") }
+    var parentPhone by remember { mutableStateOf("Fetching...") }
+
     // Local state for editable fields
     var firstName by remember { mutableStateOf(child.firstName) }
     var lastName by remember { mutableStateOf(child.lastName) }
@@ -68,6 +74,26 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
 
     val message by viewModel.message.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()
+
+    LaunchedEffect(child.studentId) {
+        val db = FirebaseDatabase.getInstance()
+        // Find parent UID from index
+        db.getReference("studentIdIndex").child(child.studentId).get().addOnSuccessListener { index ->
+            val parentUid = index.child("parentUid").getValue(String::class.java)
+            if (parentUid != null) {
+                // Fetch parent details from users node
+                db.getReference("users").child(parentUid).get().addOnSuccessListener { user ->
+                    val fName = user.child("firstName").value ?: ""
+                    val lName = user.child("lastName").value ?: ""
+                    parentName = "$fName $lName"
+                    parentPhone = user.child("phone").value.toString()
+                }
+            } else {
+                parentName = "Not Found"
+                parentPhone = "Not Found"
+            }
+        }
+    }
 
     // Show toast and go back when update is successful
     LaunchedEffect(isSuccess) {
@@ -99,6 +125,14 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text("Parent Contact Information", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ReadOnlyField(label = "Parent Name", value = parentName, icon = Icons.Default.Person)
+            ReadOnlyField(label = "Parent Phone", value = parentPhone, icon = Icons.Default.Phone)
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 1.dp, color = Color.LightGray)
+
             Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -137,6 +171,23 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     }
 }
 
+@Composable
+fun ReadOnlyField(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true, // This makes it non-editable
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        leadingIcon = { Icon(icon, null, tint = Color.Gray) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9ECEF), // Greyed out look
+            unfocusedContainerColor = Color(0xFFE9ECEF),
+            disabledTextColor = Color.Black
+        )
+    )
+}
 @Composable
 fun EditField(label: String, value: String, onValueChange: (String) -> Unit) {
     OutlinedTextField(
