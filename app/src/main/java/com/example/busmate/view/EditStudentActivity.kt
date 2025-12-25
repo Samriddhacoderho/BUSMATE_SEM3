@@ -198,3 +198,4 @@ fun EditField(label: String, value: String, onValueChange: (String) -> Unit) {
         shape = RoundedCornerShape(12.dp)
     )
 }
+//testing parent information in the child information
