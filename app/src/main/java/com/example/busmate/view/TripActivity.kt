@@ -63,7 +63,7 @@ fun TripScreen(
 
     LaunchedEffect(state.isRunning) {
         if (state.isRunning) {
-            locationViewModel.startTracking(driverUid = driverUid)
+            locationViewModel.startTracking(busId=busId,driverUid = driverUid)
         } else {
             locationViewModel.stopLocationUpdates()
         }

@@ -3,6 +3,7 @@ package com.example.busmate.view.dashboard
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -69,6 +70,7 @@ fun ParentDashboardScreen(
     val application = context.applicationContext as android.app.Application
     val accelViewModel = remember { AccelRecieverViewModel(application) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
+    var selectedChildId by remember { mutableStateOf<String?>(null) }
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
@@ -226,12 +228,29 @@ fun ParentDashboardScreen(
                                         )
                                     )
 
+                                    // Inside ParentDashboardActivity.kt -> navigation drawer onClick logic
                                     "Attendance" -> {
-                                        val intent = Intent(context, AttendanceActivity::class.java).apply {
-                                            // Use the 'user' object from your viewmodel to get the UID
-                                            putExtra("EXTRA_DRIVER_UID", user?.uid)
+                                        val currentDriverUid = user?.uid ?: ""
+
+                                        if (currentDriverUid.isNotEmpty()) {
+                                            // Use the ViewModel to check if a bus is linked to this driver UID
+                                            busViewModel.getBusByDriverUid(currentDriverUid) { bus ->
+                                                if (bus != null) {
+                                                    // SUCCESS: Bus is assigned, proceed to Attendance
+                                                    val intent = Intent(context, AttendanceActivity::class.java).apply {
+                                                        putExtra("EXTRA_DRIVER_UID", currentDriverUid)
+                                                    }
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    // FAILURE: No bus assigned
+                                                    Toast.makeText(
+                                                        context,
+                                                        "You are not assigned to any bus yet.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
                                         }
-                                        context.startActivity(intent)
                                     }
                                 }
                             }
@@ -299,23 +318,28 @@ fun ParentDashboardScreen(
                 }
             }
         ) { padding ->
-            // ... inside Scaffold { padding -> ...
+
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
-                    0 -> HomeScreen(children = children, onOpenLiveLocation = { id ->
-                        selectedBusRouteId = id
+                    0 -> HomeScreen(children = children, onOpenLiveLocation = { busId, studentId ->
+                        selectedBusRouteId = busId
+                        selectedChildId = studentId
                         selectedItem = 2
                     })
 
                     1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(viewModel = locationViewModel,
+                    2 -> LiveLocationScreen(
+                        viewModel = locationViewModel,
                         childViewModel = childViewModel,
                         accelViewModel = accelViewModel,
-                        busId = selectedBusRouteId ?: "")
+                        busId = selectedBusRouteId ?: "",
+                        selectedChildId = selectedChildId // Correctly passed now
+                    )
                     3 -> ProfileEditScreen()
                 }
             }
         }
     }
 }
+//fixed bugs
 

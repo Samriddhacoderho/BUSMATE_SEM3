@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.example.busmate.R
-import com.example.busmate.data.LocationImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.viewmodel.AccelRecieverViewModel
 import com.example.busmate.viewmodel.ChildViewModel
@@ -37,59 +36,44 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
 
-/* -------------------------------------------------------
-   SAFE bitmap creation (reduced size)
-------------------------------------------------------- */
 fun createBusMarkerIcon(context: Context): BitmapDescriptor {
-    val bitmap = BitmapFactory.decodeResource(
-        context.resources,
-        R.drawable.schoolbus
-    )
-
-    val scaledBitmap = Bitmap.createScaledBitmap(
-        bitmap,
-        64,   // 🔽 reduced size (very safe)
-        64,
-        true
-    )
-
+    val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.schoolbus)
+    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 64, 64, true)
     return BitmapDescriptorFactory.fromBitmap(scaledBitmap)
 }
 
-/* -------------------------------------------------------
-   Live Location Screen
-------------------------------------------------------- */
 @Composable
 fun LiveLocationScreen(
     viewModel: LocationViewModel,
     childViewModel: ChildViewModel,
     accelViewModel: AccelRecieverViewModel,
-    busId: String
+    busId: String,
+    selectedChildId: String? = null
 ) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
-    val childEtas by viewModel.childEtas.collectAsState() // Added: Observe calculated ETAs
-    val children by childViewModel.children.collectAsState() // Added: Observe children list
-    val liveReading by accelViewModel.firebaseReading.observeAsState() // Added: Observe live speed
+    val childEtas by viewModel.childEtas.collectAsState()
+    val children by childViewModel.children.collectAsState()
+    val liveReading by accelViewModel.firebaseReading.observeAsState()
+    val isTripRunning by viewModel.isTripRunning.collectAsState()
 
     val context = LocalContext.current
     val activity = context as Activity
-
     val model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
     LaunchedEffect(busId) {
-        viewModel.fetchBusLocation(busId)
-        accelViewModel.startTrackingBus(busId) // Added: Start listening to bus speed
-        // Added: Fetch children for the logged-in parent
+        viewModel.startTracking(busId = busId)
+        accelViewModel.startTrackingBus(busId)
         model?.uid?.let { parentUid ->
             childViewModel.observeChildren(parentUid)
         }
     }
 
     LaunchedEffect(coordinates, liveReading, children) {
+        val filteredChildren = children.filter { it.studentId == selectedChildId }
         viewModel.updateChildEtas(
-            children = children,
+            children = filteredChildren,
             currentCoords = coordinates,
             rawSpeedMps = liveReading?.speedMps ?: 0f
         )
@@ -101,7 +85,6 @@ fun LiveLocationScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
             Text(
                 text = "Live Location Tracking",
                 fontSize = 22.sp,
@@ -109,13 +92,24 @@ fun LiveLocationScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
+            if (!isTripRunning && model?.typeofUser == "Parent") {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        text = "Note: Bus is currently idle.",
+                        modifier = Modifier.padding(16.dp),
+                        color = Color.Red,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Row(modifier = Modifier.padding(16.dp)) {
                     Text("Current LatLng: ", fontWeight = FontWeight.Bold)
@@ -129,30 +123,21 @@ fun LiveLocationScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 model = model,
                 context = context,
-                coordinates = coordinates
+                coordinates = coordinates,
+                locationViewModel = viewModel,
+                busId = busId // Pass busId down
             )
-            // Added: Only show ETA section to Parents
+
             if (model?.typeofUser == "Parent") {
                 Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Your Children's Arrival Info",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
+                Text("Your Children's Arrival Info", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
-                    // Added: Dynamic loop through calculated ETAs
                     items(childEtas) { etaState ->
-                        ETACard(
-                            childName = etaState.childName,
-                            eta = etaState.etaMinutes,
-                            cardColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        ETACard(childName = etaState.childName, eta = etaState.etaMinutes, cardColor = MaterialTheme.colorScheme.primaryContainer)
                     }
                 }
             }
@@ -160,76 +145,48 @@ fun LiveLocationScreen(
     }
 }
 
-/* -------------------------------------------------------
-   Permission Handler
-------------------------------------------------------- */
 @Composable
 fun MapPrototype(
     modifier: Modifier,
     model: UserModel?,
     context: Context,
-    coordinates: String
+    coordinates: String,
+    locationViewModel: LocationViewModel,
+    busId: String // Added parameter
 ) {
     var permissionGranted by remember {
-        mutableStateOf(
-            ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+        mutableStateOf(ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
     }
 
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
     }
 
     LaunchedEffect(model?.typeofUser) {
         if (!permissionGranted) {
-            launcher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
+            launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
     }
 
     if (permissionGranted) {
-        CardMap(modifier, model, context, coordinates)
+        CardMap(modifier, model, context, coordinates, locationViewModel, busId)
     } else {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(260.dp)
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxWidth().height(260.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
             Text("Location permission required")
         }
     }
 }
 
-/* -------------------------------------------------------
-   Google Map Card (CRASH SAFE)
-------------------------------------------------------- */
 @Composable
 fun CardMap(
     modifier: Modifier,
     model: UserModel?,
     context: Context,
-    coordinates: String
+    coordinates: String,
+    locationViewModel: LocationViewModel,
+    busId: String // Added parameter
 ) {
-    val locationViewModel = remember {
-        LocationViewModel(LocationImpl(context))
-    }
-
     val currentLocation by locationViewModel.location.collectAsState()
-
     val busLatLng = remember(coordinates) {
         val parts = coordinates.split(",")
         val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull() ?: 27.7172
@@ -237,115 +194,61 @@ fun CardMap(
         LatLng(lat, lng)
     }
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(busLatLng, 15f)
-    }
-
+    val cameraPositionState = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(busLatLng, 15f) }
     val markerState = rememberMarkerState(position = busLatLng)
-
-    // 🚨 CRASH-SAFE marker creation
     var busIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
 
-    LaunchedEffect(Unit) {
-        busIcon = createBusMarkerIcon(context)
-    }
+    LaunchedEffect(Unit) { busIcon = createBusMarkerIcon(context) }
 
     LaunchedEffect(busLatLng) {
         if (model?.typeofUser == "Parent") {
             markerState.position = busLatLng
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLng(busLatLng)
-            )
+            cameraPositionState.animate(CameraUpdateFactory.newLatLng(busLatLng))
         }
     }
 
     LaunchedEffect(currentLocation) {
         if (model?.typeofUser == "Driver" && currentLocation != null) {
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLng(currentLocation!!)
-            )
+            cameraPositionState.animate(CameraUpdateFactory.newLatLng(currentLocation!!))
         }
     }
 
+    // CORRECTED: Added the missing busId parameter here
     LaunchedEffect(Unit) {
-        locationViewModel.startTracking(driverUid = null)
+        if (model?.typeofUser == "Driver") {
+            locationViewModel.startTracking(driverUid = model.uid, busId = busId)
+        }
     }
 
     DisposableEffect(Unit) {
         onDispose { locationViewModel.stopLocationUpdates() }
     }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(300.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
-    ) {
+    Card(modifier = modifier.fillMaxWidth().height(300.dp), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(8.dp)) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = model?.typeofUser == "Driver"
-            ),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = true,
-                myLocationButtonEnabled = model?.typeofUser == "Driver"
-            )
+            properties = MapProperties(isMyLocationEnabled = model?.typeofUser == "Driver"),
+            uiSettings = MapUiSettings(zoomControlsEnabled = true, myLocationButtonEnabled = model?.typeofUser == "Driver")
         ) {
             if (model?.typeofUser == "Parent" && busIcon != null) {
-                Marker(
-                    state = markerState,
-                    title = "Bus Location",
-                    icon = busIcon
-                )
+                Marker(state = markerState, title = "Bus Location", icon = busIcon)
             }
         }
     }
 }
 
-/* -------------------------------------------------------
-   ETA Card
-------------------------------------------------------- */
 @Composable
 fun ETACard(childName: String, eta: Int, cardColor: Color) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        modifier = Modifier.width(260.dp).height(100.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("👶", fontSize = 24.sp)
-            }
-
+    Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = cardColor), modifier = Modifier.width(260.dp).height(100.dp)) {
+        Row(modifier = Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White), contentAlignment = Alignment.Center) { Text("👶", fontSize = 24.sp) }
             Spacer(modifier = Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
-                // Added: Logic to show "Arriving Now" if ETA is very low
-                Text(
-                    text = if (eta <= 1) "Arriving Now" else "$eta mins to arrival",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "For $childName",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+                Text(text = if (eta <= 1) "Arriving Now" else "$eta mins to arrival", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(text = "For $childName", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
             }
-
-            Icon(
-                imageVector = Icons.Default.DirectionsBus,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
-            )
+            Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f))
         }
     }
 }
