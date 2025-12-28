@@ -60,7 +60,6 @@ fun SupportScreen(viewModel: SupportViewModel) {
             }
             if (message == "Support request submitted") {
                 delay(2000)
-                activity.finish()
             }
         }
     }

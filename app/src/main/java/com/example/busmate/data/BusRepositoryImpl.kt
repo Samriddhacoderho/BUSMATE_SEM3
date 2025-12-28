@@ -212,6 +212,22 @@ class BusRepositoryImpl : BusRepositoryInterface {
             })
     }
 
+    override fun getAllBusesLive(callback: (List<BusModel?>) -> Unit) {
+        busesRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val busList = mutableListOf<BusModel>()
+                for (childSnapshot in snapshot.children) {
+                    val bus = childSnapshot.getValue(BusModel::class.java)
+                    bus?.let { busList.add(it) }
+                }
+                callback(busList)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Firebase", "Error fetching all buses: ${error.message}")
+            }
+        })
+    }
+
 
 }
 //testing the current location of driver
