@@ -60,7 +60,8 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.foundation)
-    implementation(libs.firebase.database) //added by keshab for material icons
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.messaging) //added by keshab for material icons
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -89,6 +90,5 @@ dependencies {
     implementation("com.google.zxing:core:3.5.1")
 //    implementation("com.cloudinary:cloudinary-android:2.1.0")
 //    implementation("com.squareup.picasso:picasso:2.8")
-
 }
 
