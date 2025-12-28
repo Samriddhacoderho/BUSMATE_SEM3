@@ -196,3 +196,4 @@ fun AdminStudentCard(child: ChildModel, onClick: () -> Unit) {
     }
 }
 //testing search chid by admin
+//testing parent information
