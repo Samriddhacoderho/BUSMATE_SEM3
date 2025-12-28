@@ -28,11 +28,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.EmergencyAlertActivity"
-            android:exported="false"
-            android:label="@string/title_activity_emergency_alert"
-            android:theme="@style/Theme.BUSMATE" />
-        <activity
             android:name=".view.EditStudentActivity"
             android:exported="false"
             android:label="@string/title_activity_edit_student"
@@ -108,17 +103,6 @@
 
             <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
             <!-- </intent-filter> -->
-        </activity>
-        <activity
-            android:name=".view.EditActivity"
-            android:exported="true"
-            android:label="@string/title_activity_edit"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.dashboard.ParentDashboardActivity"
