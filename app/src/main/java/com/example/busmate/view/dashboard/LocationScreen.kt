@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.example.busmate.R
-import com.example.busmate.data.LocationImpl
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 import com.example.busmate.viewmodel.AccelRecieverViewModel
 import com.example.busmate.viewmodel.ChildViewModel
@@ -37,62 +37,59 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
 
-/* -------------------------------------------------------
-   SAFE bitmap creation (reduced size)
-------------------------------------------------------- */
+// Helper function to create the bus icon
 fun createBusMarkerIcon(context: Context): BitmapDescriptor {
-    val bitmap = BitmapFactory.decodeResource(
-        context.resources,
-        R.drawable.schoolbus
-    )
-
-    val scaledBitmap = Bitmap.createScaledBitmap(
-        bitmap,
-        64,   // 🔽 reduced size (very safe)
-        64,
-        true
-    )
-
+    val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.schoolbus)
+    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 64, 64, true)
     return BitmapDescriptorFactory.fromBitmap(scaledBitmap)
 }
 
-/* -------------------------------------------------------
-   Live Location Screen
-------------------------------------------------------- */
 @Composable
 fun LiveLocationScreen(
     viewModel: LocationViewModel,
     childViewModel: ChildViewModel,
     accelViewModel: AccelRecieverViewModel,
-    busId: String
+    busId: String,
+    selectedChildId: String? = null
 ) {
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
-    val childEtas by viewModel.childEtas.collectAsState() // Added: Observe calculated ETAs
-    val children by childViewModel.children.collectAsState() // Added: Observe children list
-    val liveReading by accelViewModel.firebaseReading.observeAsState() // Added: Observe live speed
+    val childEtas by viewModel.childEtas.collectAsState()
+    val children by childViewModel.children.collectAsState()
+    val liveReading by accelViewModel.firebaseReading.observeAsState()
+    val isTripRunning by viewModel.isTripRunning.collectAsState()
+
+    // NEW: Observe all buses for Admin view
+    val allBuses by viewModel.allBuses.collectAsState()
 
     val context = LocalContext.current
     val activity = context as Activity
-
     val model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
-    LaunchedEffect(busId) {
-        viewModel.fetchBusLocation(busId)
-        accelViewModel.startTrackingBus(busId) // Added: Start listening to bus speed
-        // Added: Fetch children for the logged-in parent
-        model?.uid?.let { parentUid ->
-            childViewModel.observeChildren(parentUid)
+    LaunchedEffect(busId, model?.typeofUser) {
+        if (model?.typeofUser == "Admin") {
+            // Logic to track all buses in the collection
+            viewModel.trackAllBuses()
+        } else {
+            // Standard tracking for Parent/Driver
+            viewModel.startTracking(busId = busId)
+            accelViewModel.startTrackingBus(busId)
+            model?.uid?.let { parentUid ->
+                childViewModel.observeChildren(parentUid)
+            }
         }
     }
 
     LaunchedEffect(coordinates, liveReading, children) {
-        viewModel.updateChildEtas(
-            children = children,
-            currentCoords = coordinates,
-            rawSpeedMps = liveReading?.speedMps ?: 0f
-        )
+        if (model?.typeofUser == "Parent") {
+            val filteredChildren = children.filter { it.studentId == selectedChildId }
+            viewModel.updateChildEtas(
+                children = filteredChildren,
+                currentCoords = coordinates,
+                rawSpeedMps = liveReading?.speedMps ?: 0f
+            )
+        }
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
@@ -101,58 +98,50 @@ fun LiveLocationScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
             Text(
-                text = "Live Location Tracking",
+                text = if (model?.typeofUser == "Admin") "Fleet Live Overview" else "Live Location Tracking",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(16.dp)
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(modifier = Modifier.padding(16.dp)) {
-                    Text("Current LatLng: ", fontWeight = FontWeight.Bold)
-                    Text(coordinates, color = MaterialTheme.colorScheme.primary)
+            // Alert for Parents if bus is idle
+            if (!isTripRunning && model?.typeofUser == "Parent") {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        text = "Note: Bus is currently idle.",
+                        modifier = Modifier.padding(16.dp),
+                        color = Color.Red,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
+            // Map View - Handles both Single and Multi-marker views
             MapPrototype(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 model = model,
                 context = context,
-                coordinates = coordinates
+                coordinates = coordinates,
+                locationViewModel = viewModel,
+                busId = busId,
+                allBuses = (if (model?.typeofUser == "Admin") allBuses else emptyList()) as List<BusModel>
             )
-            // Added: Only show ETA section to Parents
+
             if (model?.typeofUser == "Parent") {
                 Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Your Children's Arrival Info",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
+                Text("Your Children's Arrival Info", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
-                    // Added: Dynamic loop through calculated ETAs
                     items(childEtas) { etaState ->
-                        ETACard(
-                            childName = etaState.childName,
-                            eta = etaState.etaMinutes,
-                            cardColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        ETACard(childName = etaState.childName, eta = etaState.etaMinutes, cardColor = MaterialTheme.colorScheme.primaryContainer)
                     }
                 }
             }
@@ -160,192 +149,124 @@ fun LiveLocationScreen(
     }
 }
 
-/* -------------------------------------------------------
-   Permission Handler
-------------------------------------------------------- */
 @Composable
 fun MapPrototype(
     modifier: Modifier,
     model: UserModel?,
     context: Context,
-    coordinates: String
+    coordinates: String,
+    locationViewModel: LocationViewModel,
+    busId: String,
+    allBuses: List<com.example.busmate.model.BusModel> // Added for Admin
 ) {
     var permissionGranted by remember {
-        mutableStateOf(
-            ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+        mutableStateOf(ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
     }
 
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
     }
 
     LaunchedEffect(model?.typeofUser) {
         if (!permissionGranted) {
-            launcher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
+            launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
     }
 
     if (permissionGranted) {
-        CardMap(modifier, model, context, coordinates)
+        CardMap(modifier, model, context, coordinates, locationViewModel, busId, allBuses)
     } else {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(260.dp)
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxWidth().height(260.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
             Text("Location permission required")
         }
     }
 }
 
-/* -------------------------------------------------------
-   Google Map Card (CRASH SAFE)
-------------------------------------------------------- */
 @Composable
 fun CardMap(
     modifier: Modifier,
     model: UserModel?,
     context: Context,
-    coordinates: String
+    coordinates: String,
+    locationViewModel: LocationViewModel,
+    busId: String,
+    allBuses: List<com.example.busmate.model.BusModel>
 ) {
-    val locationViewModel = remember {
-        LocationViewModel(LocationImpl(context))
-    }
-
     val currentLocation by locationViewModel.location.collectAsState()
 
-    val busLatLng = remember(coordinates) {
-        val parts = coordinates.split(",")
-        val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull() ?: 27.7172
-        val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull() ?: 85.3240
-        LatLng(lat, lng)
-    }
+    // Default center for the map
+    val defaultLatLng = LatLng(27.7172, 85.3240)
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(busLatLng, 15f)
+        position = CameraPosition.fromLatLngZoom(defaultLatLng, 12f)
     }
 
-    val markerState = rememberMarkerState(position = busLatLng)
-
-    // 🚨 CRASH-SAFE marker creation
     var busIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
+    LaunchedEffect(Unit) { busIcon = createBusMarkerIcon(context) }
 
-    LaunchedEffect(Unit) {
-        busIcon = createBusMarkerIcon(context)
-    }
-
-    LaunchedEffect(busLatLng) {
+    // Parent Logic: Focus camera on their specific bus
+    LaunchedEffect(coordinates) {
         if (model?.typeofUser == "Parent") {
-            markerState.position = busLatLng
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLng(busLatLng)
-            )
+            val parts = coordinates.split(",")
+            val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull() ?: return@LaunchedEffect
+            val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull() ?: return@LaunchedEffect
+            cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(lat, lng)))
         }
     }
 
-    LaunchedEffect(currentLocation) {
-        if (model?.typeofUser == "Driver" && currentLocation != null) {
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLng(currentLocation!!)
-            )
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        locationViewModel.startTracking(driverUid = null)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { locationViewModel.stopLocationUpdates() }
-    }
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(300.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
-    ) {
+    Card(modifier = modifier.fillMaxWidth().height(400.dp), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(8.dp)) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = model?.typeofUser == "Driver"
-            ),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = true,
-                myLocationButtonEnabled = model?.typeofUser == "Driver"
-            )
+            properties = MapProperties(isMyLocationEnabled = model?.typeofUser == "Driver"),
+            uiSettings = MapUiSettings(zoomControlsEnabled = true)
         ) {
+            // ADMIN VIEW: Show markers for all buses
+            if (model?.typeofUser == "Admin" && busIcon != null) {
+                allBuses.forEach { bus ->
+                    val parts = bus.currentLocation.split(",")
+                    val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
+                    val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
+
+                    if (lat != null && lng != null) {
+                        Marker(
+                            state = rememberMarkerState(position = LatLng(lat, lng)),
+                            title = "Bus ${bus.busNumber}",
+                            snippet = "Speed: ${bus.speed} km/h",
+                            icon = busIcon
+                        )
+                    }
+                }
+            }
+
+            // PARENT VIEW: Show only their specific bus
             if (model?.typeofUser == "Parent" && busIcon != null) {
-                Marker(
-                    state = markerState,
-                    title = "Bus Location",
-                    icon = busIcon
-                )
+                val parts = coordinates.split(",")
+                val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
+                val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
+                if (lat != null && lng != null) {
+                    Marker(
+                        state = rememberMarkerState(position = LatLng(lat, lng)),
+                        title = "Your Child's Bus",
+                        icon = busIcon
+                    )
+                }
             }
         }
     }
 }
 
-/* -------------------------------------------------------
-   ETA Card
-------------------------------------------------------- */
 @Composable
 fun ETACard(childName: String, eta: Int, cardColor: Color) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        modifier = Modifier.width(260.dp).height(100.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("👶", fontSize = 24.sp)
-            }
-
+    Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = cardColor), modifier = Modifier.width(260.dp).height(100.dp)) {
+        Row(modifier = Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White), contentAlignment = Alignment.Center) { Text("👶", fontSize = 24.sp) }
             Spacer(modifier = Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
-                // Added: Logic to show "Arriving Now" if ETA is very low
-                Text(
-                    text = if (eta <= 1) "Arriving Now" else "$eta mins to arrival",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "For $childName",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+                Text(text = if (eta <= 1) "Arriving Now" else "$eta mins to arrival", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(text = "For $childName", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
             }
-
-            Icon(
-                imageVector = Icons.Default.DirectionsBus,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
-            )
+            Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f))
         }
     }
 }

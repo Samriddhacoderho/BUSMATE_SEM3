@@ -9,6 +9,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.location.Location
+import com.example.busmate.model.BusModel
 
 class LocationViewModel(
     private val repo: LocationInterface,
@@ -28,8 +29,15 @@ class LocationViewModel(
     private val _childEtas = MutableStateFlow<List<ChildEtaState>>(emptyList())
     val childEtas: StateFlow<List<ChildEtaState>> = _childEtas
 
+    private val _isTripRunning = MutableStateFlow(false)
+    val isTripRunning: StateFlow<Boolean> = _isTripRunning
+    private var trackedBusId: String? = null
+
     private val speedBuffer = mutableListOf<Float>()
     private val BUFFER_SIZE = 10
+
+    private val _allBuses = MutableStateFlow<List<BusModel?>>(emptyList())
+    val allBuses: StateFlow<List<BusModel?>> = _allBuses
 
     /**
      * Starts live tracking.
@@ -37,15 +45,25 @@ class LocationViewModel(
      * If provided, the ViewModel will trigger the repository to find the
      * driver's assigned bus and update its 'currentLocation' in Firebase.
      */
-    fun startTracking(driverUid: String? = null) {
+    fun startTracking(busId: String, driverUid: String? = null) {
+        this.trackedBusId = busId // Keep track of it
+
+        // 1. Start GPS Updates (For Driver to send or Parent to see own location)
         repo.startLocationUpdates { latLng, _ ->
-            // Update the local state flow for the UI (Map/Speedometer)
             _location.value = latLng
 
-            // Sync to Firebase if a driver is active on a trip
+            // Sync to Firebase ONLY if driverUid is present
             driverUid?.let { uid ->
                 busRepo.updateLocationByDriver(uid, latLng)
             }
+        }
+
+        busRepo.getLiveBusLocation(busId) { coords ->
+            _currentBusCoordinates.value = coords
+        }
+
+        busRepo.getBusByRouteId(busId) { bus ->
+            _isTripRunning.value = bus?.isTripRunning ?: false
         }
     }
 
@@ -69,33 +87,37 @@ class LocationViewModel(
 
         val avgSpeedMps = if (speedBuffer.isNotEmpty()) speedBuffer.average().toFloat() else 0f
         val busLatLng = parseCoordinates(currentCoords)
-        val effectiveSpeed = if (avgSpeedMps < 1.0f) 5.5f else avgSpeedMps
+
+        // FIX: If speed is 0, use 5.5 m/s (approx 20km/h) as a fallback
+        // so parents see a realistic ETA instead of 0 or infinity.
+        val effectiveSpeed = if (avgSpeedMps < 0.5f) 5.5f else avgSpeedMps
 
         _childEtas.value = children.map { child ->
             val results = FloatArray(1)
-
-            // UPDATED: Changed pLat to pickUpLat and pLng to pickUpLng to match your model
-            android.location.Location.distanceBetween(
+            Location.distanceBetween(
                 busLatLng.latitude, busLatLng.longitude,
                 child.pickUpLat, child.pickUpLng,
                 results
             )
-
             val distanceInMeters = results[0]
             val etaMinutes = (distanceInMeters / (effectiveSpeed * 60)).toInt()
 
-            ChildEtaState(
-                childName = child.firstName,
-                etaMinutes = etaMinutes
-            )
+            ChildEtaState(childName = child.firstName, etaMinutes = etaMinutes)
         }
     }
+
+    fun trackAllBuses() {
+        busRepo.getAllBusesLive { buses ->
+            _allBuses.value = buses
+        }
+    }
+
     private fun parseCoordinates(coords: String): LatLng {
         return try {
             val parts = coords.split(",")
             LatLng(parts[0].trim().toDouble(), parts[1].trim().toDouble())
         } catch (e: Exception) {
-            LatLng(27.7172, 85.3240) // Kathmandu default
+            LatLng(27.7172, 85.3240)
         }
     }
 }
