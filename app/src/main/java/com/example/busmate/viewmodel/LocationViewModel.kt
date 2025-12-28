@@ -9,6 +9,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.location.Location
+import com.example.busmate.model.BusModel
 
 class LocationViewModel(
     private val repo: LocationInterface,
@@ -34,6 +35,9 @@ class LocationViewModel(
 
     private val speedBuffer = mutableListOf<Float>()
     private val BUFFER_SIZE = 10
+
+    private val _allBuses = MutableStateFlow<List<BusModel?>>(emptyList())
+    val allBuses: StateFlow<List<BusModel?>> = _allBuses
 
     /**
      * Starts live tracking.
@@ -99,6 +103,12 @@ class LocationViewModel(
             val etaMinutes = (distanceInMeters / (effectiveSpeed * 60)).toInt()
 
             ChildEtaState(childName = child.firstName, etaMinutes = etaMinutes)
+        }
+    }
+
+    fun trackAllBuses() {
+        busRepo.getAllBusesLive { buses ->
+            _allBuses.value = buses
         }
     }
 
