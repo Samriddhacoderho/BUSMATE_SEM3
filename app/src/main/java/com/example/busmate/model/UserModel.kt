@@ -14,8 +14,7 @@ data class UserModel(
     var typeofUser:String="",
     var children: Map<String, ChildModel> = emptyMap(),
     var status:String="active",
-    var profileImageUrl: String? = null,
-    var fcmToken: String = ""
+    val profileImage: String = ""
 ): Parcelable {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -26,11 +25,9 @@ data class UserModel(
             "schoolId" to schoolId,
             "phone" to phone,
             "typeofUser" to typeofUser,
-            "status" to status,
-            "profileImageUrl" to (profileImageUrl ?: ""),
             "children" to children,
-            "fcmToken" to fcmToken
-
+            "status" to status,
+            "profileImage" to profileImage,
         )
     }
 }

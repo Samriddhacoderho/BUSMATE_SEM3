@@ -90,5 +90,10 @@ dependencies {
     implementation("com.google.zxing:core:3.5.1")
 //    implementation("com.cloudinary:cloudinary-android:2.1.0")
 //    implementation("com.squareup.picasso:picasso:2.8")
+    implementation("com.cloudinary:cloudinary-android:2.1.0")
+
+    // Coil for Loading Cloudinary URLs into Compose
+    implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0-rc01")
 }
 

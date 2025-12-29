@@ -36,5 +36,6 @@
     <string name="title_activity_edit_student">EditStudentActivity</string>
     <string name="title_activity_emergency_alert">EmergencyAlertActivity</string>
     <string name="title_activity_attendance">AttendanceActivity</string>
+    <string name="title_activity_admin_attendance_history">AdminAttendanceHistoryActivity</string>
 
 </resources>

@@ -21,8 +21,8 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
-//import com.cloudinary.Cloudinary
-//import com.cloudinary.utils.ObjectUtils
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
 import java.io.InputStream
 import java.util.concurrent.Executors
 class UserRepositoryImpl : UserRepositoryInterface {
@@ -31,13 +31,61 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
     private val adminRef = db.getReference("user")   // pre-created by admin
     private val usersRef = db.getReference("users")  // registered users
-//    private val cloudinary = Cloudinary(
-//        mapOf(
-//            "cloud_name" to "dithceay5",
-//            "api_key" to 242833732537939,
-//            "api_secret" to "qQvbql8xsRUmWuyP2xR-rutoxx0"
-//        )
-//    )
+    private val cloudinary = Cloudinary(
+        mapOf(
+            "cloud_name" to "dithceay5",
+            "api_key" to "242833732537939",
+            "api_secret" to "qQvbql8xsRUmWuyP2xR-rutoxx0"
+        )
+    )
+    override fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit) {
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            try {
+                val inputStream = context.contentResolver.openInputStream(imageUri)
+                var fileName = getFileNameFromURI(context, imageUri)
+                fileName = fileName?.substringBeforeLast(".") ?: "uploaded_image"
+
+                val response = cloudinary.uploader().upload(
+                    inputStream, ObjectUtils.asMap(
+                        "public_id", fileName,
+                        "resource_type", "image"
+                    )
+                )
+
+                // Get the URL and convert to HTTPS
+                var imageUrl = response["secure_url"] as String? ?: response["url"] as String?
+                imageUrl = imageUrl?.replace("http://", "https://")
+
+                Handler(Looper.getMainLooper()).post {
+                    callback(imageUrl)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Handler(Looper.getMainLooper()).post { callback(null) }
+            }
+        }
+    }
+
+    override fun getFileNameFromURI(context: Context, uri: Uri): String? {
+        var fileName: String? = null
+        val cursor: Cursor? = context.contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) fileName = it.getString(nameIndex)
+            }
+        }
+        return fileName
+    }
+
+    override fun updateUserField(uid: String, field: String, value: Any, callback: (Boolean, String) -> Unit) {
+        db.getReference("users").child(uid).child(field).setValue(value)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) callback(true, "Field Updated")
+                else callback(false, task.exception?.message ?: "Update Failed")
+            }
+    }
 
     override fun registerUser(
         user: UserModel,
