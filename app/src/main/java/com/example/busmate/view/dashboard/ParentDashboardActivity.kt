@@ -152,7 +152,9 @@ fun ParentDashboardScreen(
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff),
-            NavItem("Search Child", Icons.Default.Search)
+            NavItem("Search Child", Icons.Default.Search),
+            NavItem("View Attendance", Icons.Default.ChildCare)
+
         )
 
         "driver" -> listOf(
@@ -298,6 +300,11 @@ fun ParentDashboardScreen(
                                             }
                                         }
                                     }
+
+                                    "View Attendance" ->context.startActivity(
+                                        Intent(context, AdminAttendanceHistoryActivity::class.java)
+                                    )
+
                                 }
                             }
                         }

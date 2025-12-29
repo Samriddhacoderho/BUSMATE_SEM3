@@ -19,6 +19,11 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.AdminAttendanceHistoryActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_attendance_history"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.AttendanceActivity"
             android:exported="true"
             android:label="@string/title_activity_attendance"
