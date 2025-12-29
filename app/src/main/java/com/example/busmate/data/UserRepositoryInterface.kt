@@ -50,7 +50,7 @@ interface UserRepositoryInterface {
         callback: (Boolean, String) -> Unit
     )
     fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit)
-//    fun uploadImage(context: Context,imageUri: Uri,callback:(String?)-> Unit)
-//
-//    fun getFileNameFromURI(context: Context,imageUri: Uri): String?
+    fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit)
+    fun getFileNameFromURI(context: Context, uri: Uri): String?
+    fun updateUserField(uid: String, field: String, value: Any, callback: (Boolean, String) -> Unit)
 }
