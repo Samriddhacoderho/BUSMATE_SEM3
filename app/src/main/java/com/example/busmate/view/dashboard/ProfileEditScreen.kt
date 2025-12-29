@@ -252,7 +252,6 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
             dismissButton = {}
         )
     }
-
 }
 @Composable
 fun ProfileInfoCard(

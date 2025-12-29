@@ -171,11 +171,8 @@ class BusRepositoryImpl : BusRepositoryInterface {
         busRouteId: String,
         callback: (BusModel?) -> Unit
     ) {
-        busesRef
-            .orderByChild("routeId") // ⚠️ must match Firebase field
-            .equalTo(busRouteId)
+        busesRef.orderByChild("routeId").equalTo(busRouteId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
-
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (!snapshot.exists()) {
                         callback(null)
@@ -184,7 +181,28 @@ class BusRepositoryImpl : BusRepositoryInterface {
 
                     val busSnapshot = snapshot.children.first()
                     val bus = busSnapshot.getValue(BusModel::class.java)
-                    callback(bus)
+
+                    // Get the driver's UID from the nested bus data
+                    val driverUid = bus?.driver?.uid
+
+                    if (driverUid != null) {
+                        // GO TO THE USERS NODE TO GET THE REAL IMAGE
+                        db.getReference("users").child(driverUid).get()
+                            .addOnSuccessListener { userSnapshot ->
+                                val latestImageUrl = userSnapshot.child("profileImage").getValue(String::class.java)
+
+                                // Inject the live image URL into the driver object
+                                if (!latestImageUrl.isNullOrEmpty()) {
+                                    bus.driver = bus.driver?.copy(profileImage = latestImageUrl)
+                                }
+                                callback(bus)
+                            }
+                            .addOnFailureListener {
+                                callback(bus) // Return bus even if user fetch fails
+                            }
+                    } else {
+                        callback(bus)
+                    }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
