@@ -6,6 +6,7 @@ import com.example.busmate.data.AttendanceRepository
 import com.example.busmate.data.AttendanceRepositoryImpl
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.ChildModel
 import com.google.firebase.database.ServerValue
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,12 @@ class AttendanceViewModel(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _allBuses = MutableStateFlow<List<BusModel>>(emptyList())
+    val allBuses: StateFlow<List<BusModel>> = _allBuses
+
+    private val _attendanceHistory = MutableStateFlow<List<Map<String, Any?>>>(emptyList())
+    val attendanceHistory: StateFlow<List<Map<String, Any?>>> = _attendanceHistory
 
     // Helper to store bus ID after loading the list
     private var currentBusId: String? = null
@@ -59,6 +66,22 @@ class AttendanceViewModel(
             }
         } else {
             performSubmit(currentBusId!!, selectedChildren, onResult)
+        }
+    }
+
+    fun fetchAllBusesForAdmin() {
+        busRepo.getAllBusesLive { list ->
+            // Filter out nulls if necessary
+            _allBuses.value = list.filterNotNull()
+        }
+    }
+
+    // 🔹 Fetch history for Admin Screen
+    fun loadHistory(date: String, busId: String) {
+        _isLoading.value = true
+        attendanceRepo.getAttendanceHistory(date, busId) { list ->
+            _attendanceHistory.value = list
+            _isLoading.value = false
         }
     }
 
