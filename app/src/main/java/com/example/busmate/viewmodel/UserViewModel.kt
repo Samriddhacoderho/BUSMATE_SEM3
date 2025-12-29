@@ -157,6 +157,25 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 
 
     }
+    fun uploadProfileImage(context: Context, uri: Uri) {
+        _message.value = "Uploading image..."
+        repository.uploadImage(context, uri) { imageUrl ->
+            if (imageUrl != null) {
+                val uid = _user.value?.uid ?: ""
+                // Update the profileImage field in Firebase
+                repository.updateUserField(uid, "profileImage", imageUrl) { success, msg ->
+                    if (success) {
+                        _user.value = _user.value?.copy(profileImage = imageUrl)
+                        _message.value = "Profile image updated!"
+                    } else {
+                        _message.value = msg
+                    }
+                }
+            } else {
+                _message.value = "Upload failed."
+            }
+        }
+    }
 //    fun uploadImage(context: Context,imageUri: Uri,callback:(String?)-> Unit) {
 //        repository.uploadImage(context,imageUri,callback)
 //    }
