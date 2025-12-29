@@ -11,4 +11,10 @@ interface AttendanceRepository {
         attendanceList: List<Map<String, Any?>>,
         callback: (Boolean) -> Unit
     )
+
+    fun getAttendanceHistory(
+        date: String,
+        busId: String,
+        callback: (List<Map<String, Any?>>) -> Unit
+    )
 }

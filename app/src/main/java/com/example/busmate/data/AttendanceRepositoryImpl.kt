@@ -59,4 +59,23 @@ class AttendanceRepositoryImpl: AttendanceRepository{
             callback(task.isSuccessful)
         }
     }
+
+    // Add to AttendanceRepository.kt
+    override fun getAttendanceHistory(date: String, busId: String, callback: (List<Map<String, Any?>>) -> Unit) {
+        val ref = FirebaseDatabase.getInstance().getReference("attendance")
+            .child(date)
+            .child(busId)
+
+        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val historyList = mutableListOf<Map<String, Any?>>()
+                for (childSnap in snapshot.children) {
+                    val data = childSnap.value as? Map<String, Any?>
+                    if (data != null) historyList.add(data)
+                }
+                callback(historyList)
+            }
+            override fun onCancelled(error: DatabaseError) = callback(emptyList())
+        })
+    }
 }
