@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.view.dashboard.ButtonGray
 import com.example.busmate.view.dashboard.PrimaryBlack
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -166,14 +168,16 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.boy),
-                            contentDescription = "Default Profile",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "User Avatar",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(ButtonGray),
+                            tint = Color.LightGray
                         )
                     }
-
                     // Camera Icon Badge
                     Box(
                         modifier = Modifier
