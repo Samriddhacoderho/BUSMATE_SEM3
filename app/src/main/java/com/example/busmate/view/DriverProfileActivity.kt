@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -29,6 +30,11 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.BusViewModel
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.auth.FirebaseAuth
+import coil3.compose.AsyncImage
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 
 class DriverProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,12 +60,19 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
     var busDetails by remember { mutableStateOf<BusModel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Load children on start
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             childViewModel.observeChildren(it)
         }
     }
+    LaunchedEffect(children) {
+        if (selectedChild == null && children.isNotEmpty()) {
+            selectedChild = children.first()
+        }
+    }
 
+    // Load bus/driver when child selection changes
     LaunchedEffect(selectedChild) {
         selectedChild?.let { child ->
             isLoading = true
@@ -114,27 +127,60 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
                 }
             } else if (busDetails?.driver != null) {
                 val driver = busDetails!!.driver!!
-                Card(
+
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        DetailText(label = "First Name", value = driver.firstName)
-                        DetailText(label = "Last Name", value = driver.lastName)
-                        DetailText(label = "Email Address", value = driver.email)
-                        DetailText(label = "Phone Number", value = driver.phone)
-                        DetailText(label = "School ID", value = driver.schoolId)
-                        DetailText(label = "Employment Status", value = driver.typeofUser ?: "Active")
+                    // --- Driver Image ---
+                    Box(
+                        modifier = Modifier.size(110.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!driver.profileImage.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = driver.profileImage,
+                                contentDescription = "Driver Photo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                                    .border(2.dp, Color.LightGray, CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Default Driver Icon",
+                                modifier = Modifier.size(110.dp),
+                                tint = Color.LightGray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // --- Driver Details Card ---
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            DetailText(label = "First Name", value = driver.firstName)
+                            DetailText(label = "Last Name", value = driver.lastName)
+                            DetailText(label = "Email Address", value = driver.email)
+                            DetailText(label = "Phone Number", value = driver.phone)
+                            DetailText(label = "School ID", value = driver.schoolId)
+                            DetailText(label = "Employment Status", value = driver.typeofUser ?: "Active")
+                        }
                     }
                 }
             } else {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxSize().padding(top = 40.dp), contentAlignment = Alignment.Center) {
                     Text("No driver assigned yet.", color = Color.Gray)
                 }
             }
         }
     }
-}
-//testing driver profile
+}//testing driver profile
