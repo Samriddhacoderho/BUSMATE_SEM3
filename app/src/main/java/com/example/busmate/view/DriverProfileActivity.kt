@@ -35,7 +35,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import com.example.busmate.model.ChildModel
 
 class DriverProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,16 +50,17 @@ class DriverProfileActivity : ComponentActivity() {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel) {
     val context = LocalContext.current
     val children by childViewModel.children.collectAsState()
-
-    var selectedChild by remember { mutableStateOf<ChildModel?>(null) }
+    var selectedChild by remember { mutableStateOf(children.firstOrNull()) }
     var busDetails by remember { mutableStateOf<BusModel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Load children on start
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             childViewModel.observeChildren(it)
@@ -72,6 +72,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
         }
     }
 
+    // Load bus/driver when child selection changes
     LaunchedEffect(selectedChild) {
         selectedChild?.let { child ->
             isLoading = true
@@ -131,7 +132,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // --- Driver Profile Image ---
+                    // --- Driver Image ---
                     Box(
                         modifier = Modifier.size(110.dp),
                         contentAlignment = Alignment.Center
@@ -155,7 +156,9 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(20.dp))
+
                     // --- Driver Details Card ---
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -180,4 +183,4 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
             }
         }
     }
-}
+}//testing driver profile
