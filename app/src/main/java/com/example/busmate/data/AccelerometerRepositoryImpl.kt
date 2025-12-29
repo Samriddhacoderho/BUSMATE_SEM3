@@ -34,10 +34,9 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
     private var gravity = floatArrayOf(0f, 0f, 0f)
     private val ALPHA = 0.8f
     private val SHAKE_THRESHOLD = 0.5f
-    private val SCALING_FACTOR = 10.0f
+    private val SCALING_FACTOR = 1.5f
 
-
-    // DRIVER LOGIC (SENSING & SENDING)
+    /* ---------- DRIVER LOGIC (SENSING & SENDING) ---------- */
 
     override fun startListening(driverUid: String) {
         database.getReference("buses")
@@ -57,7 +56,7 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
             })
     }
 
-    private fun registerSensors() {
+    override fun registerSensors() {
         if (accelerometer == null || isSensorRegistered) return
         gravity = floatArrayOf(0f, 0f, 0f)
         lastUploadTime = System.currentTimeMillis()
@@ -75,7 +74,6 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
         _currentSpeedMps.postValue(0f)
     }
 
-
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
         val ax = event.values[0]
@@ -92,9 +90,17 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
                     Math.pow((az - gravity[2]).toDouble(), 2.0)
         ).toFloat()
 
-        val finalValue = if (movementMagnitude < SHAKE_THRESHOLD) 0f else movementMagnitude * SCALING_FACTOR
+
+
+
+        // Apply smoother scaling and cap the max "simulated" speed
+        var finalValue = if (movementMagnitude < SHAKE_THRESHOLD) 0f else movementMagnitude * SCALING_FACTOR
+        if (finalValue > 25f) finalValue = 25f // Cap at ~90km/h for safety
+
         _currentSpeedMps.postValue(finalValue)
         sendDataToFirebase(finalValue)
+
+
     }
 
     private fun sendDataToFirebase(value: Float, isFinal: Boolean = false) {
@@ -103,39 +109,107 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
 
         if (isFinal || currentTime - lastUploadTime >= 500L) {
             database.getReference("buses").child(busId).child("speed")
-                .setValue(value.toDouble()) // Store as double for precision
+                .setValue(value.toDouble())
             if (!isFinal) lastUploadTime = currentTime
         }
     }
 
+    /* ---------- NOTIFICATION TRIGGER LOGIC ---------- */
 
-    // RECEIVER LOGIC (FETCHING FOR BUS PROFILE)
+    override fun updateTripRunning(busId: String, isRunning: Boolean) {
+        database.getReference("buses").child(busId).child("isTripRunning").setValue(isRunning)
 
+        database.getReference("buses").child(busId).child("busNumber")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val busNo = snapshot.getValue(String::class.java) ?: "Unknown"
+                    val statusText = if (isRunning) "Started" else "Ended"
+
+                    val parentData = mapOf(
+                        "title" to "Trip $statusText",
+                        "message" to "Your child's bus ($busNo) has $statusText its journey.",
+                        "timestamp" to ServerValue.TIMESTAMP
+                    )
+
+                    val adminData = mapOf(
+                        "title" to "Fleet Update",
+                        "message" to "Route $busNo has $statusText a trip.",
+                        "timestamp" to ServerValue.TIMESTAMP
+                    )
+
+                    sendNotificationToAssociatedUsers(busId, parentData, adminData)
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+
+
+    override fun sendNotificationToAssociatedUsers(
+        busId: String,
+        parentData: Map<String, Any>,
+        adminData: Map<String, Any>
+    ) {
+        // 1. Notify Admin (Works because 'admin' is a fixed path)
+        database.getReference("notifications").child("admin").push().setValue(adminData)
+
+        // 2. Notify Parents (Using the logic found in BusDetailsActivity)
+        database.getReference("users").addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Loop through all users (just like you did to find driver/parent details)
+                for (userSnapshot in snapshot.children) {
+                    val parentUid = userSnapshot.key ?: continue
+                    val childrenNode = userSnapshot.child("children")
+
+                    var isThisParentInvolved = false
+
+                    // Loop through children under this specific user
+                    for (childSnapshot in childrenNode.children) {
+                        val childBusRouteId = childSnapshot.child("busRouteId").getValue(String::class.java)
+
+                        // If this child belongs to the bus that triggered the alert
+                        if (childBusRouteId == busId) {
+                            isThisParentInvolved = true
+                            break
+                        }
+                    }
+
+                    // If a match was found, send notification to notifications/{parentUid}
+                    if (isThisParentInvolved) {
+                        database.getReference("notifications")
+                            .child(parentUid)
+                            .push()
+                            .setValue(parentData)
+                            .addOnSuccessListener {
+                                Log.d("Notification", "Successfully sent to parent: $parentUid")
+                            }
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Notification", "Database error: ${error.message}")
+            }
+        })
+    }
+    /* ---------- RECEIVER LOGIC (FETCHING FOR BUS PROFILE) ---------- */
 
     override fun startSyncingFromFirebase(busUid: String) {
-        // Stop previous listener if switching buses in HorizontalPager
         stopSyncingFromFirebase()
-
         val speedRef = database.getReference("buses").child(busUid).child("speed")
 
         firebaseSpeedListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                // Ensure data is read as Double (matching how it's sent)
                 val speedValue = snapshot.getValue(Double::class.java) ?: 0.0
-
-                // Update the LiveData which AccelRecieverViewModel observes
                 _firebaseData.postValue(AccelerometerModel(
                     speedMps = speedValue.toFloat(),
                     isRunning = speedValue > 0.1
                 ))
-                Log.d("AccelerometerRepo", "Fetched Speed: $speedValue for Bus: $busUid")
             }
-
             override fun onCancelled(error: DatabaseError) {
                 Log.e("AccelerometerRepo", "Fetch error: ${error.message}")
             }
         }
-
         speedRef.addValueEventListener(firebaseSpeedListener!!)
     }
 
@@ -143,17 +217,8 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
         firebaseSpeedListener?.let { listener ->
             database.getReference("buses").removeEventListener(listener)
             firebaseSpeedListener = null
-            Log.d("AccelerometerRepo", "Stopped syncing speed data.")
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-
-    override fun updateTripRunning(busId: String, isRunning: Boolean) {
-        database.getReference("buses")
-            .child(busId)
-            .child("isTripRunning")
-            .setValue(isRunning)
-    }
-
 }

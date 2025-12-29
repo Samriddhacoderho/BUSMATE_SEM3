@@ -10,10 +10,17 @@ interface AccelerometerRepository {
 
     // Pass the DRIVER'S UID here
     fun startListening(driverUid: String)
+    fun registerSensors()
     fun stopListening()
 
     fun startSyncingFromFirebase(busUid: String)
     fun stopSyncingFromFirebase()
-    fun updateTripRunning(biusId: String, isRunning: Boolean)
+    fun updateTripRunning(busId: String, isRunning: Boolean)
+
+    fun sendNotificationToAssociatedUsers(
+        busId: String,
+        parentData: Map<String, Any>,
+        adminData: Map<String, Any>
+    )
 
 }
