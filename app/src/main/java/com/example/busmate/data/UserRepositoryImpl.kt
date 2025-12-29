@@ -19,6 +19,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 //import com.cloudinary.Cloudinary
 //import com.cloudinary.utils.ObjectUtils
@@ -361,4 +362,22 @@ class UserRepositoryImpl : UserRepositoryInterface {
 //        }
 //        return fileName
 //    }
+
+    override fun updateFcmToken(callback: (Boolean) -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+
+        // This line asks Google for the device's unique "Address"
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                // Store it in: users / {userId} / fcmToken
+                usersRef.child(userId).child("fcmToken").setValue(token)
+                    .addOnCompleteListener { dbTask ->
+                        callback(dbTask.isSuccessful)
+                    }
+            } else {
+                callback(false)
+            }
+        }
+    }
 }

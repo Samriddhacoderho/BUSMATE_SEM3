@@ -44,6 +44,7 @@ import com.example.busmate.data.UserRepositoryImpl
 @Composable
 fun HomeScreen(
     children: List<ChildModel> = emptyList(),
+    notifications: List<Map<String, String>> = emptyList(),
     onOpenLiveLocation: (busRouteId: String,studentId: String) -> Unit
 ) {
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
@@ -177,6 +178,28 @@ fun HomeScreen(
                     NotificationsAlertHeaderScreen()
                 } else {
                     NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+                }
+            }
+
+            // NEW: Dynamic Notification List
+// This renders each message sent from the Dashboard Activity
+            items(notifications) { notification ->
+                NotificationItemScreen(
+                    initial = notification["title"]?.take(1) ?: "!",
+                    message = notification["message"] ?: "",
+                    indicatorColor = BusMateOrange
+                )
+            }
+
+// Fallback if no notifications exist
+            if (notifications.isEmpty() && (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")) {
+                item {
+                    Text(
+                        text = "No new alerts",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
                 }
             }
 

@@ -53,4 +53,6 @@ interface UserRepositoryInterface {
 //    fun uploadImage(context: Context,imageUri: Uri,callback:(String?)-> Unit)
 //
 //    fun getFileNameFromURI(context: Context,imageUri: Uri): String?
+
+    fun updateFcmToken(callback: (Boolean) -> Unit)
 }
