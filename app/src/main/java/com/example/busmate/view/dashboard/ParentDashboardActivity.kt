@@ -34,12 +34,22 @@ import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Search
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ChildEventListener
+import android.os.Build
+import com.example.busmate.util.NotificationHelper
+import com.google.firebase.messaging.FirebaseMessaging
 
 class ParentDashboardActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        }
 
         setContent {
             var isDarkModeEnabled by remember { mutableStateOf(false) }
@@ -83,13 +93,49 @@ fun ParentDashboardScreen(
     var selectedItem by remember { mutableStateOf(0) }
     var isViewingBusDetails by remember { mutableStateOf(false) }
 
+
+    /* ---------- 1. NOTIFICATION LISTENER ---------- */
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid ?: return@LaunchedEffect
+        val nodePath = if (user?.typeofUser?.lowercase() == "admin") "admin" else uid
+        val notificationsRef = FirebaseDatabase.getInstance().getReference("notifications").child(nodePath)
+
+        notificationsRef.addChildEventListener(object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val title = snapshot.child("title").getValue(String::class.java) ?: "Bus Update"
+                val message = snapshot.child("message").getValue(String::class.java) ?: ""
+
+                if (message.isNotEmpty()) {
+                    NotificationHelper.showNotification(context, title, message)
+                    snapshot.ref.removeValue() // Delete after showing
+                }
+            }
+            override fun onChildChanged(s: DataSnapshot, p: String?) {}
+            override fun onChildRemoved(s: DataSnapshot) {}
+            override fun onChildMoved(s: DataSnapshot, p: String?) {}
+            override fun onCancelled(e: DatabaseError) {}
+        })
+    }
+
+    /* ---------- 2. FCM TOKEN REGISTRATION ---------- */
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid ?: return@LaunchedEffect
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                FirebaseDatabase.getInstance().getReference("users")
+                    .child(uid).child("fcmToken").setValue(token)
+            }
+        }
+    }
+
+    /* ---------- 3. DATA LOADING ---------- */
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             userViewModel.loadUserProfile(it)
             childViewModel.observeChildren(it)
         }
     }
-
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(val label: String, val icon: ImageVector)
 
@@ -106,7 +152,9 @@ fun ParentDashboardScreen(
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff),
-            NavItem("Search Child", Icons.Default.Search)
+            NavItem("Search Child", Icons.Default.Search),
+            NavItem("View Attendance", Icons.Default.ChildCare)
+
         )
 
         "driver" -> listOf(
@@ -252,6 +300,11 @@ fun ParentDashboardScreen(
                                             }
                                         }
                                     }
+
+                                    "View Attendance" ->context.startActivity(
+                                        Intent(context, AdminAttendanceHistoryActivity::class.java)
+                                    )
+
                                 }
                             }
                         }
