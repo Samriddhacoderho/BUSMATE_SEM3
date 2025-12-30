@@ -8,9 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -66,14 +68,22 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
     var busRouteId by remember { mutableStateOf("") }
     var pickUpLocation by remember { mutableStateOf("") }
     var dropOffLocation by remember { mutableStateOf("") }
+
+    // --- NEW IMAGE PICKER STATE ---
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri -> selectedImageUri = uri }
+    // ------------------------------
+
     var isGeocoding by remember { mutableStateOf(false) }
-    val isLoading = message == "Loading" || isGeocoding
+    val isLoading = message == "Loading" || message == "Uploading data..." || isGeocoding
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty() && message != "Loading") {
+        if (message.isNotEmpty() && message != "Loading" && message != "Uploading data...") {
             snackbarHostState.showSnackbar(message)
             if (isSuccess) activity.finish()
         }
@@ -84,7 +94,6 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
                     snackbarData = data,
-                    // Specific callback logic for color
                     containerColor = if (message.contains("successfully", true)) Color(0xFF4CAF50) else Color.Red,
                     contentColor = Color.White
                 )
@@ -98,44 +107,29 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                 .verticalScroll(rememberScrollState())
                 .background(Color(0xFFF0F0F0))
         ) {
-            // **HEADER SECTION: Card Stack Design**
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .background(BusMateBlue)
+                    .background(Color(0xFF1976D2)) // BusMateBlue
                     .padding(top = 16.dp),
             ) {
-                // Back Button
                 IconButton(
                     onClick = { activity.finish() },
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(horizontal = 8.dp)
+                    modifier = Modifier.align(Alignment.TopStart).padding(horizontal = 8.dp)
                 ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Go Back",
-                        tint = Color.White
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Go Back", tint = Color.White)
                 }
 
-                // Center Content (Icon and Title)
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Enter Child Details",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Enter Child Details", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            // **CONTENT CARD: Overlapping and Elevated**
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,61 +139,51 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally // Center the image picker
                 ) {
-                    // Input Fields
-                    AddChildInputField(
-                        firstName,
-                        { firstName = it },
-                        "First Name",
-                        Icons.Default.Person
-                    )
-                    AddChildInputField(
-                        lastName,
-                        { lastName = it },
-                        "Last Name",
-                        Icons.Default.Person,
-                        isOptional = true
-                    )
-                    AddChildInputField(
-                        studentId,
-                        { studentId = it },
-                        "Student ID",
-                        Icons.Default.Badge,
-                        keyboardType = KeyboardType.Number
-                    )
-                    AddChildInputField(
-                        busRouteId,
-                        { busRouteId = it },
-                        "Bus Route ID",
-                        Icons.Default.DirectionsBus
-                    )
 
-                    HorizontalDivider(Modifier.padding(vertical = 16.dp)) // Updated from Divider
-                    Text(
-                        "Pickup/Dropoff Location",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    // --- IMAGE PICKER UI SECTION ---
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE0E0E0))
+                            .border(2.dp, Color(0xFF1976D2), CircleShape)
+                            .clickable { launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedImageUri != null) {
+                            coil3.compose.AsyncImage(
+                                model = selectedImageUri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.CameraAlt, null, tint = Color.Gray)
+                                Text("Add Photo", fontSize = 10.sp, color = Color.Gray)
+                            }
+                        }
+                    }
+                    Text("Child Profile Photo", modifier = Modifier.padding(top = 8.dp), fontSize = 12.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // -------------------------------
 
-                    AddChildInputField(
-                        pickUpLocation,
-                        { pickUpLocation = it },
-                        "Pickup Location",
-                        Icons.Default.PinDrop
-                    )
-                    AddChildInputField(
-                        dropOffLocation,
-                        { dropOffLocation = it },
-                        "Dropoff Location",
-                        Icons.Default.PinDrop
-                    )
+                    AddChildInputField(firstName, { firstName = it }, "First Name", Icons.Default.Person)
+                    AddChildInputField(lastName, { lastName = it }, "Last Name", Icons.Default.Person, isOptional = true)
+                    AddChildInputField(studentId, { studentId = it }, "Student ID", Icons.Default.Badge, keyboardType = KeyboardType.Number)
+                    AddChildInputField(busRouteId, { busRouteId = it }, "Bus Route ID", Icons.Default.DirectionsBus)
+
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
+
+                    AddChildInputField(pickUpLocation, { pickUpLocation = it }, "Pickup Location", Icons.Default.PinDrop)
+                    AddChildInputField(dropOffLocation, { dropOffLocation = it }, "Dropoff Location", Icons.Default.PinDrop)
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Submit Button
                     Button(
                         onClick = {
                             scope.launch {
@@ -208,14 +192,16 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                                 val dAddr = getCoords(context, dropOffLocation)
 
                                 if (pAddr != null && dAddr != null) {
+                                    // UPDATED: Now passing context and selectedImageUri
                                     viewModel.addChild(
+                                        context = context,
+                                        imageUri = selectedImageUri,
                                         firstName = firstName,
                                         lastName = lastName,
                                         studentId = studentId,
                                         busRouteId = busRouteId,
                                         pickUpLocation = pickUpLocation,
                                         dropOffLocation = dropOffLocation,
-                                        // Ensure ChildViewModel.addChild is updated to accept these 4 parameters
                                         pLat = pAddr.latitude,
                                         pLng = pAddr.longitude,
                                         dLat = dAddr.latitude,
@@ -233,11 +219,7 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                         if (isLoading) {
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                         } else {
-                            Text(
-                                text = "ADD CHILD",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("ADD CHILD", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

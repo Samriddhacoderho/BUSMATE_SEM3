@@ -28,8 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+    import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +38,8 @@ import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.AdminActionsViewModel
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 class DriverProfileScreen : ComponentActivity() {
 
@@ -189,16 +190,26 @@ fun SingleDriverProfile(
                         .size(130.dp)
                         .shadow(8.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color.White)
+                        .background(Color(0xFFF5F5F5))
                         .border(4.dp, Color.White, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.driver),
-                        contentDescription = "Driver Avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (!driver.profileImage.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = driver.profileImage,
+                            contentDescription = "Driver Photo",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // FALLBACK: Show Name Initial if no image is uploaded
+                        Text(
+                            text = driver.firstName.take(1).uppercase(),
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BusMateBlue
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
