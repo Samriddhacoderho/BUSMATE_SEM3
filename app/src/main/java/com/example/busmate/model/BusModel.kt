@@ -1,6 +1,7 @@
 package com.example.busmate.model
 
 import android.os.Parcelable
+import com.google.firebase.database.PropertyName
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -14,7 +15,10 @@ data class BusModel(
     var currentLocation: String = "Depot",
     var speed: Double = 0.0,
     var driver: UserModel? = null, // nullable for Realtime DB safety
-    var isTripRunning:Boolean?=false
+    @get:PropertyName("isTripRunning")
+    @set:PropertyName("isTripRunning")
+    @get:JvmName("isTripRunning")
+    var isTripRunning:Boolean = false
 ) : Parcelable {
     fun toMap(): Map<String, Any?> {
         return mapOf(

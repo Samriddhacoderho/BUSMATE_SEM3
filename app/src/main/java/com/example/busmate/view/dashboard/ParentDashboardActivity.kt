@@ -1,7 +1,9 @@
 package com.example.busmate.view.dashboard
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -39,6 +41,11 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ChildEventListener
 import android.os.Build
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.example.busmate.service.TripMonitoringService
 import com.example.busmate.util.NotificationHelper
 import com.google.firebase.messaging.FirebaseMessaging
 
@@ -47,10 +54,6 @@ class ParentDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-        }
-
         setContent {
             var isDarkModeEnabled by remember { mutableStateOf(false) }
 
@@ -71,6 +74,8 @@ fun ParentDashboardScreen(
     onThemeChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid ?: ""
 
     /* ---------- VIEW MODELS ---------- */
     val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
@@ -85,7 +90,13 @@ fun ParentDashboardScreen(
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
 
+    val userState by userViewModel.user.collectAsState()
+    var dynamicNotifications by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
+
 //    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
+    val busIds = remember(userState) {
+        userState?.children?.values?.map { it.busRouteId }?.filter { it.isNotEmpty() }?.distinct() ?: emptyList()
+    }
 
     /* ---------- DRAWER STATE ---------- */
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -93,42 +104,52 @@ fun ParentDashboardScreen(
     var selectedItem by remember { mutableStateOf(0) }
     var isViewingBusDetails by remember { mutableStateOf(false) }
 
-
-    /* ---------- 1. NOTIFICATION LISTENER ---------- */
-    LaunchedEffect(user?.uid) {
-        val uid = user?.uid ?: return@LaunchedEffect
-        val nodePath = if (user?.typeofUser?.lowercase() == "admin") "admin" else uid
-        val notificationsRef = FirebaseDatabase.getInstance().getReference("notifications").child(nodePath)
-
-        notificationsRef.addChildEventListener(object : ChildEventListener {
-            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                val title = snapshot.child("title").getValue(String::class.java) ?: "Bus Update"
-                val message = snapshot.child("message").getValue(String::class.java) ?: ""
-
-                if (message.isNotEmpty()) {
-                    NotificationHelper.showNotification(context, title, message)
-                    snapshot.ref.removeValue() // Delete after showing
-                }
-            }
-            override fun onChildChanged(s: DataSnapshot, p: String?) {}
-            override fun onChildRemoved(s: DataSnapshot) {}
-            override fun onChildMoved(s: DataSnapshot, p: String?) {}
-            override fun onCancelled(e: DatabaseError) {}
-        })
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Permission denied. Notifications disabled.", Toast.LENGTH_SHORT).show()
+        }
     }
+    // 3. Combined Logic: Load Profile, Register FCM, and Check Permissions
+    LaunchedEffect(Unit) {
+        userViewModel.loadUserProfile(userId)
 
-    /* ---------- 2. FCM TOKEN REGISTRATION ---------- */
-    LaunchedEffect(user?.uid) {
-        val uid = user?.uid ?: return@LaunchedEffect
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val token = task.result
-                FirebaseDatabase.getInstance().getReference("users")
-                    .child(uid).child("fcmToken").setValue(token)
+        UserRepositoryImpl().updateFcmToken { success ->
+            Log.d("FCM", "Token update: $success")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
 
+    // CHANGE: Combined logic into a single block to save battery and memory
+    // Update your existing LaunchedEffect(busIds) to look like this:
+    LaunchedEffect(busIds) {
+        // This log is critical. If you see "Bus IDs are empty" in Logcat,
+        // it means your Firebase User data hasn't loaded properly.
+        if (busIds.isEmpty()) {
+            Log.d("TripMonitor", "Bus IDs are empty, waiting for data...")
+            return@LaunchedEffect
+        }
+
+        Log.d("TripMonitor", "Starting Service with: $busIds")
+
+        val serviceIntent = Intent(context, TripMonitoringService::class.java).apply {
+            putStringArrayListExtra("BUS_ROUTE_IDS", ArrayList(busIds))
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+
+        // ... rest of your in-app listener code ...
+    }
     /* ---------- 3. DATA LOADING ---------- */
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -153,13 +174,15 @@ fun ParentDashboardScreen(
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff),
             NavItem("Search Child", Icons.Default.Search),
-            NavItem("View Attendance", Icons.Default.ChildCare)
+            NavItem("View Attendance", Icons.Default.ChildCare),
+            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
 
         )
 
         "driver" -> listOf(
             NavItem("My Trips", Icons.Default.Route),
-            NavItem("Attendance",Icons.Default.ChildCare)
+            NavItem("Attendance",Icons.Default.ChildCare),
+            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
         )
 
         else -> listOf(
@@ -304,6 +327,20 @@ fun ParentDashboardScreen(
                                     "View Attendance" ->context.startActivity(
                                         Intent(context, AdminAttendanceHistoryActivity::class.java)
                                     )
+                                    // Inside ParentDashboardActivity
+                                    "Guidelines and Rules" -> {
+                                        val userRole = user?.typeofUser
+
+                                        // LOGGING: Check if user or role is null
+                                        android.util.Log.d("BUSMATE_DEBUG", "Navigating from Dashboard")
+                                        android.util.Log.d("BUSMATE_DEBUG", "User Object exists: ${user != null}")
+                                        android.util.Log.d("BUSMATE_DEBUG", "User Role value: '$userRole'")
+
+                                        val intent = Intent(context, GuideLineActivity::class.java).apply {
+                                            putExtra("typeOfUser", userRole) // If this is null, the other activity needs to handle it
+                                        }
+                                        context.startActivity(intent)
+                                    }
 
                                 }
                             }
@@ -374,7 +411,7 @@ fun ParentDashboardScreen(
 
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (selectedItem) {
-                    0 -> HomeScreen(children = children, onOpenLiveLocation = { busId, studentId ->
+                    0 -> HomeScreen(children = children,notifications=dynamicNotifications, onOpenLiveLocation = { busId, studentId ->
                         selectedBusRouteId = busId
                         selectedChildId = studentId
                         selectedItem = 2
