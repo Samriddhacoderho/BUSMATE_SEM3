@@ -38,5 +38,6 @@
     <string name="title_activity_attendance">AttendanceActivity</string>
     <string name="title_activity_admin_attendance_history">AdminAttendanceHistoryActivity</string>
     <string name="title_activity_guide_line">GuideLineActivity</string>
+    <string name="title_activity_parent_attendance">ParentAttendanceActivity</string>
 
 </resources>

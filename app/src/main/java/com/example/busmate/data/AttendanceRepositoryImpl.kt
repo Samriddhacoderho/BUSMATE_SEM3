@@ -78,4 +78,64 @@ class AttendanceRepositoryImpl: AttendanceRepository{
             override fun onCancelled(error: DatabaseError) = callback(emptyList())
         })
     }
+
+    // Inside AttendanceRepositoryImpl.kt
+    override fun getAttendanceForParent(parentUid: String, date: String, callback: (List<Map<String, Any?>>) -> Unit) {
+        val result = mutableListOf<Map<String, Any?>>()
+        val parentRef = FirebaseDatabase.getInstance().getReference("users").child(parentUid).child("children")
+
+        parentRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) {
+                    callback(emptyList()) // Return early if no children found
+                    return
+                }
+
+                val children = snapshot.children.mapNotNull { it.getValue(ChildModel::class.java) }
+                // Group children by busId to minimize Firebase calls
+                val childrenByBus = children.groupBy { it.busRouteId }
+                var pendingRequests = childrenByBus.size
+
+                if (pendingRequests == 0) {
+                    callback(emptyList())
+                    return
+                }
+
+                childrenByBus.forEach { (busId, childList) ->
+                    if (busId.isNullOrEmpty()) {
+                        pendingRequests--
+                        if (pendingRequests == 0) callback(result)
+                        return@forEach
+                    }
+
+                    FirebaseDatabase.getInstance().getReference("attendance")
+                        .child(date).child(busId)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(attSnap: DataSnapshot) {
+                                childList.forEach { child ->
+                                    // FIX: Check if the child exists in the attendance record
+                                    val record = attSnap.child(child.studentId)
+                                    val status = record.child("status").getValue(String::class.java) ?: "Absent"
+
+                                    result.add(mapOf(
+                                        "studentId" to child.studentId,
+                                        "childName" to "${child.firstName} ${child.lastName}",
+                                        "busRouteId" to busId,
+                                        "status" to status
+                                    ))
+                                }
+                                pendingRequests--
+                                if (pendingRequests == 0) callback(result)
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                                pendingRequests--
+                                if (pendingRequests == 0) callback(result)
+                            }
+                        })
+                }
+            }
+            override fun onCancelled(p0: DatabaseError) { callback(emptyList()) }
+        })
+    }
 }
