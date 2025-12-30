@@ -66,6 +66,7 @@ import com.example.busmate.view.EditProfileActivity
 import com.example.busmate.view.LoginScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.example.busmate.view.DarkMoodSettingActivity
+import coil3.compose.AsyncImage
 
 
 // --- Colors and Theme (Simplified placeholders based on the image's black and white style) ---
@@ -82,6 +83,7 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
 
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
 //    var isDarkModeEnabled by remember { mutableStateOf(false) }
@@ -93,6 +95,7 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
                     if (success && user != null) {
                         firstName = user.firstName ?: ""
                         lastName = user.lastName ?: ""
+                        profileImageUrl = user.profileImage
                     }
                 }
             }
@@ -117,9 +120,13 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
             item {
                 // 2. Profile Info Section
                 ProfileInfoCard(
-                    fullName = firstName,lastName = lastName,
-                    onEditClick = {   val intent = Intent(context, EditProfileActivity::class.java)
-                        context.startActivity(intent) }
+                    fullName = firstName,
+                    lastName = lastName,
+                    profileImageUrl = profileImageUrl,
+                    onEditClick = {
+                        val intent = Intent(context, EditProfileActivity::class.java)
+                        context.startActivity(intent)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -245,28 +252,48 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
             dismissButton = {}
         )
     }
-
 }
 @Composable
-fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit) {
+fun ProfileInfoCard(
+    fullName: String,
+    lastName: String,
+    profileImageUrl: String?,
+    onEditClick: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Placeholder for user avatar with an edit badge
+        // Avatar Section
         Box(
             modifier = Modifier.size(80.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            Icon(
-                imageVector = Icons.Default.AccountCircle, // Placeholder Image
-                contentDescription = "User Avatar",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(ButtonGray),
-                tint = Color.LightGray
-            )
+            // FIX: Use an if-else block so only ONE image is drawn
+            if (!profileImageUrl.isNullOrEmpty()) {
+                // Use AsyncImage directly after importing it
+                AsyncImage(
+                    model = profileImageUrl,
+                    contentDescription = "User Avatar",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .border(1.dp, Color.LightGray, CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                // Default placeholder only if URL is null
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "User Avatar",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(ButtonGray),
+                    tint = Color.LightGray
+                )
+            }
+
             // Edit badge (Camera/Edit Icon)
             Box(
                 modifier = Modifier
@@ -285,7 +312,10 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
                 )
             }
         }
+
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Name Row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
@@ -296,7 +326,7 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 color = PrimaryBlack
             )
-            Spacer(modifier = Modifier.width(8.dp)) // Add space between names
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = lastName,
                 fontSize = 18.sp,
@@ -306,6 +336,7 @@ fun ProfileInfoCard(fullName: String, lastName: String, onEditClick: () -> Unit)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
         Button(
             onClick = onEditClick,
             shape = RoundedCornerShape(8.dp),
@@ -357,4 +388,4 @@ fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true,
         }
     }
 }
-//testing
+//testing show image
