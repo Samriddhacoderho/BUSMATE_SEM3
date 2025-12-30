@@ -1,6 +1,8 @@
 package com.example.busmate.view
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -69,6 +72,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
 
     val context = LocalContext.current
     val message by viewModel.message.collectAsState()
+    val activity=context as Activity
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -289,7 +293,11 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                     text = "Forgot Your Password?",
                     color = PrimaryBlue,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = {
+                        val intent= Intent(context, ResetPasswordActivity::class.java)
+                        context.startActivity(intent)
+                        activity.finish()
+                    })
                 )
 
                 Spacer(modifier = Modifier.height(25.dp))
