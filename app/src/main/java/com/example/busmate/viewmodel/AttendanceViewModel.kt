@@ -1,6 +1,5 @@
 package com.example.busmate.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AttendanceRepository
 import com.example.busmate.data.AttendanceRepositoryImpl
@@ -8,10 +7,8 @@ import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
 import com.example.busmate.model.BusModel
 import com.example.busmate.model.ChildModel
-import com.google.firebase.database.ServerValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlin.collections.emptyList
 
 class AttendanceViewModel(
     private val busRepo: BusRepositoryInterface = BusRepositoryImpl(),
@@ -30,14 +27,17 @@ class AttendanceViewModel(
     private val _attendanceHistory = MutableStateFlow<List<Map<String, Any?>>>(emptyList())
     val attendanceHistory: StateFlow<List<Map<String, Any?>>> = _attendanceHistory
 
-    // Helper to store bus ID after loading the list
-    private var currentBusId: String? = null
+    private val _parentAttendance = MutableStateFlow<List<Map<String, Any?>>>(emptyList())
+    val parentAttendance: StateFlow<List<Map<String, Any?>>> = _parentAttendance
+
+    // 🔹 Changed variable name to track Route Name instead of UID
+    private var currentBusRouteId: String? = null
 
     fun loadAttendanceList(driverUid: String) {
         _isLoading.value = true
         busRepo.getBusByDriverUid(driverUid) { bus ->
             if (bus != null) {
-                currentBusId = bus.uid
+                currentBusRouteId = bus.routeId // Store Route Name
                 attendanceRepo.getChildrenByRouteId(bus.routeId) { list ->
                     _children.value = list
                     _isLoading.value = false
@@ -48,59 +48,61 @@ class AttendanceViewModel(
         }
     }
 
-    // 🔹 FIXED SIGNATURE: 3 parameters to match the Activity call
     fun submitAttendance(
         driverUid: String,
         selectedChildren: List<ChildModel>,
         onResult: (Boolean) -> Unit
     ) {
-        // If we don't have the busId yet, fetch it first
-        if (currentBusId == null) {
+        if (currentBusRouteId == null) {
             busRepo.getBusByDriverUid(driverUid) { bus ->
                 if (bus != null) {
-                    currentBusId = bus.uid
-                    performSubmit(bus.uid, selectedChildren, onResult)
+                    currentBusRouteId = bus.routeId
+                    performSubmit(bus.routeId, selectedChildren, onResult)
                 } else {
                     onResult(false)
                 }
             }
         } else {
-            performSubmit(currentBusId!!, selectedChildren, onResult)
+            performSubmit(currentBusRouteId!!, selectedChildren, onResult)
         }
     }
 
-    fun fetchAllBusesForAdmin() {
-        busRepo.getAllBusesLive { list ->
-            // Filter out nulls if necessary
-            _allBuses.value = list.filterNotNull()
-        }
-    }
-
-    // 🔹 Fetch history for Admin Screen
-    fun loadHistory(date: String, busId: String) {
+    // 🔹 For Admin: identifier is now the routeId passed from Activity
+    fun loadHistory(date: String, routeId: String) {
         _isLoading.value = true
-        attendanceRepo.getAttendanceHistory(date, busId) { list ->
+        attendanceRepo.getAttendanceHistory(date, routeId) { list ->
             _attendanceHistory.value = list
             _isLoading.value = false
         }
     }
 
-    private fun performSubmit(busId: String, selectedChildren: List<ChildModel>, onResult: (Boolean) -> Unit) {
-        // Get the full list of students we loaded for this route
+    fun loadParentAttendance(parentUid: String, date: String) {
+        _isLoading.value = true
+        attendanceRepo.getAttendanceForParent(parentUid, date) { list ->
+            _parentAttendance.value = list
+            _isLoading.value = false
+        }
+    }
+
+    private fun performSubmit(routeId: String, selectedChildren: List<ChildModel>, onResult: (Boolean) -> Unit) {
         val allChildren = _children.value
 
         val attendanceData = allChildren.map { child ->
-            // Check if this specific child was in the checked list
             val isPresent = selectedChildren.any { it.studentId == child.studentId }
-
             mapOf(
                 "studentId" to child.studentId,
                 "childName" to "${child.firstName} ${child.lastName}",
-                "status" to if (isPresent) "Present" else "Absent", // 🔹 Dynamic status
+                "status" to if (isPresent) "Present" else "Absent",
                 "timestamp" to com.google.firebase.database.ServerValue.TIMESTAMP
             )
         }
+        // Submits to attendance/date/RouteName
+        attendanceRepo.submitAttendance(routeId, attendanceData, onResult)
+    }
 
-        attendanceRepo.submitAttendance(busId, attendanceData, onResult)
+    fun fetchAllBusesForAdmin() {
+        busRepo.getAllBusesLive { list ->
+            _allBuses.value = list.filterNotNull()
+        }
     }
 }

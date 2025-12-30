@@ -188,6 +188,7 @@ fun ParentDashboardScreen(
         else -> listOf(
             NavItem("About Us", Icons.Default.Info),
             NavItem("Bus Details", Icons.Default.DirectionsBus),
+            NavItem("Attendance of Children", Icons.Default.ChildCare),
             NavItem("Digital Student ID", Icons.Default.QrCode),
             NavItem("Driver Profile", Icons.Default.Badge)
         )
@@ -340,6 +341,18 @@ fun ParentDashboardScreen(
                                             putExtra("typeOfUser", userRole) // If this is null, the other activity needs to handle it
                                         }
                                         context.startActivity(intent)
+                                    }
+                                    "Attendance of Children" -> {
+                                        // userId is already defined at the top of your ParentDashboardScreen
+                                        if (userId.isNotEmpty()) {
+                                            val intent = Intent(context, ParentAttendanceActivity::class.java).apply {
+                                                // ParentAttendanceActivity expects "PARENT_UID" to function
+                                                putExtra("PARENT_UID", userId)
+                                            }
+                                            context.startActivity(intent)
+                                        } else {
+                                            Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
 
                                 }

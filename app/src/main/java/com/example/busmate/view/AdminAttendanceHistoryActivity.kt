@@ -123,7 +123,8 @@ fun AdminAttendanceHistoryScreen() {
                             selectedBus = bus
                             isBusDropdownExpanded = false
                             if (formattedDateForFirebase.isNotEmpty()) {
-                                viewModel.loadHistory(formattedDateForFirebase, bus.uid)
+                                // 🔹 FIXED: Use bus.routeId instead of it.uid
+                                viewModel.loadHistory(formattedDateForFirebase, bus.routeId)
                             }
                         }
                     )
@@ -160,7 +161,10 @@ fun AdminAttendanceHistoryScreen() {
                         val fbFormatter = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                         formattedDateForFirebase = fbFormatter.format(date)
 
-                        selectedBus?.let { viewModel.loadHistory(formattedDateForFirebase, it.uid) }
+                        // 🔹 FIXED: Use selectedBus?.routeId instead of it.uid
+                        selectedBus?.let { bus ->
+                            viewModel.loadHistory(formattedDateForFirebase, bus.routeId)
+                        }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -174,7 +178,6 @@ fun AdminAttendanceHistoryScreen() {
     }
 }
 
-// 🔹 Added the missing HistoryCard Composable
 @Composable
 fun HistoryCard(record: Map<String, Any?>) {
     val name = record["childName"] as? String ?: "Unknown"

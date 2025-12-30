@@ -17,4 +17,11 @@ interface AttendanceRepository {
         busId: String,
         callback: (List<Map<String, Any?>>) -> Unit
     )
+
+    fun getAttendanceForParent(
+        parentUid: String,
+        date: String,
+        callback: (List<Map<String, Any?>>) -> Unit
+    )
+
 }
