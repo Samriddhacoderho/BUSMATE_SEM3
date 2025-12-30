@@ -301,7 +301,9 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            modifier = Modifier.clickable { /* UX: navigate back */ }
+                            modifier = Modifier.clickable {
+                                activity.finish()
+                            }
                         )
 
                         // Spacer to push content right
