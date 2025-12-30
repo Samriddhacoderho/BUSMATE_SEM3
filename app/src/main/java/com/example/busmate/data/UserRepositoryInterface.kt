@@ -6,21 +6,18 @@ import com.example.busmate.model.CreateAccountModel
 import com.example.busmate.model.UserModel
 
 interface UserRepositoryInterface {
+
     fun registerUser(
         user: UserModel,
         password: String,
         callback: (Boolean, String, UserModel?) -> Unit
     )
 
-//    fun login(email:String,password: String,callback:(String, Boolean, UserModel)->Unit)
-    //sir ko changed code
-
     fun loginUser(
         schoolId: String,
         password: String,
         callback: (Boolean, String, UserModel?) -> Unit
     )
-
 
     fun changePassword(
         oldPassword: String,
@@ -42,6 +39,7 @@ interface UserRepositoryInterface {
         schoolId: String,
         callback: (Boolean, String, UserModel?) -> Unit
     )
+
     fun updateUserProfile(
         schoolId: String,
         firstName: String,
@@ -49,8 +47,32 @@ interface UserRepositoryInterface {
         phone: String,
         callback: (Boolean, String) -> Unit
     )
-    fun getCurrentUserProfile(callback: (Boolean, String, UserModel?) -> Unit)
-    fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit)
-    fun getFileNameFromURI(context: Context, uri: Uri): String?
-    fun updateUserField(uid: String, field: String, value: Any, callback: (Boolean, String) -> Unit)
+
+    fun getCurrentUserProfile(
+        callback: (Boolean, String, UserModel?) -> Unit
+    )
+
+    // 🔹 HEAD branch
+    fun updateFcmToken(
+        callback: (Boolean) -> Unit
+    )
+
+    // 🔹 Developer branch
+    fun uploadImage(
+        context: Context,
+        imageUri: Uri,
+        callback: (String?) -> Unit
+    )
+
+    fun getFileNameFromURI(
+        context: Context,
+        uri: Uri
+    ): String?
+
+    fun updateUserField(
+        uid: String,
+        field: String,
+        value: Any,
+        callback: (Boolean, String) -> Unit
+    )
 }
