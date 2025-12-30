@@ -153,13 +153,15 @@ fun ParentDashboardScreen(
             NavItem("View Driver", Icons.Default.Badge),
             NavItem("Manage Account", Icons.Default.PersonOff),
             NavItem("Search Child", Icons.Default.Search),
-            NavItem("View Attendance", Icons.Default.ChildCare)
+            NavItem("View Attendance", Icons.Default.ChildCare),
+            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
 
         )
 
         "driver" -> listOf(
             NavItem("My Trips", Icons.Default.Route),
-            NavItem("Attendance",Icons.Default.ChildCare)
+            NavItem("Attendance",Icons.Default.ChildCare),
+            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
         )
 
         else -> listOf(
@@ -304,6 +306,20 @@ fun ParentDashboardScreen(
                                     "View Attendance" ->context.startActivity(
                                         Intent(context, AdminAttendanceHistoryActivity::class.java)
                                     )
+                                    // Inside ParentDashboardActivity
+                                    "Guidelines and Rules" -> {
+                                        val userRole = user?.typeofUser
+
+                                        // LOGGING: Check if user or role is null
+                                        android.util.Log.d("BUSMATE_DEBUG", "Navigating from Dashboard")
+                                        android.util.Log.d("BUSMATE_DEBUG", "User Object exists: ${user != null}")
+                                        android.util.Log.d("BUSMATE_DEBUG", "User Role value: '$userRole'")
+
+                                        val intent = Intent(context, GuideLineActivity::class.java).apply {
+                                            putExtra("typeOfUser", userRole) // If this is null, the other activity needs to handle it
+                                        }
+                                        context.startActivity(intent)
+                                    }
 
                                 }
                             }
