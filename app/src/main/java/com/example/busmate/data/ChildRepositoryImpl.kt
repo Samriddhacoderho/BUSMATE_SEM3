@@ -14,6 +14,7 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
 
     private val usersRef = db.getReference("users")
     private val studentIndexRef = db.getReference("studentIdIndex")
+    private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     override fun addChild(
         model: ChildModel,
@@ -129,6 +130,40 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
             }
         }.addOnFailureListener {
             callback("Database error: ${it.message}", false)
+        }
+    }
+    // Inside ChildRepositoryImpl.kt
+
+
+    fun uploadChildImage(context: android.content.Context, imageUri: android.net.Uri, callback: (String?) -> Unit) {
+        executor.execute {
+            try {
+                val inputStream = context.contentResolver.openInputStream(imageUri)
+
+                // IMPORTANT: Put your real credentials here!
+                val cloudinary = com.cloudinary.Cloudinary(
+                    mapOf(
+                        "cloud_name" to "dithceay5",
+                        "api_key" to "242833732537939",
+                        "api_secret" to "qQvbql8xsRUmWuyP2xR-rutoxx0"
+                    )
+                )
+
+                val uploadResponse = cloudinary.uploader().upload(inputStream, com.cloudinary.utils.ObjectUtils.emptyMap())
+                var imageUrl = uploadResponse["url"] as String?
+
+                // Convert to https to avoid security issues on Android
+                imageUrl = imageUrl?.replace("http://", "https://")
+
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    callback(imageUrl)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace() // This helps you see the error in Logcat
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    callback(null)
+                }
+            }
         }
     }
 }

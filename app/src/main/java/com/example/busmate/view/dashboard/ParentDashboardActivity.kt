@@ -41,6 +41,10 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ChildEventListener
 import android.os.Build
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,6 +52,8 @@ import androidx.core.content.ContextCompat
 import com.example.busmate.service.TripMonitoringService
 import com.example.busmate.util.NotificationHelper
 import com.google.firebase.messaging.FirebaseMessaging
+import coil3.compose.AsyncImage
+import com.google.firebase.database.ValueEventListener
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -157,6 +163,48 @@ fun ParentDashboardScreen(
             childViewModel.observeChildren(it)
         }
     }
+
+    DisposableEffect(Unit) {
+        val database = FirebaseDatabase.getInstance()
+        val adminNotifRef = database
+            .getReference("notifications")
+            .child("admin")
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<Map<String, String>>()
+
+                for (notifSnapshot in snapshot.children) {
+                    val title = notifSnapshot.child("title")
+                        .getValue(String::class.java) ?: ""
+                    val message = notifSnapshot.child("message")
+                        .getValue(String::class.java) ?: ""
+
+                    list.add(
+                        mapOf(
+                            "title" to title,
+                            "message" to message
+                        )
+                    )
+                }
+
+                dynamicNotifications = list
+                Log.d("NOTIF_DEBUG", "Notifications updated: ${list.size}")
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("NOTIF_DEBUG", "Notification error: ${error.message}")
+            }
+        }
+
+        adminNotifRef.addValueEventListener(listener)
+
+        onDispose {
+            adminNotifRef.removeEventListener(listener)
+            Log.d("NOTIF_DEBUG", "Notification listener removed")
+        }
+    }
+
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(val label: String, val icon: ImageVector)
 
@@ -188,6 +236,7 @@ fun ParentDashboardScreen(
         else -> listOf(
             NavItem("About Us", Icons.Default.Info),
             NavItem("Bus Details", Icons.Default.DirectionsBus),
+            NavItem("Attendance of Children", Icons.Default.ChildCare),
             NavItem("Digital Student ID", Icons.Default.QrCode),
             NavItem("Driver Profile", Icons.Default.Badge)
         )
@@ -200,26 +249,61 @@ fun ParentDashboardScreen(
                     Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.primary)
-                        .padding(24.dp)
+                        .padding(top = 40.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
                 ) {
                     Column {
-                        Icon(
-                            Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
+                        // Profile Image with Fallback Logic
+                        Box(
+                            modifier = Modifier
+                                .size(75.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .border(2.dp, Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!user?.profileImage.isNullOrEmpty()) {
+                                // Show uploaded image from Cloudinary
+                                AsyncImage(
+                                    model = user?.profileImage,
+                                    contentDescription = "User Profile Picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                // Fallback: Show first letter of First Name if no image
+                                Text(
+                                    text = user?.firstName?.take(1)?.uppercase() ?: "U",
+                                    color = Color.White,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // User Name
                         Text(
-                            user?.firstName ?: "Loading...",
+                            text = "${user?.firstName ?: "Loading..."} ${user?.lastName ?: ""}",
                             color = Color.White,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            user?.typeofUser ?: "",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
+
+                        // User Role Badge
+                        Surface(
+                            color = Color.White.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(
+                                text = user?.typeofUser?.uppercase() ?: "",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
                 drawerItems.forEach { item ->
@@ -341,6 +425,18 @@ fun ParentDashboardScreen(
                                         }
                                         context.startActivity(intent)
                                     }
+                                    "Attendance of Children" -> {
+                                        // userId is already defined at the top of your ParentDashboardScreen
+                                        if (userId.isNotEmpty()) {
+                                            val intent = Intent(context, ParentAttendanceActivity::class.java).apply {
+                                                // ParentAttendanceActivity expects "PARENT_UID" to function
+                                                putExtra("PARENT_UID", userId)
+                                            }
+                                            context.startActivity(intent)
+                                        } else {
+                                            Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
 
                                 }
                             }
@@ -432,4 +528,5 @@ fun ParentDashboardScreen(
     }
 }
 //fixed bugs
+//show user or admin image in nav drawer
 
