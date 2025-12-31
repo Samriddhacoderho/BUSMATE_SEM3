@@ -17,7 +17,8 @@ data class ChildModel (
     val pickUpLat: Double = 0.0,
     val pickUpLng: Double = 0.0,
     val dropOffLat: Double = 0.0,
-    val dropOffLng: Double = 0.0
+    val dropOffLng: Double = 0.0,
+    val profileImage: String = ""
 ) : Parcelable {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -30,7 +31,8 @@ data class ChildModel (
             "pickUpLat" to pickUpLat,
             "pickUpLng" to pickUpLng,
             "dropOffLat" to dropOffLat,
-            "dropOffLng" to dropOffLng
+            "dropOffLng" to dropOffLng,
+            "profileImage" to profileImage
 
         )
     }

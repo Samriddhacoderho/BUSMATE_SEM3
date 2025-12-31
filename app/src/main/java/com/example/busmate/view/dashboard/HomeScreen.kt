@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.busmate.data.UserRepositoryImpl
+import coil3.compose.AsyncImage
 
 
 @Composable
@@ -143,7 +145,8 @@ fun HomeScreen(
                             statusText = "On Route",
                             subText = "Student ID: ${child.studentId}\nRoute: ${child.busRouteId}",
                             statusColor = BusMateGreen,
-                            imageResource = R.drawable.boy,
+                            imageUrl = child.profileImage, // Pass the Cloudinary URL
+                            imageResource = R.drawable.boy, // Keep as fallback
                             mapImageResource = R.drawable.map,
                             onClick = {
                                 busViewModel.getBusByRouteId(child.busRouteId) { bus ->
@@ -371,9 +374,10 @@ fun ChildTrackingCardScreen(
     statusText: String,
     subText: String,
     statusColor: Color,
+    imageUrl: String?,      // Added
     imageResource: Int,
     mapImageResource: Int,
-    onClick: () -> Unit        // ✅ ADD THIS
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -393,55 +397,48 @@ fun ChildTrackingCardScreen(
                 modifier = Modifier.weight(0.8f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(imageResource),
-                    contentDescription = null,
+                // --- PHOTO SECTION UPDATED ---
+                Box(
                     modifier = Modifier
                         .size(70.dp)
                         .clip(CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                )
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!imageUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = childName.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
-                    Text(
-                        text = childName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-
+                    Text(text = childName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = statusColor.copy(alpha = 0.8f)
-                        )
-                    ) {
-                        Text(
-                            text = statusText,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                    Card(colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.8f))) {
+                        Text(text = statusText, color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                     }
-
                     Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = subText,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = subText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Image(
                 painter = painterResource(id = mapImageResource),
                 contentDescription = null,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
             )
         }
     }
@@ -546,3 +543,4 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
         indicatorColor = BusMateOrange
     )
 }
+//show child image in parent homescreen

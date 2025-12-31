@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -36,6 +37,8 @@ import com.example.busmate.utils.QRCodeGenerator
 import com.example.busmate.viewmodel.ChildViewModel
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 class StudentIdCard : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -131,7 +134,7 @@ fun StudentIdRoute(
 
 @Composable
 fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
-    val busMateBlue = Color(0xFF2567E8) // Updated color
+    val busMateBlue = Color(0xFF2567E8)
     val scrollState = rememberScrollState()
 
     val qrBitmap = remember(child, parent) {
@@ -170,16 +173,35 @@ fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // --- UPDATED IMAGE SECTION ---
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(100.dp) // Slightly larger for ID card
                         .clip(CircleShape)
-                        .background(Color(0xFFE0E0E0)),
+                        .background(Color(0xFFE0E0E0))
+                        .border(2.dp, busMateBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, null, modifier = Modifier.size(40.dp), tint = Color.Gray)
+                    if (!child.profileImage.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = child.profileImage,
+                            contentDescription = "Student Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Fallback: Show first letter if no image
+                        Text(
+                            text = child.firstName.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = busMateBlue
+                        )
+                    }
                 }
-                Spacer(Modifier.height(10.dp))
+                // -----------------------------
+
+                Spacer(Modifier.height(12.dp))
                 Text("STUDENT PROFILE", color = busMateBlue, fontWeight = FontWeight.Bold)
                 HorizontalDivider(Modifier.padding(vertical = 10.dp))
 

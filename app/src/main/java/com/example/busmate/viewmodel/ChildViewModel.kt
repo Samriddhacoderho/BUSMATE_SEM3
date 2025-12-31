@@ -1,6 +1,9 @@
 package com.example.busmate.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
+import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.data.ChildRepositoryInterface
 import com.example.busmate.model.ChildModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +23,10 @@ class ChildViewModel(
     private val _children = MutableStateFlow<List<ChildModel>>(emptyList())
     val children: StateFlow<List<ChildModel>> = _children
 
+    // UPDATED: Added context and imageUri parameters
     fun addChild(
+        context: android.content.Context,
+        imageUri: android.net.Uri?,
         firstName: String,
         lastName: String,
         studentId: String,
@@ -32,25 +38,43 @@ class ChildViewModel(
         dLat: Double,
         dLng: Double
     ) {
-        _message.value = ""
+        _message.value = "Uploading data..."
         _isSuccess.value = false
 
-        val child = ChildModel(
-            firstName = firstName,
-            lastName = lastName,
-            studentId = studentId,
-            busRouteId = busRouteId,
-            pickUpLocation = pickUpLocation,
-            dropOffLocation = dropOffLocation,
-            pickUpLat = pLat,
-            pickUpLng = pLng,
-            dropOffLat = dLat,
-            dropOffLng = dLng
-        )
-
-        repository.addChild(child) { responseMessage, success ->
-            _message.value = responseMessage
-            _isSuccess.value = success
+        if (imageUri != null) {
+            // Safe cast and call to the repository
+            val repo = repository as? ChildRepositoryImpl
+            repo?.uploadChildImage(context, imageUri) { imageUrl ->
+                if (imageUrl != null) {
+                    val child = ChildModel(
+                        firstName = firstName,
+                        lastName = lastName,
+                        studentId = studentId,
+                        busRouteId = busRouteId,
+                        pickUpLocation = pickUpLocation,
+                        dropOffLocation = dropOffLocation,
+                        pickUpLat = pLat,
+                        pickUpLng = pLng,
+                        dropOffLat = dLat,
+                        dropOffLng = dLng,
+                        profileImage = imageUrl // This must be in your ChildModel.kt
+                    )
+                    repository.addChild(child) { msg, success ->
+                        _message.value = msg
+                        _isSuccess.value = success
+                    }
+                } else {
+                    _message.value = "Image upload failed. Check your internet or credentials."
+                    _isSuccess.value = false
+                }
+            }
+        } else {
+            // Logic for adding child without an image
+            val child = ChildModel(firstName, lastName, studentId, busRouteId, pickUpLocation, dropOffLocation, pLat, pLng, dLat, dLng, "")
+            repository.addChild(child) { msg, success ->
+                _message.value = msg
+                _isSuccess.value = success
+            }
         }
     }
 
@@ -63,12 +87,14 @@ class ChildViewModel(
     fun clearMessage() {
         _message.value = ""
     }
+
     // ChildViewModel.kt
     fun observeAllChildren() {
         repository.observeAllChildren { list ->
             _children.value = list // Updates the StateFlow for the UI
         }
     }
+
     fun updateChild(child: ChildModel) {
         _message.value = "Saving changes..."
         _isSuccess.value = false
@@ -77,6 +103,7 @@ class ChildViewModel(
             _isSuccess.value = success
         }
     }
+
     fun resetStatus() {
         _isSuccess.value = false
         _message.value = ""
