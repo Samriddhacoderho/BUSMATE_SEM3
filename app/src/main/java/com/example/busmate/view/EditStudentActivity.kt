@@ -28,6 +28,7 @@ import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 
 class EditStudentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +62,7 @@ class EditStudentActivity : ComponentActivity() {
 fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -> Unit) {
     val busMateBlue = Color(0xFF2567E8)
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var parentName by remember { mutableStateOf("Fetching...") }
     var parentPhone by remember { mutableStateOf("Fetching...") }
@@ -71,6 +73,8 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     var routeId by remember { mutableStateOf(child.busRouteId) }
     var pickUp by remember { mutableStateOf(child.pickUpLocation) }
     var dropOff by remember { mutableStateOf(child.dropOffLocation) }
+
+    var isGeocoding by remember { mutableStateOf(false) }
 
     val message by viewModel.message.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()
@@ -125,13 +129,22 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Parent Contact Information", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Text(
+                "Parent Contact Information",
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
             ReadOnlyField(label = "Parent Name", value = parentName, icon = Icons.Default.Person)
             ReadOnlyField(label = "Parent Phone", value = parentPhone, icon = Icons.Default.Phone)
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 1.dp, color = Color.LightGray)
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 20.dp),
+                thickness = 1.dp,
+                color = Color.LightGray
+            )
 
             Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
@@ -151,26 +164,63 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
 
             Button(
                 onClick = {
-                    val updatedChild = child.copy(
-                        firstName = firstName,
-                        lastName = lastName,
-                        busRouteId = routeId,
-                        pickUpLocation = pickUp,
-                        dropOffLocation = dropOff
-                    )
-                    // You need to implement updateChild in your ViewModel/Repo
-                    viewModel.updateChild(updatedChild)
+                    scope.launch {
+                        isGeocoding = true
+                        // Convert address strings to Lat/Lng using your helper function
+                        val pAddr = getCoords(context, pickUp)
+                        val dAddr = getCoords(context, dropOff)
+
+                        if (pAddr != null && dAddr != null) {
+                            val updatedChild = child.copy(
+                                firstName = firstName,
+                                lastName = lastName,
+                                busRouteId = routeId,
+                                pickUpLocation = pickUp,
+                                dropOffLocation = dropOff,
+                                // ADDED: Update the actual coordinates in the model
+                                pickUpLat = pAddr.latitude,
+                                pickUpLng = pAddr.longitude,
+                                dropOffLat = dAddr.latitude,
+                                dropOffLng = dAddr.longitude
+                            )
+                            viewModel.updateChild(updatedChild)
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Invalid address. Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        isGeocoding = false
+                    }
                 },
+                // Disable button while geocoding to prevent double-clicks
+                enabled = !isGeocoding && firstName.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
             ) {
-                Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isGeocoding) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
         }
     }
 }
-
+// Helper function to fetch coordinates
+private suspend fun getCoords(context: android.content.Context, address: String): android.location.Address? {
+    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val geocoder = android.location.Geocoder(context)
+            // Adding ", Kathmandu" helps accuracy as used in AddChildActivity
+            geocoder.getFromLocationName("$address, Kathmandu", 1)?.firstOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
 @Composable
 fun ReadOnlyField(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     OutlinedTextField(
