@@ -22,5 +22,7 @@ interface AccelerometerRepository {
         parentData: Map<String, Any>,
         adminData: Map<String, Any>
     )
+    fun checkSpeedAlert(speedMps: Float, busId: String)
+    fun sendSpeedAlertToAdmin(busId: String, speed: Int)
 
 }
