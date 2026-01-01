@@ -85,6 +85,18 @@ fun AttendanceScreen(
             viewModel.loadAttendanceList(driverUid)
         }
     }
+    LaunchedEffect(children) {
+        if (children.isNotEmpty()) {
+            checkedStudents.clear() // Clear old state
+            children.forEach { child ->
+                // Check if this child was marked present in the pre-loaded map
+                if (viewModel.getInitialStatus(child.studentId)) {
+                    checkedStudents.add(child)
+                }
+            }
+        }
+    }
+
 
     Scaffold(
         topBar = {
