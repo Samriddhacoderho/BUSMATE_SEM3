@@ -1,11 +1,17 @@
 package com.example.busmate.view
 
+import android.Manifest
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,18 +21,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.model.ChildModel
 import com.example.busmate.viewmodel.AttendanceViewModel
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import org.json.JSONObject
+import java.util.concurrent.Executors
 
 class AttendanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +48,6 @@ class AttendanceActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val driverUid = intent.getStringExtra("EXTRA_DRIVER_UID") ?: ""
-        Log.d("AttendanceFlow", "Activity Started with UID: $driverUid")
 
         setContent {
             AttendanceScreen(
@@ -56,8 +69,16 @@ fun AttendanceScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
-    // Tracks only the students the driver has manually "checked"
     val checkedStudents = remember { mutableStateListOf<ChildModel>() }
+    var isScannerOpen by remember { mutableStateOf(false) }
+
+    // Camera Permission Launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) isScannerOpen = true
+        else Toast.makeText(context, "Camera permission is required to scan IDs", Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(driverUid) {
         if (driverUid.isNotEmpty()) {
@@ -73,34 +94,36 @@ fun AttendanceScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    // QR Scanner Toggle Button
+                    IconButton(onClick = {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan QR")
+                    }
                 }
             )
         },
         bottomBar = {
-            // Submit Button Area
             Surface(tonalElevation = 8.dp) {
                 Button(
                     onClick = {
-                        // We pass the list of checked students.
-                        // The ViewModel will compare this against the full list to mark others as Absent.
                         viewModel.submitAttendance(driverUid, checkedStudents.toList()) { success ->
                             if (success) {
-                                Toast.makeText(context, "Attendance submitted successfully!", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Attendance submitted!", Toast.LENGTH_LONG).show()
                                 onBackClick()
                             } else {
-                                Toast.makeText(context, "Failed to submit attendance", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Submission failed", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp).height(56.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = null)
+                    Icon(Icons.Default.CheckCircle, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Submit Attendance", fontSize = 16.sp)
+                    Text("Submit Attendance (${checkedStudents.size})", fontSize = 16.sp)
                 }
             }
         }
@@ -108,11 +131,6 @@ fun AttendanceScreen(
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (children.isEmpty()) {
-                Text(
-                    "No students found for this route.",
-                    modifier = Modifier.align(Alignment.Center)
-                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -120,22 +138,121 @@ fun AttendanceScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(children) { child ->
-                        // Check if this child is in our checkedStudents list
                         val isChecked = checkedStudents.any { it.studentId == child.studentId }
-
                         StudentAttendanceCard(
                             child = child,
                             isSelected = isChecked,
                             onCheckChanged = { checked ->
-                                if (checked) checkedStudents.add(child)
-                                else checkedStudents.removeAll { it.studentId == child.studentId }
+                                if (checked) {
+                                    if (!checkedStudents.any { it.studentId == child.studentId }) {
+                                        checkedStudents.add(child)
+                                    }
+                                } else {
+                                    checkedStudents.removeAll { it.studentId == child.studentId }
+                                }
                             }
                         )
                     }
                 }
             }
+
+            // QR Scanner Overlay
+            if (isScannerOpen) {
+                QRScannerOverlay(
+                    onDismiss = { isScannerOpen = false },
+                    onIdScanned = { scannedId ->
+                        val student = children.find { it.studentId == scannedId }
+                        if (student != null) {
+                            if (!checkedStudents.any { it.studentId == scannedId }) {
+                                checkedStudents.add(student)
+                                Toast.makeText(context, "Scanned: ${student.firstName}", Toast.LENGTH_SHORT).show()
+                            }
+                            isScannerOpen = false // Close after scan
+                        } else {
+                            Toast.makeText(context, "Student ID $scannedId not found on this route!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+@Composable
+fun QRScannerOverlay(onDismiss: () -> Unit, onIdScanned: (String) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    // Background dimming and scanner dialog
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text("Scan Student ID Card") },
+        text = {
+            Box(
+                modifier = Modifier
+                    .size(280.dp)
+                    .background(Color.Black, RoundedCornerShape(12.dp))
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx)
+                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+
+                            val barcodeScanner = BarcodeScanning.getClient()
+                            val imageAnalysis = ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build()
+
+                            imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                val mediaImage = imageProxy.image
+                                if (mediaImage != null) {
+                                    val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                    barcodeScanner.process(image)
+                                        .addOnSuccessListener { barcodes ->
+                                            for (barcode in barcodes) {
+                                                barcode.rawValue?.let { rawValue ->
+                                                    try {
+                                                        val json = JSONObject(rawValue)
+                                                        val id = json.getString("studentId")
+                                                        onIdScanned(id)
+                                                    } catch (e: Exception) {
+                                                        Log.e("Scanner", "Invalid JSON QR")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .addOnCompleteListener { imageProxy.close() }
+                                }
+                            }
+
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    CameraSelector.DEFAULT_BACK_CAMERA,
+                                    preview,
+                                    imageAnalysis
+                                )
+                            } catch (e: Exception) {
+                                Log.e("Scanner", "Camera binding failed", e)
+                            }
+                        }, ContextCompat.getMainExecutor(ctx))
+                        previewView
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -157,7 +274,6 @@ fun StudentAttendanceCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Profile Initial
             Box(
                 modifier = Modifier
                     .size(50.dp)
