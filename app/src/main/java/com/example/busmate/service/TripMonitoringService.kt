@@ -15,11 +15,17 @@ class TripMonitoringService : Service() {
 
     private val database = FirebaseDatabase.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
+    // Listeners and State Tracking
     private var busQueries = mutableMapOf<String, Query>()
     private var busListeners = mutableMapOf<String, ValueEventListener>()
-
-    // Track the last known status to prevent notification spam
     private var lastStatus = mutableMapOf<String, Boolean>()
+
+    private var adminNotificationQuery: Query? = null
+    private var adminNotificationListener: ValueEventListener? = null
+
+    // To prevent firing notifications for old database records on start
+    private val serviceStartTime = System.currentTimeMillis()
 
     companion object {
         private const val CHANNEL_ID = "monitoring_channel"
@@ -32,71 +38,140 @@ class TripMonitoringService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Build the mandatory foreground notification required for Android 14+
+        // Required Foreground Notification
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("BusMate Monitoring Active")
-            .setContentText("Checking for trip starts...")
+            .setContentTitle("BusMate Active")
+            .setContentText("Monitoring bus activities...")
             .setSmallIcon(R.drawable.outline_directions_bus_24)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
 
-        // Use try-catch to satisfy Android 14's strict foreground start rules
-        try {
-            startForeground(NOTIFICATION_ID, notification)
-        } catch (e: Exception) {
-            Log.e("TripMonitor", "Foreground start failed: ${e.message}")
+        startForeground(NOTIFICATION_ID, notification)
+
+        val currentUserUid = auth.currentUser?.uid
+        if (currentUserUid != null) {
+            identifyUserRoleAndStart(currentUserUid)
         }
 
-        val busRouteIds = intent?.getStringArrayListExtra("BUS_ROUTE_IDS") ?: return START_NOT_STICKY
-        Log.d("TripMonitor", "Monitoring routes: $busRouteIds")
-
-        busRouteIds.forEach { routeId ->
-            if (!busListeners.containsKey(routeId)) {
-                // Query by "routeId" field inside the random bus nodes
-                val busQuery = database.getReference("buses")
-                    .orderByChild("routeId")
-                    .equalTo(routeId)
-
-                val listener = object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        for (busSnapshot in snapshot.children) {
-                            val isRunning = busSnapshot.child("isTripRunning").getValue(Boolean::class.java) ?: false
-                            val busNo = busSnapshot.child("busNumber").getValue(String::class.java) ?: routeId
-
-                            val previousStatus = lastStatus[routeId] ?: false
-
-                            // Only notify when the bus status CHANGES from false to true
-                            if (isRunning && !previousStatus) {
-                                val title = "Bus $busNo Started"
-                                val message = "The bus for route $routeId has started its trip."
-
-                                NotificationHelper.showNotification(applicationContext, title, message)
-                                saveNotificationToHistory(title, message)
-
-                                lastStatus[routeId] = true
-                            } else if (!isRunning) {
-                                // Reset status when trip ends so it can trigger again next time
-                                lastStatus[routeId] = false
-                            }
-                        }
-                    }
-                    override fun onCancelled(error: DatabaseError) {
-                        Log.e("TripMonitor", "Query Error: ${error.message}")
-                    }
-                }
-
-                busQuery.addValueEventListener(listener)
-                busQueries[routeId] = busQuery
-                busListeners[routeId] = listener
-            }
-        }
         return START_STICKY
     }
 
-    private fun saveNotificationToHistory(title: String, message: String) {
-        val userId = auth.currentUser?.uid ?: return
+    private fun identifyUserRoleAndStart(uid: String) {
+        database.getReference("users").child(uid).get().addOnSuccessListener { snapshot ->
+            val userType = snapshot.child("typeofUser").getValue(String::class.java)
+
+            when (userType) {
+                "Admin" -> {
+                    Log.d("TripMonitor", "Role: Admin. Initializing Global Listeners.")
+                    setupAdminNotificationListener() // Speed Alerts
+                    setupAdminBusStatusListener()    // Trip Start/End for all buses
+                }
+                "Parent" -> {
+                    Log.d("TripMonitor", "Role: Parent. Initializing Child Bus Listener.")
+                    setupParentBusListeners(uid)     // Trip Start/End for specific child
+                }
+            }
+        }
+    }
+
+    /**
+     * ADMIN: Listens for Speed Alerts in notifications/admin
+     */
+    private fun setupAdminNotificationListener() {
+        val adminRef = database.getReference("notifications").child("admin")
+
+        // We look at the latest alert
+        adminNotificationQuery = adminRef.limitToLast(1)
+        adminNotificationListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (alert in snapshot.children) {
+                    val timestamp = alert.child("timestamp").getValue(Long::class.java) ?: 0L
+
+                    // Only trigger if this notification happened after the service started
+                    if (timestamp > serviceStartTime) {
+                        val title = alert.child("title").getValue(String::class.java) ?: "Alert"
+                        val message = alert.child("message").getValue(String::class.java) ?: ""
+                        NotificationHelper.showNotification(applicationContext, title, message)
+                    }
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        adminNotificationQuery?.addValueEventListener(adminNotificationListener!!)
+    }
+
+    /**
+     * ADMIN: Listens for Trip Start/End for ALL buses
+     */
+    private fun setupAdminBusStatusListener() {
+        val busesRef = database.getReference("buses")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { busSnapshot ->
+                    val busId = busSnapshot.key ?: return@forEach
+                    val routeNo = busSnapshot.child("routeNo").getValue(String::class.java) ?: "N/A"
+                    val isRunning = busSnapshot.child("isTripRunning").getValue(Boolean::class.java) ?: false
+
+                    val prevStatus = lastStatus[busId]
+
+                    // Trigger only on status CHANGE
+                    if (prevStatus != null && prevStatus != isRunning) {
+                        val title = if (isRunning) "Trip Started" else "Trip Ended"
+                        val msg = "Bus Route $routeNo has ${if (isRunning) "started" else "ended"} its trip."
+
+                        NotificationHelper.showNotification(applicationContext, title, msg)
+                    }
+                    lastStatus[busId] = isRunning
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        busesRef.addValueEventListener(listener)
+        busQueries["admin_global_buses"] = busesRef
+        busListeners["admin_global_buses"] = listener
+    }
+
+    /**
+     * PARENT: Listens ONLY to the bus associated with their children
+     */
+    private fun setupParentBusListeners(uid: String) {
+        val childrenRef = database.getReference("users").child(uid).child("children")
+        childrenRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { childSnapshot ->
+                    val routeId = childSnapshot.child("busRouteId").getValue(String::class.java)
+                    val childName = childSnapshot.child("firstName").getValue(String::class.java) ?: "Child"
+
+                    if (routeId != null && !busQueries.containsKey(routeId)) {
+                        val busQuery = database.getReference("buses").child(routeId)
+                        val listener = object : ValueEventListener {
+                            override fun onDataChange(busSnapshot: DataSnapshot) {
+                                val isRunning = busSnapshot.child("isTripRunning").getValue(Boolean::class.java) ?: false
+                                val prevStatus = lastStatus[routeId]
+
+                                if (prevStatus != null && prevStatus != isRunning) {
+                                    val title = if (isRunning) "Trip Started" else "Trip Ended"
+                                    val msg = if (isRunning) "$childName's bus is starting!" else "$childName's bus has finished the trip."
+
+                                    NotificationHelper.showNotification(applicationContext, title, msg)
+                                    // Parents keep their own local history
+                                    saveNotificationToHistory(uid, title, msg)
+                                }
+                                lastStatus[routeId] = isRunning
+                            }
+                            override fun onCancelled(error: DatabaseError) {}
+                        }
+                        busQuery.addValueEventListener(listener)
+                        busQueries[routeId] = busQuery
+                        busListeners[routeId] = listener
+                    }
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun saveNotificationToHistory(userId: String, title: String, message: String) {
         val data = mapOf(
             "title" to title,
             "message" to message,
@@ -118,6 +193,7 @@ class TripMonitoringService : Service() {
 
     override fun onDestroy() {
         busQueries.forEach { (id, query) -> busListeners[id]?.let { query.removeEventListener(it) } }
+        adminNotificationListener?.let { adminNotificationQuery?.removeEventListener(it) }
         super.onDestroy()
     }
 }
