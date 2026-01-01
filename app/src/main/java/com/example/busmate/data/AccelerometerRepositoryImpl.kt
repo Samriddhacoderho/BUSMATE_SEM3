@@ -246,18 +246,17 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
     }
 
     override fun sendSpeedAlertToAdmin(busId: String, speed: Int) {
-        // Get the driver's name/bus info and push to admin's notification node
         database.getReference("buses").child(busId).get().addOnSuccessListener { snapshot ->
-            val driverName = snapshot.child("driverName").getValue(String::class.java) ?: "A driver"
-            val routeNo = snapshot.child("routeNo").getValue(String::class.java) ?: busId
+            val driverName = snapshot.child("driverName").getValue(String::class.java) ?: "Driver"
 
             val adminNotification = mapOf(
                 "title" to "Speed Violation",
-                "message" to "$driverName (Route $routeNo) has exceeded the speed limit: $speed km/h",
+                "message" to "$driverName is driving at $speed km/h",
                 "timestamp" to ServerValue.TIMESTAMP,
-                "type" to "warning"
+                "type" to "speed_warning" // Use a type to distinguish it
             )
 
+            // KEEP IT CLEAN: Use the existing notifications/admin node
             database.getReference("notifications").child("admin").push().setValue(adminNotification)
         }
     }
