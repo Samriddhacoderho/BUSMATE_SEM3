@@ -30,22 +30,45 @@ class AttendanceViewModel(
     private val _parentAttendance = MutableStateFlow<List<Map<String, Any?>>>(emptyList())
     val parentAttendance: StateFlow<List<Map<String, Any?>>> = _parentAttendance
 
+    private val _todayStatusMap = MutableStateFlow<Map<String, String>>(emptyMap())
+
     // 🔹 Changed variable name to track Route Name instead of UID
     private var currentBusRouteId: String? = null
 
     fun loadAttendanceList(driverUid: String) {
         _isLoading.value = true
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+
         busRepo.getBusByDriverUid(driverUid) { bus ->
             if (bus != null) {
-                currentBusRouteId = bus.routeId // Store Route Name
-                attendanceRepo.getChildrenByRouteId(bus.routeId) { list ->
-                    _children.value = list
-                    _isLoading.value = false
+                currentBusRouteId = bus.routeId
+
+                // 1. Fetch children on this route
+                attendanceRepo.getChildrenByRouteId(bus.routeId) { roster ->
+
+                    // 2. Fetch today's existing attendance for this bus route
+                    // (Note: Using bus.routeId as the key based on your previous performSubmit logic)
+                    attendanceRepo.getAttendanceForDateAndBus(today, bus.routeId) { existingRecords ->
+
+                        // Convert list to map: studentId -> status
+                        val statusMap = existingRecords.associate {
+                            (it["studentId"] as String) to (it["status"] as String)
+                        }
+
+                        _todayStatusMap.value = statusMap
+                        _children.value = roster
+                        _isLoading.value = false
+                    }
                 }
             } else {
                 _isLoading.value = false
             }
         }
+    }
+
+    // 🔹 Helper function for the Activity to check initial status
+    fun getInitialStatus(studentId: String): Boolean {
+        return _todayStatusMap.value[studentId] == "Present"
     }
 
     fun submitAttendance(
