@@ -1,75 +1,47 @@
 package com.example.busmate.view
 
-import android.app.Activity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.GuideLinesImpl
+import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.viewmodel.GuideLineViewModel
-import com.example.busmate.viewmodel.UserViewModel
+
+// ---- SAME PRIMARY COLOR AS LOGIN UI ----
+private val PrimaryBlue = Color(0xFF2567E8)
 
 class GuideLineActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // LOGGING: Check what was received
         val typeOfUser = intent.getStringExtra("typeOfUser")
-        Log.d("BUSMATE_DEBUG", "GuideLineActivity started")
-        Log.d("BUSMATE_DEBUG", "Received typeOfUser: '$typeOfUser'")
+        Log.d("BUSMATE_DEBUG", "GuideLineActivity: $typeOfUser")
 
         enableEdgeToEdge()
         setContent {
-            // Use the standard theme name
             BusMateTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-
-                        // Use a safe check. If it's null, we default to Driver to prevent crash
-                        when {
-                            typeOfUser == "Admin" -> {
-                                Log.d("BUSMATE_DEBUG", "Showing Admin Screen")
-                                AdminGuidelineScreen()
-                            }
-                            typeOfUser == "Driver" || typeOfUser == "Parent" -> {
-                                Log.d("BUSMATE_DEBUG", "Showing Driver/View Screen for: $typeOfUser")
-                                DriverGuidelineScreen()
-                            }
-                            else -> {
-                                Log.e("BUSMATE_DEBUG", "Unknown or Null user type: $typeOfUser")
-                                // Fallback UI so it doesn't just show a blank screen or crash
-                                Text("Error: User type not recognized. Received: $typeOfUser", Modifier.padding(16.dp))
-                            }
+                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                        when (typeOfUser) {
+                            "Admin" -> AdminGuidelineScreen()
+                            "Driver", "Parent" -> DriverGuidelineScreen()
+                            else -> ErrorScreen(typeOfUser)
                         }
                     }
                 }
@@ -77,50 +49,129 @@ class GuideLineActivity : ComponentActivity() {
         }
     }
 }
+
+@Composable
+private fun ErrorScreen(type: String?) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Unknown user type: $type",
+            color = Color.Red,
+            fontSize = 16.sp
+        )
+    }
+}
+
+/* ============================================================
+   ADMIN UI (THEMED LIKE LOGIN SCREEN)
+   ============================================================ */
 @Composable
 fun AdminGuidelineScreen() {
-    // Note: In a real app, use a ViewModel Factory, but keeping your style:
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
-    val currentGuidelines by viewModel.guidelines.collectAsState()
+    val guidelines by viewModel.guidelines.collectAsState()
     val message by viewModel.message.collectAsState()
     var textState by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) { viewModel.loadGuidelines() }
 
-    // Update textState only when currentGuidelines changes from Firebase
-    LaunchedEffect(currentGuidelines) {
-        if (currentGuidelines.isNotEmpty()) {
-            textState = currentGuidelines
-        }
+    LaunchedEffect(guidelines) {
+        if (guidelines.isNotEmpty()) textState = guidelines
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Admin Editor", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        OutlinedTextField(
-            value = textState,
-            onValueChange = { textState = it },
-            label = { Text("Write Safety Guidelines...") },
-            modifier = Modifier.fillMaxWidth().height(300.dp),
-            minLines = 10
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.postGuidelines(textState) },
-            modifier = Modifier.fillMaxWidth()
+        // ---- TOP BLUE HEADER ----
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.35f)
+                .background(BusMateBlue),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(if (message == "Posting...") "Saving..." else "Update Guidelines")
+            Text(
+                text = "Admin Guidelines",
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Manage safety instructions",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp
+            )
         }
 
-        if (message.isNotEmpty() && message != "Posting...") {
-            Text(text = message, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+        // ---- WHITE CARD ----
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .align(Alignment.BottomCenter)
+                .offset(y = (-32).dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                OutlinedTextField(
+                    value = textState,
+                    onValueChange = { textState = it },
+                    label = { Text("Write Safety Guidelines") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    minLines = 10,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryBlue,
+                        focusedLabelColor = PrimaryBlue
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = { viewModel.postGuidelines(textState) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryBlue,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = if (message == "Posting...") "Saving..." else "Update Guidelines",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (message.isNotEmpty() && message != "Posting...") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = message,
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }
 
+/* ============================================================
+   DRIVER / PARENT UI (THEMED LIKE LOGIN SCREEN)
+   ============================================================ */
 @Composable
 fun DriverGuidelineScreen() {
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
@@ -128,14 +179,47 @@ fun DriverGuidelineScreen() {
 
     LaunchedEffect(Unit) { viewModel.loadGuidelines() }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Safety Guidelines", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(20.dp)) {
+        // ---- TOP BLUE HEADER ----
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.35f)
+                .background(BusMateBlue),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Safety Guidelines",
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Please follow these instructions",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp
+            )
+        }
+
+        // ---- WHITE CARD ----
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .align(Alignment.BottomCenter)
+                .offset(y = (-32).dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = guidelines.ifEmpty { "Waiting for admin to post guidelines..." },
+                    text = guidelines.ifEmpty {
+                        "Waiting for admin to post guidelines..."
+                    },
                     fontSize = 16.sp,
                     lineHeight = 24.sp
                 )
