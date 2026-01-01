@@ -53,6 +53,7 @@ import com.example.busmate.service.TripMonitoringService
 import com.example.busmate.util.NotificationHelper
 import com.google.firebase.messaging.FirebaseMessaging
 import coil3.compose.AsyncImage
+import com.google.firebase.database.ValueEventListener
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -163,6 +164,38 @@ fun ParentDashboardScreen(
             childViewModel.observeChildren(it)
         }
     }
+
+    DisposableEffect(user?.typeofUser) {
+        val database = FirebaseDatabase.getInstance()
+        val currentUserType = user?.typeofUser?.lowercase()
+
+        val notifRef = if (currentUserType == "admin") {
+            database.getReference("notifications").child("admin")
+        } else {
+            database.getReference("notifications").child(userId)
+        }
+
+        // We use a query to get the last 10, but we must handle them correctly
+        val query = notifRef.limitToLast(10)
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<Map<String, String>>()
+                for (notifSnapshot in snapshot.children) {
+                    val title = notifSnapshot.child("title").getValue(String::class.java) ?: ""
+                    val message = notifSnapshot.child("message").getValue(String::class.java) ?: ""
+                    list.add(mapOf("title" to title, "message" to message))
+                }
+                // newest notification is now the last one in the Firebase list
+                // so we reverse it for the UI LazyColumn
+                dynamicNotifications = list
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        query.addValueEventListener(listener)
+        onDispose { query.removeEventListener(listener) }
+    }
+
     /* ---------- NAV ITEM MODEL ---------- */
     data class NavItem(val label: String, val icon: ImageVector)
 
@@ -485,6 +518,4 @@ fun ParentDashboardScreen(
         }
     }
 }
-//fixed bugs
-//show user or admin image in nav drawer
 

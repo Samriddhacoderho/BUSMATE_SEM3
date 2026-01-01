@@ -33,15 +33,9 @@
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.AttendanceActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_attendance"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.BUSMATE"/>
         <activity
             android:name=".view.EditStudentActivity"
             android:exported="false"
@@ -59,22 +53,22 @@
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.DriverProfileActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_driver_profile"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.ChildTripDetails"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_child_trip_details"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.TripActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_trip"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.DarkMoodSettingActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_dark_mood_setting"
             android:theme="@style/Theme.BUSMATE" />
 
@@ -84,57 +78,57 @@
 
         <activity
             android:name=".view.EditProfileActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_edit_profile"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.dashboard.ParentDashboardActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_parent_dashboard"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.BusScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_bus_screen"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.AddChildActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_add_child"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.ChangePasswordScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_change_password"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.BusProfileScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_bus_profile"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.DriverProfileScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_driver_profile"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.CreateAccountScreenActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_create_account_screen"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.SignUpScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_sign_up_screen"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.ResetPasswordActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_parent_reset_password"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.LoginScreen"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_login_screen"
             android:theme="@style/Theme.BUSMATE" />
         <activity
@@ -144,7 +138,7 @@
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.AdminDeactivatesActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_deactivates"
             android:theme="@style/Theme.BUSMATE" />
         <activity
@@ -160,20 +154,14 @@
         </activity>
         <activity
             android:name=".view.StudentIdCard"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_student_id_card"
             android:theme="@style/Theme.BUSMATE" /> <!-- HEAD change -->
         <activity
             android:name=".view.GuideLineActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_guide_line"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity> <!-- Developer change -->
+            android:theme="@style/Theme.BUSMATE"/>
         <service
             android:name=".service.TripMonitoringService"
             android:enabled="true"

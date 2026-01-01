@@ -6,16 +6,20 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.busmate.model.AccelerometerModel
+import com.example.busmate.util.NotificationHelper
 import com.google.firebase.database.*
 import kotlin.math.sqrt
 
-class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, SensorEventListener {
+class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerRepository, SensorEventListener {
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private var lastSpeedAlertTime = 0L
+    private val ALERT_COOLDOWN = 10000L // 10 seconds cooldown between alerts
 
     // Variables for Driver Mode (Sending)
     private var activeBusUid: String? = null
@@ -221,4 +225,39 @@ class AccelerometerRepositoryImpl(context: Context) : AccelerometerRepository, S
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    // In AccelerometerRepositoryImpl.kt
+    override fun checkSpeedAlert(speedMps: Float, busId: String) {
+        val speedKmh = speedMps * 3.6
+        val currentTime = System.currentTimeMillis()
+
+        if (speedKmh > 50 && (currentTime - lastSpeedAlertTime > ALERT_COOLDOWN)) {
+            lastSpeedAlertTime = currentTime
+
+            // 1. Trigger local notification for Driver
+            NotificationHelper.showNotification(
+                context,
+                "Speed Warning!",
+                "You are driving at ${speedKmh.toInt()} km/h. Please slow down."
+            )
+
+            // 2. Send notification to Admin via Firebase
+            sendSpeedAlertToAdmin(busId, speedKmh.toInt())
+        }
+    }
+
+    override fun sendSpeedAlertToAdmin(busId: String, speed: Int) {
+        database.getReference("buses").child(busId).get().addOnSuccessListener { snapshot ->
+            val driverName = snapshot.child("driverName").getValue(String::class.java) ?: "Driver"
+
+            val adminNotification = mapOf(
+                "title" to "Speed Violation",
+                "message" to "$driverName is driving at $speed km/h",
+                "timestamp" to ServerValue.TIMESTAMP,
+                "type" to "speed_warning" // Use a type to distinguish it
+            )
+
+            // KEEP IT CLEAN: Use the existing notifications/admin node
+            database.getReference("notifications").child("admin").push().setValue(adminNotification)
+        }
+    }
 }
