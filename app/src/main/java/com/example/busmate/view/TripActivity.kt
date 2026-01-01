@@ -1,6 +1,7 @@
 package com.example.busmate.view
 
 import android.Manifest
+import android.app.Application
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -80,10 +81,14 @@ fun TripScreen(
     val state by accelerometerViewModel.state
     val context = LocalContext.current
 
+    // Updated: Get application context to satisfy AndroidViewModel constructor
+    val application = context.applicationContext as Application
+
     val locationViewModel = remember {
         LocationViewModel(
-            repo = LocationImpl(context),
-            busRepo = BusRepositoryImpl()
+            application = application, // Added Parameter 1
+            repo = LocationImpl(context), // Parameter 2
+            busRepo = BusRepositoryImpl() // Parameter 3
         )
     }
 

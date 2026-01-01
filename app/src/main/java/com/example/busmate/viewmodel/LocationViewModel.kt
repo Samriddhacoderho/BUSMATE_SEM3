@@ -10,11 +10,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.location.Location
 import com.example.busmate.model.BusModel
+import android.content.pm.PackageManager
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel // Change to AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.maps.android.PolyUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.net.URL
 
 class LocationViewModel(
+    application: Application,
     private val repo: LocationInterface,
     private val busRepo: BusRepositoryInterface = BusRepositoryImpl()
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     data class ChildEtaState(
         val childName: String,
@@ -25,6 +35,9 @@ class LocationViewModel(
     val location: StateFlow<LatLng?> = _location
     private val _currentBusCoordinates = MutableStateFlow("Fetching...")
     val currentBusCoordinates: StateFlow<String> = _currentBusCoordinates
+
+    private val _currentBusSpeed = MutableStateFlow(0f)
+    val currentBusSpeed: StateFlow<Float> = _currentBusSpeed
 
     private val _childEtas = MutableStateFlow<List<ChildEtaState>>(emptyList())
     val childEtas: StateFlow<List<ChildEtaState>> = _childEtas
@@ -39,6 +52,9 @@ class LocationViewModel(
     private val _allBuses = MutableStateFlow<List<BusModel?>>(emptyList())
     val allBuses: StateFlow<List<BusModel?>> = _allBuses
 
+    private val _roadPathPoints = MutableStateFlow<List<LatLng>>(emptyList())
+    val roadPathPoints: StateFlow<List<LatLng>> = _roadPathPoints
+
     /**
      * Starts live tracking.
      * @param driverUid The UID of the driver currently on the trip.
@@ -46,24 +62,24 @@ class LocationViewModel(
      * driver's assigned bus and update its 'currentLocation' in Firebase.
      */
     fun startTracking(busId: String, driverUid: String? = null) {
-        this.trackedBusId = busId // Keep track of it
+        this.trackedBusId = busId
 
-        // 1. Start GPS Updates (For Driver to send or Parent to see own location)
+        // 1. Start GPS Updates (For Driver)
         repo.startLocationUpdates { latLng, _ ->
             _location.value = latLng
-
-            // Sync to Firebase ONLY if driverUid is present
             driverUid?.let { uid ->
                 busRepo.updateLocationByDriver(uid, latLng)
             }
         }
 
-        busRepo.getLiveBusLocation(busId) { coords ->
-            _currentBusCoordinates.value = coords
-        }
-
+        // 2. Observe Live Data from Firebase (For Parent/Admin)
+        // We update the listener to handle the speed as well
         busRepo.getBusByRouteId(busId) { bus ->
-            _isTripRunning.value = bus?.isTripRunning ?: false
+            bus?.let {
+                _currentBusCoordinates.value = it.currentLocation
+                _currentBusSpeed.value = it.speed.toFloat() // Capture the live speed!
+                _isTripRunning.value = it.isTripRunning
+            }
         }
     }
 
@@ -118,6 +134,51 @@ class LocationViewModel(
             LatLng(parts[0].trim().toDouble(), parts[1].trim().toDouble())
         } catch (e: Exception) {
             LatLng(27.7172, 85.3240)
+        }
+    }
+
+    fun fetchRoadRoute(origin: LatLng, waypoints: List<LatLng>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 1. Get the Context from the Application
+                val context = getApplication<Application>().applicationContext
+
+                // 2. Automatically pull the API KEY from the Manifest
+                val appInfo = context.packageManager.getApplicationInfo(
+                    context.packageName,
+                    PackageManager.GET_META_DATA
+                )
+                val apiKey = appInfo.metaData.getString("com.google.android.geo.API_KEY")
+
+                if (apiKey.isNullOrEmpty()) return@launch
+
+                // 3. Prepare the URL for the Directions API
+                val destination = waypoints.last()
+                val waypointsString = waypoints.dropLast(1).joinToString("|") {
+                    "${it.latitude},${it.longitude}"
+                }
+
+                val url = "https://maps.googleapis.com/maps/api/directions/json?" +
+                        "origin=${origin.latitude},${origin.longitude}" +
+                        "&destination=${destination.latitude},${destination.longitude}" +
+                        "&waypoints=$waypointsString" +
+                        "&key=$apiKey"
+
+                // 4. Fetch and Decode
+                val response = URL(url).readText()
+                val json = JSONObject(response)
+                val routes = json.getJSONArray("routes")
+
+                if (routes.length() > 0) {
+                    val encodedPolyline = routes.getJSONObject(0)
+                        .getJSONObject("overview_polyline")
+                        .getString("points")
+
+                    _roadPathPoints.value = PolyUtil.decode(encodedPolyline)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

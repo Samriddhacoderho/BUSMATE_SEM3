@@ -95,5 +95,9 @@ dependencies {
     // Coil for Loading Cloudinary URLs into Compose
     implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0-rc01")
+
+    //map
+    implementation("com.google.maps.android:android-maps-utils:3.8.2")
+
 }
 

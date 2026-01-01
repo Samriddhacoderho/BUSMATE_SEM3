@@ -36,6 +36,11 @@ import com.example.busmate.viewmodel.LocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
+import com.google.maps.android.PolyUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.URL
 
 // Helper function to create the bus icon
 fun createBusMarkerIcon(context: Context): BitmapDescriptor {
@@ -187,75 +192,109 @@ fun CardMap(
     modifier: Modifier,
     model: UserModel?,
     context: Context,
-    coordinates: String,
+    coordinates: String, // This is the flow from currentBusCoordinates
     locationViewModel: LocationViewModel,
     busId: String,
     allBuses: List<com.example.busmate.model.BusModel>
 ) {
     val currentLocation by locationViewModel.location.collectAsState()
+    val roadPoints by locationViewModel.roadPathPoints.collectAsState()
+    val liveBusSpeed by locationViewModel.currentBusSpeed.collectAsState()
 
-    // Default center for the map
-    val defaultLatLng = LatLng(27.7172, 85.3240)
+    val staticPickupPoints = remember {
+        listOf(
+            LatLng(27.7781, 85.3524), LatLng(27.7533, 85.3436),
+            LatLng(27.7390, 85.3340), LatLng(27.7320, 85.3090),
+            LatLng(27.6930, 85.3175)
+        )
+    }
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLatLng, 12f)
+        position = CameraPosition.fromLatLngZoom(LatLng(27.7172, 85.3240), 12f)
     }
 
     var busIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
     LaunchedEffect(Unit) { busIcon = createBusMarkerIcon(context) }
 
-    // Parent Logic: Focus camera on their specific bus
-    LaunchedEffect(coordinates) {
+    // Logic to update route (Driver only) and Camera (Parent only)
+    LaunchedEffect(coordinates, currentLocation) {
+        if (model?.typeofUser == "Driver" && currentLocation != null) {
+            locationViewModel.fetchRoadRoute(currentLocation!!, staticPickupPoints)
+        }
+
         if (model?.typeofUser == "Parent") {
             val parts = coordinates.split(",")
-            val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull() ?: return@LaunchedEffect
-            val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull() ?: return@LaunchedEffect
-            cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(lat, lng)))
+            val lat = parts.getOrNull(0)?.toDoubleOrNull()
+            val lng = parts.getOrNull(1)?.toDoubleOrNull()
+            if (lat != null && lng != null) {
+                cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(lat, lng)))
+            }
         }
     }
 
-    Card(modifier = modifier.fillMaxWidth().height(400.dp), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(8.dp)) {
+    Card(modifier = modifier.fillMaxWidth().height(400.dp), shape = RoundedCornerShape(16.dp)) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = model?.typeofUser == "Driver"),
-            uiSettings = MapUiSettings(zoomControlsEnabled = true)
+            properties = MapProperties(isMyLocationEnabled = model?.typeofUser == "Driver")
         ) {
-            // ADMIN VIEW: Show markers for all buses
-            if (model?.typeofUser == "Admin" && busIcon != null) {
-                allBuses.forEach { bus ->
-                    val parts = bus.currentLocation.split(",")
-                    val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
-                    val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
 
-                    if (lat != null && lng != null) {
+            // --- 1. ROUTE & STOPS (ONLY FOR DRIVER) ---
+            if (model?.typeofUser == "Driver") {
+                if (roadPoints.isNotEmpty()) {
+                    Polyline(points = roadPoints, color = Color(0xFF1A73E8), width = 12f, jointType = JointType.ROUND)
+                }
+                staticPickupPoints.forEachIndexed { index, point ->
+                    Marker(
+                        state = rememberMarkerState(position = point),
+                        title = if (index == staticPickupPoints.lastIndex) "School" else "Stop ${index + 1}",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                    )
+                }
+            }
+
+            // --- 2. BUS MARKERS (VISIBLE TO ALL) ---
+            if (busIcon != null) {
+                if (model?.typeofUser == "Admin") {
+                    allBuses.forEach { bus ->
+                        val parts = bus.currentLocation.split(",")
+                        val lat = parts.getOrNull(0)?.toDoubleOrNull()
+                        val lng = parts.getOrNull(1)?.toDoubleOrNull()
+                        if (lat != null && lng != null) {
+                            Marker(
+                                state = rememberMarkerState(position = LatLng(lat, lng)),
+                                title = "Bus ${bus.busNumber}",
+                                snippet = "Speed: ${"%.1f".format(bus.speed * 3.6)} KM/H",
+                                icon = busIcon
+                            )
+                        }
+                    }
+                } else {
+                    // This section handles both Driver and Parent marker display
+                    val displayCoords = if (model?.typeofUser == "Driver") {
+                        currentLocation
+                    } else {
+                        // Parent uses the 'coordinates' string passed from the screen
+                        val parts = coordinates.split(",")
+                        val lat = parts.getOrNull(0)?.toDoubleOrNull()
+                        val lng = parts.getOrNull(1)?.toDoubleOrNull()
+                        if (lat != null && lng != null) LatLng(lat, lng) else null
+                    }
+
+                    displayCoords?.let {
                         Marker(
-                            state = rememberMarkerState(position = LatLng(lat, lng)),
-                            title = "Bus ${bus.busNumber}",
-                            snippet = "Speed: ${bus.speed} km/h",
+                            state = rememberMarkerState(position = it),
+                            title = if (model?.typeofUser == "Driver") "My Bus" else "Child's Bus",
+                            // This snippet ensures speed is visible when tapping the icon
+                            snippet = "Live Speed: ${"%.1f".format(liveBusSpeed * 3.6)} KM/H",
                             icon = busIcon
                         )
                     }
                 }
             }
-
-            // PARENT VIEW: Show only their specific bus
-            if (model?.typeofUser == "Parent" && busIcon != null) {
-                val parts = coordinates.split(",")
-                val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
-                val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
-                if (lat != null && lng != null) {
-                    Marker(
-                        state = rememberMarkerState(position = LatLng(lat, lng)),
-                        title = "Your Child's Bus",
-                        icon = busIcon
-                    )
-                }
-            }
         }
     }
 }
-
 @Composable
 fun ETACard(childName: String, eta: Int, cardColor: Color) {
     Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = cardColor), modifier = Modifier.width(260.dp).height(100.dp)) {

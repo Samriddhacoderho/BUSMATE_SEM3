@@ -86,8 +86,9 @@ fun ParentDashboardScreen(
     val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
     val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
-    val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
     val application = context.applicationContext as android.app.Application
+    val locationViewModel = remember { LocationViewModel(application, LocationImpl(context))
+    }
     val accelViewModel = remember { AccelRecieverViewModel(application) }
     var selectedBusRouteId by remember { mutableStateOf<String?>(null) }
     var selectedChildId by remember { mutableStateOf<String?>(null) }
