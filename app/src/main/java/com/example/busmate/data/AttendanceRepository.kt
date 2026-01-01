@@ -24,4 +24,6 @@ interface AttendanceRepository {
         callback: (List<Map<String, Any?>>) -> Unit
     )
 
+    fun getAttendanceForDateAndBus(date: String, busId: String, callback: (List<Map<String, Any?>>) -> Unit)
+
 }
