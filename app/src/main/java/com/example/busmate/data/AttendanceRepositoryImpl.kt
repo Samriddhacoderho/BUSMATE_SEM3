@@ -138,4 +138,27 @@ class AttendanceRepositoryImpl: AttendanceRepository{
             override fun onCancelled(p0: DatabaseError) { callback(emptyList()) }
         })
     }
+    // In AttendanceRepositoryImpl.kt
+
+    override fun getAttendanceForDateAndBus(date: String, busId: String, callback: (List<Map<String, Any?>>) -> Unit) {
+        val ref = FirebaseDatabase.getInstance().getReference("attendance")
+            .child(date)
+            .child(busId)
+
+        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<Map<String, Any?>>()
+                for (childSnap in snapshot.children) {
+                    val data = childSnap.value as? Map<String, Any?>
+                    if (data != null) {
+                        list.add(data)
+                    }
+                }
+                callback(list)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(emptyList())
+            }
+        })
+    }
 }
