@@ -157,7 +157,9 @@ class AdminActionsImpl : AdminActionsInterface {
                             .getValue(Double::class.java) ?: 0.0,
                         // ✅ SAFE: driver may or may not exist
                         driver = child.child("driver")
-                            .getValue(UserModel::class.java)
+                            .getValue(UserModel::class.java),
+                        busImage = child.child("busImage").getValue(String::class.java).orEmpty()
+
                     )
 
                     buses.add(bus)
