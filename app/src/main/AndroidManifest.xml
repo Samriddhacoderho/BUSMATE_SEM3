@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -135,7 +137,13 @@
             android:name=".view.SplashScreen"
             android:exported="true"
             android:label="@string/title_activity_splash_screen"
-            android:theme="@style/Theme.BUSMATE" />
+            android:theme="@style/Theme.BUSMATE" >
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        </activity>
         <activity
             android:name=".view.AdminDeactivatesActivity"
             android:exported="false"
