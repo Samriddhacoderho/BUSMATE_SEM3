@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,6 +31,11 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.BusViewModel
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import coil3.compose.AsyncImage
+import com.example.busmate.R
 
 class BusDetailsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,9 +122,7 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(20.dp))
-
             if (isLoading) {
                 Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
@@ -130,6 +134,29 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val busImageUrl = busDetails!!.busImage.trim()
+                        if (busImageUrl.isNotEmpty()) {
+                            AsyncImage(
+                                model = busImageUrl,
+                                contentDescription = "Bus Image",
+                                modifier = Modifier
+                                    .width(200.dp) // Set a width to avoid full stretching
+                                    .height(180.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(R.drawable.schoolbus),
+                                contentDescription = "Default Bus",
+                                modifier = Modifier.size(120.dp)
+                            )
+                        }
+                    }
                     Column(modifier = Modifier.padding(20.dp)) {
                         DetailText(label = "Route ID", value = busDetails!!.routeId)
                         DetailText(label = "Bus Number", value = busDetails!!.busNumber)
