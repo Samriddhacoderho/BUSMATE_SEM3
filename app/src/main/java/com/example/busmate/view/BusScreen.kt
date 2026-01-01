@@ -30,6 +30,17 @@ import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.viewmodel.BusViewModel
 import com.example.busmate.R
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import com.example.busmate.data.UserRepositoryImpl
 
 class BusScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +62,13 @@ fun BusScreenUI(
     var licensePlate by remember { mutableStateOf("") }
     var routeId by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val userRepo = UserRepositoryImpl() // To use uploadImage
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> selectedImageUri = uri }
 
     val message by viewModel.message.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -137,16 +155,74 @@ fun BusScreenUI(
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "Bus Details", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(
+                        text = "Bus Details",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    // --- IMAGE PICKER SECTION ---
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFFF1F3F5))
+                            .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
+                            .clickable { launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedImageUri != null) {
+                            AsyncImage(
+                                model = selectedImageUri,
+                                contentDescription = "Selected Bus Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.AddAPhoto,
+                                    contentDescription = null,
+                                    tint = BusMateBlue
+                                )
+                                Text("Add Photo", fontSize = 12.sp, color = BusMateBlue)
+                            }
+                        }
+                    }
 
-                    OutlinedTextField(value = busNumber, onValueChange = { busNumber = it }, label = { Text("Bus Number *") }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-                    OutlinedTextField(value = licensePlate, onValueChange = { licensePlate = it }, label = { Text("License Plate *") }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-                    OutlinedTextField(value = routeId, onValueChange = { routeId = it }, label = { Text("Route ID *") }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = busNumber,
+                        onValueChange = { busNumber = it },
+                        label = { Text("Bus Number *") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = licensePlate,
+                        onValueChange = { licensePlate = it },
+                        label = { Text("License Plate *") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = routeId,
+                        onValueChange = { routeId = it },
+                        label = { Text("Route ID *") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    )
                     OutlinedTextField(
                         value = capacity,
                         onValueChange = { capacity = it.filter { c -> c.isDigit() } },
                         label = { Text("Capacity *") },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                     )
 
@@ -155,17 +231,32 @@ fun BusScreenUI(
                     Button(
                         onClick = {
                             val capacityInt = capacity.toIntOrNull()
-                            if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacityInt == null || capacityInt <= 0) {
+                            if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Please fill all bus details correctly.")
                                 }
                             } else {
-                                viewModel.registerBus(
-                                    busNumber = busNumber,
-                                    licensePlate = licensePlate,
-                                    routeId = routeId,
-                                    capacity = capacityInt,
-                                )
+                                // Check if an image is selected
+                                // Inside BusScreen.kt Button onClick
+                                if (selectedImageUri != null) {
+                                    userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
+                                        viewModel.registerBus(
+                                            busNumber = busNumber,
+                                            licensePlate = licensePlate,
+                                            routeId = routeId,
+                                            capacity = capacityInt,
+                                            busImage = imageUrl ?: "" // ✅ Now this works!
+                                        )
+                                    }
+                                } else {
+                                    viewModel.registerBus(
+                                        busNumber = busNumber,
+                                        licensePlate = licensePlate,
+                                        routeId = routeId,
+                                        capacity = capacityInt,
+                                        busImage = "" // ✅ Now this works!
+                                    )
+                                }
                             }
                         },
                         enabled = !isLoading,
@@ -180,3 +271,4 @@ fun BusScreenUI(
         }
     }
 }
+// testing add bus image

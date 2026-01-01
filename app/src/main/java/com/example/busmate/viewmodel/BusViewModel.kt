@@ -18,7 +18,8 @@ class BusViewModel(
         busNumber: String,
         licensePlate: String,
         routeId: String,
-        capacity: Int
+        capacity: Int,
+        busImage: String
     ) {
         _message.value = "Loading"
 
@@ -28,9 +29,9 @@ class BusViewModel(
                 licensePlate = licensePlate.trim().uppercase(),
                 routeId = routeId.trim(),
                 capacity = capacity,
+                busImage = busImage,
                 driver = null
             )
-
             repository.registerBus(bus) { responseMessage, _ ->
                 _message.value = responseMessage
             }
