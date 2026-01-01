@@ -527,6 +527,4 @@ fun ParentDashboardScreen(
         }
     }
 }
-//fixed bugs
-//show user or admin image in nav drawer
 
