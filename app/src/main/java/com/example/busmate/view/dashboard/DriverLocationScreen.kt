@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MyLocation
@@ -22,12 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.busmate.viewmodel.LocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.JointType
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.RoundCap
+import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 
@@ -40,20 +34,24 @@ fun DriverLocationScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Observing state from your shared ViewModel
     val currentGpsLocation by viewModel.location.collectAsState()
     val students by viewModel.driverStudents.collectAsState()
     val snappedPath by viewModel.polylinePoints.collectAsState()
 
-    val schoolLatLng = remember { LatLng(27.7174, 85.3435) } // Deerwalk Location
+    // 1. Define Kathmandu Coordinates
+    val kathmandu = remember { LatLng(27.7172, 85.3240) }
+    val schoolLatLng = remember { LatLng(27.7174, 85.3435) }
+
+    // 2. Initialize the camera specifically at Kathmandu instead of (0,0)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(27.7172, 85.3240), 14f)
+        position = CameraPosition.fromLatLngZoom(kathmandu, 12f)
     }
 
-    // Get API Key from Manifest for Road Snapping
     val apiKey = remember {
-        context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-            .metaData.getString("com.google.android.geo.API_KEY") ?: ""
+        try {
+            context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+                .metaData.getString("com.google.android.geo.API_KEY") ?: ""
+        } catch (e: Exception) { "" }
     }
 
     var permissionGranted by remember {
@@ -64,7 +62,6 @@ fun DriverLocationScreen(
         permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
     }
 
-    // Initialize tracking and data
     LaunchedEffect(permissionGranted, busId) {
         if (permissionGranted) {
             viewModel.startTracking(busId = busId, driverUid = driverUid)
@@ -74,14 +71,13 @@ fun DriverLocationScreen(
         }
     }
 
-    // ROAD SNAPPING TRIGGER: Updates whenever driver moves or student list loads
+    // Road Snapping Logic
     LaunchedEffect(currentGpsLocation, students) {
-        currentGpsLocation?.let { startPos ->
-            val waypoints = students.map { LatLng(it.pickUpLat, it.pickUpLng) }
-            // This calls your ViewModel's existing road-snapping logic
-            viewModel.fetchRoadSnappedRoute(
-                origin = startPos,
-                destination = schoolLatLng,
+        if (currentGpsLocation != null && students.isNotEmpty() && apiKey.isNotEmpty()) {
+            viewModel.fetchDriverRouteWithWaypoints(
+                origin = currentGpsLocation!!,
+                destination = schoolLatLng, // Deerwalk
+                students = students,        // Passes all students to connect them
                 apiKey = apiKey
             )
         }
@@ -89,57 +85,48 @@ fun DriverLocationScreen(
 
     Scaffold { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Minimal Header to maximize map space
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF2567E8),
-                shadowElevation = 4.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // Header
+            Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFF2567E8), shadowElevation = 4.dp) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Navigation: $busId", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("Destination: Deerwalk Institute", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text("Driver Route", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text("Total Students: ${students.size}", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                     }
-                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color.White)
                 }
             }
 
-            // FULL SCREEN MAP CARD
             Box(modifier = Modifier.fillMaxSize()) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = permissionGranted,
-                        isTrafficEnabled = true
+                        isTrafficEnabled = false
                     ),
                     uiSettings = MapUiSettings(zoomControlsEnabled = false)
                 ) {
-                    // 1. THE ROAD-SNAPPED POLYLINE
+                    // Path
                     if (snappedPath.isNotEmpty()) {
                         Polyline(
                             points = snappedPath,
                             color = Color(0xFF2567E8),
-                            width = 15f,
+                            width = 16f,
                             jointType = JointType.ROUND,
                             startCap = RoundCap(),
                             endCap = RoundCap()
                         )
                     }
 
-                    // 2. STUDENT MARKERS
+                    // Student Markers
                     students.forEach { student ->
                         Marker(
                             state = rememberMarkerState(position = LatLng(student.pickUpLat, student.pickUpLng)),
-                            title = "${student.firstName} (Pickup)",
+                            title = student.firstName,
                             icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                         )
                     }
 
-                    // 3. SCHOOL MARKER
+                    // School Marker
                     Marker(
                         state = rememberMarkerState(position = schoolLatLng),
                         title = "Deerwalk Institute",
@@ -147,24 +134,20 @@ fun DriverLocationScreen(
                     )
                 }
 
-                // ZOOM CONTROLS OVERLAY
+                // Zoom Controls
                 Column(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp),
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FloatingActionButton(
                         onClick = { scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomIn()) } },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(50.dp)
-                    ) { Icon(Icons.Default.Add, contentDescription = "Zoom In") }
+                        containerColor = Color.White, modifier = Modifier.size(54.dp)
+                    ) { Icon(Icons.Default.Add, "+", tint = Color.Black) }
 
                     FloatingActionButton(
                         onClick = { scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomOut()) } },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(50.dp)
-                    ) { Icon(Icons.Default.Remove, contentDescription = "Zoom Out") }
+                        containerColor = Color.White, modifier = Modifier.size(54.dp)
+                    ) { Icon(Icons.Default.Remove, "-", tint = Color.Black) }
 
                     FloatingActionButton(
                         onClick = {
@@ -173,12 +156,13 @@ fun DriverLocationScreen(
                             students.forEach { builder.include(LatLng(it.pickUpLat, it.pickUpLng)) }
                             builder.include(schoolLatLng)
                             scope.launch {
+                                // This ensures the map snaps to your location/route immediately on click
                                 cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(builder.build(), 200))
                             }
                         },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(50.dp)
-                    ) { Icon(Icons.Default.MyLocation, contentDescription = "Recenter") }
+                        containerColor = Color(0xFF2567E8),
+                        modifier = Modifier.size(54.dp)
+                    ) { Icon(Icons.Default.MyLocation, "Center", tint = Color.White) }
                 }
             }
         }

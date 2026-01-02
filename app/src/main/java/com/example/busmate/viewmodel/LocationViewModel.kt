@@ -153,26 +153,28 @@ class LocationViewModel(
         )
     }
 
-    fun fetchRoadSnappedRouteWithStops(
+    // Add this to LocationViewModel.kt
+    fun fetchDriverRouteWithWaypoints(
         origin: LatLng,
-        stops: List<LatLng>,
         destination: LatLng,
+        students: List<ChildModel>,
         apiKey: String
     ) {
-        // This uses your existing busRepo logic but ensures stops are included
+        // 1. Map student objects to LatLng points
+        val studentWaypoints = students.map { LatLng(it.pickUpLat, it.pickUpLng) }
+
+        // 2. Call the repository with waypoints
         busRepo.getRoadSnappedRoute(
             origin = origin,
             destination = destination,
             apiKey = apiKey,
-            // We pass the stops as part of the directions request
-            // Ensure your BusRepositoryImpl.getRoadSnappedRoute is updated
-            // to handle a 'waypoints' parameter if needed.
-            onSuccess = { points, distanceMeters ->
+            waypoints = studentWaypoints, // This is the key to connecting markers
+            onSuccess = { points, distance ->
                 _polylinePoints.value = points
-                currentRouteDistanceMeters = distanceMeters
+                currentRouteDistanceMeters = distance
             },
             onFailure = { error ->
-                android.util.Log.e("DirectionsAPI", "Error: $error")
+                android.util.Log.e("DirectionsAPI", "Driver Route Error: $error")
             }
         )
     }

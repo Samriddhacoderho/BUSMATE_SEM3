@@ -121,6 +121,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 }
             })
     }
+
     override fun updateBusLocation(
         busUid: String,
         latLng: com.google.android.gms.maps.model.LatLng,
@@ -135,6 +136,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 callback(task.isSuccessful)
             }
     }
+
     // In BusRepositoryImpl.kt
     override fun getLiveBusLocation(busId: String, callback: (String) -> Unit) {
         // Reference the specific bus and its currentLocation field
@@ -196,7 +198,8 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         // GO TO THE USERS NODE TO GET THE REAL IMAGE
                         db.getReference("users").child(driverUid).get()
                             .addOnSuccessListener { userSnapshot ->
-                                val latestImageUrl = userSnapshot.child("profileImage").getValue(String::class.java)
+                                val latestImageUrl =
+                                    userSnapshot.child("profileImage").getValue(String::class.java)
 
                                 // Inject the live image URL into the driver object
                                 if (!latestImageUrl.isNullOrEmpty()) {
@@ -231,6 +234,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         callback(null)
                     }
                 }
+
                 override fun onCancelled(error: DatabaseError) {
                     callback(null)
                 }
@@ -247,6 +251,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 }
                 callback(busList)
             }
+
             override fun onCancelled(error: DatabaseError) {
                 Log.e("Firebase", "Error fetching all buses: ${error.message}")
             }
@@ -257,53 +262,50 @@ class BusRepositoryImpl : BusRepositoryInterface {
         origin: LatLng,
         destination: LatLng,
         apiKey: String,
-        onSuccess: (List<LatLng>, Int) -> Unit, // Updated to include distance
+        waypoints: List<LatLng>, // No default value allowed here
+        onSuccess: (List<LatLng>, Int) -> Unit,
         onFailure: (String) -> Unit
     ) {
+        // Construct the waypoints string for the URL
+        val waypointsString = if (waypoints.isNotEmpty()) {
+            "&waypoints=optimize:true|" + waypoints.joinToString("|") { "${it.latitude},${it.longitude}" }
+        } else ""
+
         val urlString = "https://maps.googleapis.com/maps/api/directions/json?" +
-                "origin=${origin.latitude},${origin.longitude}&" +
-                "destination=${destination.latitude},${destination.longitude}&" +
-                "key=$apiKey"
+                "origin=${origin.latitude},${origin.longitude}" +
+                "&destination=${destination.latitude},${destination.longitude}" +
+                waypointsString +
+                "&key=$apiKey"
 
         Thread {
-            val connection = URL(urlString).openConnection()
-            val response = connection.getInputStream().bufferedReader().use { it.readText() }
+            val response = try { java.net.URL(urlString).readText() } catch (e: Exception) { "" }
 
-            if (response.isEmpty()) {
-                onFailure("Empty response from server")
-                return@Thread
-            }
+            if (response.isNotBlank()) {
+                val json = JSONObject(response)
+                val status = json.optString("status", "UNKNOWN_ERROR")
 
-            val json = JSONObject(response)
-            val status = json.optString("status", "UNKNOWN_ERROR")
+                if (status == "OK") {
+                    val routes = json.getJSONArray("routes")
+                    if (routes.length() > 0) {
+                        val route = routes.getJSONObject(0)
+                        val points = route.getJSONObject("overview_polyline").getString("points")
+                        val decodedPath = PolyUtil.decode(points)
 
-            if (status == "OK") {
-                val routes = json.getJSONArray("routes")
-                if (routes.length() > 0) {
-                    val route = routes.getJSONObject(0)
-
-                    // 1. Extract Points
-                    val points = route.getJSONObject("overview_polyline").getString("points")
-                    val decodedPath = PolyUtil.decode(points)
-
-                    // 2. Extract Distance (Legs contain the distance data)
-                    val legs = route.getJSONArray("legs")
-                    val distanceMeters = if (legs.length() > 0) {
-                        legs.getJSONObject(0).getJSONObject("distance").getInt("value")
+                        val legs = route.getJSONArray("legs")
+                        var totalDistance = 0
+                        for (i in 0 until legs.length()) {
+                            totalDistance += legs.getJSONObject(i).getJSONObject("distance").getInt("value")
+                        }
+                        onSuccess(decodedPath, totalDistance)
                     } else {
-                        0
+                        onFailure("No routes found")
                     }
-
-                    onSuccess(decodedPath, distanceMeters)
                 } else {
-                    onFailure("No routes found")
+                    onFailure("API Error: $status")
                 }
             } else {
-                onFailure("Directions API Error: $status")
+                onFailure("Network error")
             }
         }.start()
     }
-
-
 }
-//testing the current location of driver
