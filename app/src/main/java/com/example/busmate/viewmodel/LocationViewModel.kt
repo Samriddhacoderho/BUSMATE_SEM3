@@ -34,6 +34,8 @@ class LocationViewModel(
 
     private val _polylinePoints = MutableStateFlow<List<LatLng>>(emptyList())
     val polylinePoints: StateFlow<List<LatLng>> = _polylinePoints
+
+    private var currentRouteDistanceMeters: Int = 0
     private var trackedBusId: String? = null
 
     private val speedBuffer = mutableListOf<Float>()
@@ -90,21 +92,23 @@ class LocationViewModel(
 
         val avgSpeedMps = if (speedBuffer.isNotEmpty()) speedBuffer.average().toFloat() else 0f
         val busLatLng = parseCoordinates(currentCoords)
-
-        // FIX: If speed is 0, use 5.5 m/s (approx 20km/h) as a fallback
-        // so parents see a realistic ETA instead of 0 or infinity.
         val effectiveSpeed = if (avgSpeedMps < 0.5f) 5.5f else avgSpeedMps
 
         _childEtas.value = children.map { child ->
-            val results = FloatArray(1)
-            Location.distanceBetween(
-                busLatLng.latitude, busLatLng.longitude,
-                child.pickUpLat, child.pickUpLng,
-                results
-            )
-            val distanceInMeters = results[0]
-            val etaMinutes = (distanceInMeters / (effectiveSpeed * 60)).toInt()
+            // Logic: Use route distance if available (more accurate), else use aerial
+            val distanceInMeters = if (currentRouteDistanceMeters > 0) {
+                currentRouteDistanceMeters.toFloat()
+            } else {
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    busLatLng.latitude, busLatLng.longitude,
+                    child.pickUpLat, child.pickUpLng,
+                    results
+                )
+                results[0]
+            }
 
+            val etaMinutes = (distanceInMeters / (effectiveSpeed * 60)).toInt()
             ChildEtaState(childName = child.firstName, etaMinutes = etaMinutes)
         }
     }
@@ -129,8 +133,10 @@ class LocationViewModel(
             origin = origin,
             destination = destination,
             apiKey = apiKey,
-            onSuccess = { points ->
-                _polylinePoints.value = points // Fixed reference here
+            onSuccess = { points, distanceMeters ->
+                _polylinePoints.value = points
+                // Store the road distance for ETA calculation
+                currentRouteDistanceMeters = distanceMeters
             },
             onFailure = { error ->
                 android.util.Log.e("DirectionsAPI", "Error: $error")

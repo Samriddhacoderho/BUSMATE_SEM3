@@ -86,17 +86,9 @@ fun LiveLocationScreen(
         }
     }
 
-    // Trigger Route Fetching and ETA updates
-    LaunchedEffect(coordinates, children) {
+    /// 1. THIS BLOCK REQUESTS THE ROUTE
+    LaunchedEffect(coordinates, children, selectedChildId) {
         if (model?.typeofUser == "Parent") {
-            val filteredChildren = children.filter { it.studentId == selectedChildId }
-            viewModel.updateChildEtas(
-                children = filteredChildren,
-                currentCoords = coordinates,
-                rawSpeedMps = liveReading?.speedMps ?: 0f
-            )
-
-            // Calculate coordinates for Directions API
             val busParts = coordinates.split(",")
             val busLat = busParts.getOrNull(0)?.toDoubleOrNull()
             val busLng = busParts.getOrNull(1)?.toDoubleOrNull()
@@ -111,6 +103,33 @@ fun LiveLocationScreen(
             }
         }
     }
+
+// 2. THIS BLOCK UPDATES THE CARDS ONCE DATA ARRIVES
+    LaunchedEffect(polylinePoints, liveReading?.speedMps) {
+        if (model?.typeofUser == "Parent") {
+            val filteredChildren = children.filter { it.studentId == selectedChildId }
+            viewModel.updateChildEtas(
+                children = filteredChildren,
+                currentCoords = coordinates,
+                rawSpeedMps = liveReading?.speedMps ?: 0f
+            )
+        }
+    }
+
+            // Calculate coordinates for Directions API
+            val busParts = coordinates.split(",")
+            val busLat = busParts.getOrNull(0)?.toDoubleOrNull()
+            val busLng = busParts.getOrNull(1)?.toDoubleOrNull()
+            val child = children.find { it.studentId == selectedChildId }
+
+            if (busLat != null && busLng != null && child != null && apiKey.isNotEmpty()) {
+                viewModel.fetchRoadSnappedRoute(
+                    origin = LatLng(busLat, busLng),
+                    destination = LatLng(child.pickUpLat, child.pickUpLng),
+                    apiKey = apiKey
+                )
+            }
+
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(

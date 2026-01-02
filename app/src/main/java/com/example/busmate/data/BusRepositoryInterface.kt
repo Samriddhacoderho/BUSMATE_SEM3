@@ -39,7 +39,7 @@ interface BusRepositoryInterface {
         origin: LatLng,
         destination: LatLng,
         apiKey: String,
-        onSuccess: (List<LatLng>) -> Unit,
+        onSuccess: (List<LatLng>, Int) -> Unit, // Change from (List<LatLng>) -> Unit
         onFailure: (String) -> Unit
     )
 
