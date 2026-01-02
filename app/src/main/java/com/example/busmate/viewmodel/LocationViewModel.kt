@@ -1,15 +1,21 @@
 package com.example.busmate.viewmodel
 
+import android.location.Location
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.example.busmate.data.AttendanceRepositoryImpl
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
 import com.example.busmate.data.LocationInterface
+import com.example.busmate.model.BusModel
 import com.example.busmate.model.ChildModel
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import android.location.Location
-import com.example.busmate.model.BusModel
 
 class LocationViewModel(
     private val repo: LocationInterface,
@@ -21,6 +27,10 @@ class LocationViewModel(
         val etaMinutes: Int
     )
 
+    private val attendanceRepo = AttendanceRepositoryImpl()
+
+    private val _driverStudents = MutableStateFlow<List<ChildModel>>(emptyList())
+    val driverStudents: StateFlow<List<ChildModel>> = _driverStudents
     private val _location = MutableStateFlow<LatLng?>(null)
     val location: StateFlow<LatLng?> = _location
     private val _currentBusCoordinates = MutableStateFlow("Fetching...")
@@ -37,7 +47,6 @@ class LocationViewModel(
 
     private var currentRouteDistanceMeters: Int = 0
     private var trackedBusId: String? = null
-
     private val speedBuffer = mutableListOf<Float>()
     private val BUFFER_SIZE = 10
 
@@ -142,5 +151,37 @@ class LocationViewModel(
                 android.util.Log.e("DirectionsAPI", "Error: $error")
             }
         )
+    }
+
+    // Inside LocationViewModel.kt
+    fun fetchStudentsForRoute(driverSchoolId: String) {
+        val busRef = FirebaseDatabase.getInstance().getReference("buses")
+
+        busRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var actualRouteId = ""
+                for (busSnap in snapshot.children) {
+                    val bus = busSnap.getValue(BusModel::class.java)
+                    // Comparing Driver Login ID to find the correct bus
+                    if (bus?.driver?.schoolId == driverSchoolId) {
+                        actualRouteId = bus.routeId
+                        break
+                    }
+                }
+
+                if (actualRouteId.isNotEmpty()) {
+                    attendanceRepo.getChildrenByRouteId(actualRouteId) { students ->
+                        _driverStudents.value = students
+                        Log.d("DRIVER_DEBUG", "Success! Found ${students.size} students for Route: $actualRouteId")
+                    }
+                } else {
+                    Log.e("DRIVER_DEBUG", "No bus found where driver schoolId matches: $driverSchoolId")
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("DRIVER_DEBUG", "Database error: ${error.message}")
+            }
+        })
     }
 }
