@@ -39,9 +39,8 @@ interface BusRepositoryInterface {
         origin: LatLng,
         destination: LatLng,
         apiKey: String,
-        onSuccess: (List<LatLng>, Int) -> Unit, // Change from (List<LatLng>) -> Unit
+        waypoints: List<LatLng> = emptyList(), // Default value goes here
+        onSuccess: (List<LatLng>, Int) -> Unit,
         onFailure: (String) -> Unit
     )
-
-
 }
