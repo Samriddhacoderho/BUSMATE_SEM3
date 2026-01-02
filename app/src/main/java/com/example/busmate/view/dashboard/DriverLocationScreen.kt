@@ -42,13 +42,17 @@ fun DriverLocationScreen(
 
     var permissionGranted by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         )
     }
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
-    }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        }
 
     // TRIGGER: Fetch data and start tracking when screen opens or busId changes
     LaunchedEffect(permissionGranted, busId) {
@@ -59,7 +63,12 @@ fun DriverLocationScreen(
             // REUSE: Use your Attendance logic to fetch the manifest
             viewModel.fetchStudentsForRoute(busId)
         } else {
-            launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            launcher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
@@ -74,12 +83,27 @@ fun DriverLocationScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Driver's Navigation Route", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "Students assigned: ${students.size}", fontSize = 12.sp, color = Color.Gray)
+                        Text(
+                            text = "Driver's Navigation Route",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Students assigned: ${students.size}",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
                     }
-                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = if(permissionGranted) Color.Green else Color.Red)
+                    Icon(
+                        Icons.Default.MyLocation,
+                        contentDescription = null,
+                        tint = if (permissionGranted) Color.Green else Color.Red
+                    )
                 }
             }
 
@@ -97,76 +121,93 @@ fun DriverLocationScreen(
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(isMyLocationEnabled = permissionGranted)
+                    properties = MapProperties(
+                        isMyLocationEnabled = permissionGranted,
+                        isTrafficEnabled = true // Useful for drivers to see delays
+                    ),
+                    uiSettings = MapUiSettings(zoomControlsEnabled = false)
                 ) {
-                    // Place markers for all students on the route
+                    // 1. Show student pickup markers
                     students.forEach { student ->
+                        // Create a unique marker for every child in the list
                         Marker(
-                            state = rememberMarkerState(position = LatLng(student.pickUpLat, student.pickUpLng)),
+                            state = rememberMarkerState(
+                                position = LatLng(student.pickUpLat, student.pickUpLng)
+                            ),
                             title = "${student.firstName} ${student.lastName}",
                             snippet = "Pickup: ${student.pickUpLocation}",
+                            // Azure/Cyan color makes it look different from the driver's blue dot
                             icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                         )
                     }
                 }
             }
 
-            // STUDENT LIST SECTION
-            Text(
-                text = "Pick-up Manifest",
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold
-            )
+                // STUDENT LIST SECTION
+                Text(
+                    text = "Pick-up Manifest",
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(0.7f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                // 'items' works here because of the 'import androidx.compose.foundation.lazy.items'
-                items(students) { student ->
-                    StudentCard(student)
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(0.7f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    // 'items' works here because of the 'import androidx.compose.foundation.lazy.items'
+                    items(students) { student ->
+                        StudentCard(student)
+                    }
                 }
             }
         }
     }
-}
 
-@Composable
-fun StudentCard(student: ChildModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+    @Composable
+    fun StudentCard(student: ChildModel) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${student.firstName} ${student.lastName}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(text = "Location: ${student.pickUpLocation}", fontSize = 12.sp, color = Color.DarkGray)
-                // GPS Coordinates as requested
-                Text(
-                    text = "Lat: ${student.pickUpLat}, Lng: ${student.pickUpLng}",
-                    fontSize = 10.sp,
-                    color = Color.Gray,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
-            }
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${student.firstName} ${student.lastName}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = "Location: ${student.pickUpLocation}",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    // GPS Coordinates as requested
+                    Text(
+                        text = "Lat: ${student.pickUpLat}, Lng: ${student.pickUpLng}",
+                        fontSize = 10.sp,
+                        color = Color.Gray,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    )
+                }
 
-            IconButton(onClick = { /* Add Google Maps Intent here */ }) {
-                Icon(Icons.Default.Directions, contentDescription = "Navigate", tint = Color(0xFF1976D2))
+                IconButton(onClick = { /* Add Google Maps Intent here */ }) {
+                    Icon(
+                        Icons.Default.Directions,
+                        contentDescription = "Navigate",
+                        tint = Color(0xFF1976D2)
+                    )
+                }
             }
         }
     }
-}
+
 
 private suspend fun CameraPositionState.centerOnLocation(latLng: LatLng) {
     animate(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(latLng, 15f))
