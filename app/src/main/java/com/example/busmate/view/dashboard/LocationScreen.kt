@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,34 +55,44 @@ fun LiveLocationScreen(
     viewModel: LocationViewModel,
     childViewModel: ChildViewModel,
     accelViewModel: AccelRecieverViewModel,
-    busId: String,
+    busId: String, // ID passed from Parent click
     selectedChildId: String? = null
 ) {
+    val routeChildren by viewModel.routeChildren.collectAsState()
     val coordinates by viewModel.currentBusCoordinates.collectAsState()
     val childEtas by viewModel.childEtas.collectAsState()
     val children by childViewModel.children.collectAsState()
     val liveReading by accelViewModel.firebaseReading.observeAsState()
     val isTripRunning by viewModel.isTripRunning.collectAsState()
-
-    // NEW: Observe all buses for Admin view
     val allBuses by viewModel.allBuses.collectAsState()
 
     val context = LocalContext.current
     val activity = context as Activity
+
     val model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
-    LaunchedEffect(busId, model?.typeofUser) {
-        if (model?.typeofUser == "Admin") {
-            // Logic to track all buses in the collection
-            viewModel.trackAllBuses()
-        } else {
-            // Standard tracking for Parent/Driver
-            viewModel.startTracking(busId = busId)
-            accelViewModel.startTrackingBus(busId)
-            model?.uid?.let { parentUid ->
-                childViewModel.observeChildren(parentUid)
+    // UPDATED: Logic to separate Driver UID from Parent Route ID
+    LaunchedEffect(model, busId) {
+        val currentUser = model ?: return@LaunchedEffect
+
+        when (currentUser.typeofUser) {
+            "Driver" -> {
+                // Driver uses UID to find their Route, which loads kids AND starts map tracking
+                viewModel.loadChildrenByDriverId(currentUser.uid)
+                accelViewModel.startTrackingBus(currentUser.schoolId)
+            }
+            "Parent" -> {
+                if (busId.isNotEmpty()) {
+                    viewModel.loadChildrenForRoute(busId)
+                    viewModel.startTracking(busId) // RESTORES THE BUS MARKER
+                    accelViewModel.startTrackingBus(busId)
+                    currentUser.uid.let { childViewModel.observeChildren(it) }
+                }
+            }
+            "Admin" -> {
+                viewModel.trackAllBuses()
             }
         }
     }
@@ -96,57 +107,78 @@ fun LiveLocationScreen(
             )
         }
     }
-
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Text(
-                text = if (model?.typeofUser == "Admin") "Fleet Live Overview" else "Live Location Tracking",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
+        // Box is used to overlay the Driver's list ON TOP of the Map
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
 
-            // Alert for Parents if bus is idle
-            if (!isTripRunning && model?.typeofUser == "Parent") {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
-                ) {
-                    Text(
-                        text = "Note: Bus is currently idle.",
-                        modifier = Modifier.padding(16.dp),
-                        color = Color.Red,
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp
-                    )
+            // Background: Map and Title
+            Column(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = if (model?.typeofUser == "Admin") "Fleet Live Overview" else "Live Location Tracking",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp)
+                )
+
+                MapPrototype(
+                    modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                    model = model,
+                    context = context,
+                    coordinates = coordinates,
+                    locationViewModel = viewModel,
+                    busId = if (model?.typeofUser == "Driver") model?.schoolId ?: "" else busId,
+                    allBuses = if (model?.typeofUser == "Admin") allBuses.filterNotNull() else emptyList()
+                )
+
+                if (model?.typeofUser == "Parent") {
+                    Text("Children Arrival Info", fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
+                        items(childEtas) { etaState ->
+                            ETACard(childName = etaState.childName, eta = etaState.etaMinutes, cardColor = MaterialTheme.colorScheme.primaryContainer)
+                        }
+                    }
                 }
             }
 
-            // Map View - Handles both Single and Multi-marker views
-            MapPrototype(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                model = model,
-                context = context,
-                coordinates = coordinates,
-                locationViewModel = viewModel,
-                busId = busId,
-                allBuses = (if (model?.typeofUser == "Admin") allBuses else emptyList()) as List<BusModel>
-            )
-
-            if (model?.typeofUser == "Parent") {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Your Children's Arrival Info", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            // Foreground: Driver's Student Pickup List
+            if (model?.typeofUser == "Driver") {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    elevation = CardDefaults.cardElevation(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    items(childEtas) { etaState ->
-                        ETACard(childName = etaState.childName, eta = etaState.etaMinutes, cardColor = MaterialTheme.colorScheme.primaryContainer)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Route Students", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+
+                        // Corrected Material 3 Divider
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            thickness = 1.dp,
+                            color = Color.LightGray.copy(alpha = 0.4f)
+                        )
+
+                        if (routeChildren.isEmpty()) {
+                            Text("No students found on this route.", color = Color.Gray, modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally))
+                        }
+
+                        LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
+                            items(routeChildren) { child ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("${child.firstName} ${child.lastName}", fontWeight = FontWeight.Bold)
+                                        Text("Stop: ${child.pickUpLocation}", fontSize = 12.sp, color = Color.Gray)
+                                    }
+                                    Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = Color(0xFF2567E8))
+                                }
+                                HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                            }
+                        }
                     }
                 }
             }

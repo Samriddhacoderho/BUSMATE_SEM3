@@ -12,8 +12,10 @@ import android.location.Location
 import com.example.busmate.model.BusModel
 import android.content.pm.PackageManager
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel // Change to AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.busmate.data.AttendanceRepositoryImpl
 import com.google.maps.android.PolyUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,6 +42,9 @@ class LocationViewModel(
     val currentBusSpeed: StateFlow<Float> = _currentBusSpeed
 
     private val _childEtas = MutableStateFlow<List<ChildEtaState>>(emptyList())
+
+    private val _routeChildren = MutableStateFlow<List<ChildModel>>(emptyList())
+    val routeChildren: StateFlow<List<ChildModel>> = _routeChildren
     val childEtas: StateFlow<List<ChildEtaState>> = _childEtas
 
     private val _isTripRunning = MutableStateFlow(false)
@@ -49,8 +54,8 @@ class LocationViewModel(
     private val speedBuffer = mutableListOf<Float>()
     private val BUFFER_SIZE = 10
 
-    private val _allBuses = MutableStateFlow<List<BusModel?>>(emptyList())
-    val allBuses: StateFlow<List<BusModel?>> = _allBuses
+    private val _allBuses = MutableStateFlow<List<BusModel>>(emptyList())
+    val allBuses: StateFlow<List<BusModel>> = _allBuses
 
     private val _roadPathPoints = MutableStateFlow<List<LatLng>>(emptyList())
     val roadPathPoints: StateFlow<List<LatLng>> = _roadPathPoints
@@ -124,7 +129,8 @@ class LocationViewModel(
 
     fun trackAllBuses() {
         busRepo.getAllBusesLive { buses ->
-            _allBuses.value = buses
+            // Filter nulls here so the UI doesn't have to
+            _allBuses.value = buses.filterNotNull()
         }
     }
 
@@ -178,6 +184,29 @@ class LocationViewModel(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+    }
+    fun loadChildrenForRoute(routeId: String) {
+        Log.d("DEBUG_BUS", "Fetching children for route: $routeId") // Check your Logcat for this
+        val attendanceRepo = AttendanceRepositoryImpl()
+        attendanceRepo.getChildrenByRouteId(routeId) { children ->
+            _routeChildren.value = children
+        }
+    }
+    fun loadChildrenByDriverId(driverUid: String) {
+        busRepo.getAllBusesLive { buses ->
+            // 1. Find the bus where the driver's UID matches
+            val assignedBus = buses.find { it?.driver?.uid == driverUid }
+
+            assignedBus?.routeId?.let { actualRouteId ->
+                Log.d("DEBUG_BUS", "Found Route: $actualRouteId for Driver: $driverUid")
+
+                // 2. Now load children using the correct Route ID
+                loadChildrenForRoute(actualRouteId)
+
+                // 3. Start tracking this specific bus
+                startTracking(actualRouteId)
             }
         }
     }
