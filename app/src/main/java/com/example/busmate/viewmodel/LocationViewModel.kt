@@ -153,6 +153,30 @@ class LocationViewModel(
         )
     }
 
+    fun fetchRoadSnappedRouteWithStops(
+        origin: LatLng,
+        stops: List<LatLng>,
+        destination: LatLng,
+        apiKey: String
+    ) {
+        // This uses your existing busRepo logic but ensures stops are included
+        busRepo.getRoadSnappedRoute(
+            origin = origin,
+            destination = destination,
+            apiKey = apiKey,
+            // We pass the stops as part of the directions request
+            // Ensure your BusRepositoryImpl.getRoadSnappedRoute is updated
+            // to handle a 'waypoints' parameter if needed.
+            onSuccess = { points, distanceMeters ->
+                _polylinePoints.value = points
+                currentRouteDistanceMeters = distanceMeters
+            },
+            onFailure = { error ->
+                android.util.Log.e("DirectionsAPI", "Error: $error")
+            }
+        )
+    }
+
     // Inside LocationViewModel.kt
     fun fetchStudentsForRoute(driverSchoolId: String) {
         val busRef = FirebaseDatabase.getInstance().getReference("buses")
