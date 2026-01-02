@@ -58,21 +58,26 @@ fun LiveLocationScreen(
     val liveReading by accelViewModel.firebaseReading.observeAsState()
     val isTripRunning by viewModel.isTripRunning.collectAsState()
 
-    // NEW: Observe all buses for Admin view
-    val allBuses by viewModel.allBuses.collectAsState()
+    // FIXED: Collect polylinePoints (matching ViewModel name)
+    val polylinePoints by viewModel.polylinePoints.collectAsState()
 
+    val allBuses by viewModel.allBuses.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
     val model by remember {
         mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
     }
 
+    // Retrieve API Key from Manifest
+    val apiKey = remember {
+        context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+            .metaData.getString("com.google.android.geo.API_KEY") ?: ""
+    }
+
     LaunchedEffect(busId, model?.typeofUser) {
         if (model?.typeofUser == "Admin") {
-            // Logic to track all buses in the collection
             viewModel.trackAllBuses()
         } else {
-            // Standard tracking for Parent/Driver
             viewModel.startTracking(busId = busId)
             accelViewModel.startTrackingBus(busId)
             model?.uid?.let { parentUid ->
@@ -81,7 +86,8 @@ fun LiveLocationScreen(
         }
     }
 
-    LaunchedEffect(coordinates, liveReading, children) {
+    // Trigger Route Fetching and ETA updates
+    LaunchedEffect(coordinates, children) {
         if (model?.typeofUser == "Parent") {
             val filteredChildren = children.filter { it.studentId == selectedChildId }
             viewModel.updateChildEtas(
@@ -89,6 +95,20 @@ fun LiveLocationScreen(
                 currentCoords = coordinates,
                 rawSpeedMps = liveReading?.speedMps ?: 0f
             )
+
+            // Calculate coordinates for Directions API
+            val busParts = coordinates.split(",")
+            val busLat = busParts.getOrNull(0)?.toDoubleOrNull()
+            val busLng = busParts.getOrNull(1)?.toDoubleOrNull()
+            val child = children.find { it.studentId == selectedChildId }
+
+            if (busLat != null && busLng != null && child != null && apiKey.isNotEmpty()) {
+                viewModel.fetchRoadSnappedRoute(
+                    origin = LatLng(busLat, busLng),
+                    destination = LatLng(child.pickUpLat, child.pickUpLng),
+                    apiKey = apiKey
+                )
+            }
         }
     }
 
@@ -105,7 +125,6 @@ fun LiveLocationScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
-            // Alert for Parents if bus is idle
             if (!isTripRunning && model?.typeofUser == "Parent") {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -121,7 +140,6 @@ fun LiveLocationScreen(
                 }
             }
 
-            // Map View - Handles both Single and Multi-marker views
             MapPrototype(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 model = model,
@@ -129,7 +147,10 @@ fun LiveLocationScreen(
                 coordinates = coordinates,
                 locationViewModel = viewModel,
                 busId = busId,
-                allBuses = (if (model?.typeofUser == "Admin") allBuses else emptyList()) as List<BusModel>
+                allBuses = (if (model?.typeofUser == "Admin") allBuses else emptyList()) as List<BusModel>,
+                polylinePoints = polylinePoints, // Passed correctly now
+                selectedChildId = selectedChildId,
+                children = children
             )
 
             if (model?.typeofUser == "Parent") {
@@ -157,7 +178,10 @@ fun MapPrototype(
     coordinates: String,
     locationViewModel: LocationViewModel,
     busId: String,
-    allBuses: List<com.example.busmate.model.BusModel> // Added for Admin
+    allBuses: List<com.example.busmate.model.BusModel>,
+    polylinePoints: List<LatLng>,
+    selectedChildId: String?,
+    children: List<com.example.busmate.model.ChildModel>
 ) {
     var permissionGranted by remember {
         mutableStateOf(ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
@@ -174,7 +198,7 @@ fun MapPrototype(
     }
 
     if (permissionGranted) {
-        CardMap(modifier, model, context, coordinates, locationViewModel, busId, allBuses)
+        CardMap(modifier, model, context, coordinates, locationViewModel, busId, allBuses, polylinePoints, selectedChildId, children)
     } else {
         Box(modifier = modifier.fillMaxWidth().height(260.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
             Text("Location permission required")
@@ -190,13 +214,12 @@ fun CardMap(
     coordinates: String,
     locationViewModel: LocationViewModel,
     busId: String,
-    allBuses: List<com.example.busmate.model.BusModel>
+    allBuses: List<com.example.busmate.model.BusModel>,
+    polylinePoints: List<LatLng>,
+    selectedChildId: String?,
+    children: List<com.example.busmate.model.ChildModel>
 ) {
-    val currentLocation by locationViewModel.location.collectAsState()
-
-    // Default center for the map
     val defaultLatLng = LatLng(27.7172, 85.3240)
-
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLatLng, 12f)
     }
@@ -204,7 +227,6 @@ fun CardMap(
     var busIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
     LaunchedEffect(Unit) { busIcon = createBusMarkerIcon(context) }
 
-    // Parent Logic: Focus camera on their specific bus
     LaunchedEffect(coordinates) {
         if (model?.typeofUser == "Parent") {
             val parts = coordinates.split(",")
@@ -221,13 +243,11 @@ fun CardMap(
             properties = MapProperties(isMyLocationEnabled = model?.typeofUser == "Driver"),
             uiSettings = MapUiSettings(zoomControlsEnabled = true)
         ) {
-            // ADMIN VIEW: Show markers for all buses
             if (model?.typeofUser == "Admin" && busIcon != null) {
                 allBuses.forEach { bus ->
                     val parts = bus.currentLocation.split(",")
                     val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
                     val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
-
                     if (lat != null && lng != null) {
                         Marker(
                             state = rememberMarkerState(position = LatLng(lat, lng)),
@@ -239,8 +259,20 @@ fun CardMap(
                 }
             }
 
-            // PARENT VIEW: Show only their specific bus
             if (model?.typeofUser == "Parent" && busIcon != null) {
+                // 1. Draw Road-Snapped Polyline
+                if (polylinePoints.isNotEmpty()) {
+                    Polyline(
+                        points = polylinePoints,
+                        color = Color(0xFFFF9800),
+                        width = 12f,
+                        jointType = JointType.ROUND,
+                        startCap = RoundCap(),
+                        endCap = RoundCap()
+                    )
+                }
+
+                // 2. Bus Marker
                 val parts = coordinates.split(",")
                 val lat = parts.getOrNull(0)?.trim()?.toDoubleOrNull()
                 val lng = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
@@ -249,6 +281,16 @@ fun CardMap(
                         state = rememberMarkerState(position = LatLng(lat, lng)),
                         title = "Your Child's Bus",
                         icon = busIcon
+                    )
+                }
+
+                // 3. Child Pickup Marker
+                val child = children.find { it.studentId == selectedChildId }
+                child?.let {
+                    Marker(
+                        state = rememberMarkerState(position = LatLng(it.pickUpLat, it.pickUpLng)),
+                        title = "Pickup Point",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                     )
                 }
             }

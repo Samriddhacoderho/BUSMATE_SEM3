@@ -31,6 +31,9 @@ class LocationViewModel(
 
     private val _isTripRunning = MutableStateFlow(false)
     val isTripRunning: StateFlow<Boolean> = _isTripRunning
+
+    private val _polylinePoints = MutableStateFlow<List<LatLng>>(emptyList())
+    val polylinePoints: StateFlow<List<LatLng>> = _polylinePoints
     private var trackedBusId: String? = null
 
     private val speedBuffer = mutableListOf<Float>()
@@ -119,5 +122,19 @@ class LocationViewModel(
         } catch (e: Exception) {
             LatLng(27.7172, 85.3240)
         }
+    }
+
+    fun fetchRoadSnappedRoute(origin: LatLng, destination: LatLng, apiKey: String) {
+        busRepo.getRoadSnappedRoute(
+            origin = origin,
+            destination = destination,
+            apiKey = apiKey,
+            onSuccess = { points ->
+                _polylinePoints.value = points // Fixed reference here
+            },
+            onFailure = { error ->
+                android.util.Log.e("DirectionsAPI", "Error: $error")
+            }
+        )
     }
 }

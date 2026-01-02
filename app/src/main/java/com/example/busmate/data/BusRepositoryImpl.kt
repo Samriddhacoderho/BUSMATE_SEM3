@@ -4,6 +4,9 @@ import android.util.Log
 import com.example.busmate.model.BusModel
 import com.google.firebase.database.*
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.PolyUtil
+import org.json.JSONObject
+import java.net.URL
 
 class BusRepositoryImpl : BusRepositoryInterface {
 
@@ -248,6 +251,38 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 Log.e("Firebase", "Error fetching all buses: ${error.message}")
             }
         })
+    }
+
+    override fun getRoadSnappedRoute(
+        origin: LatLng,
+        destination: LatLng,
+        apiKey: String,
+        onSuccess: (List<LatLng>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val urlString = "https://maps.googleapis.com/maps/api/directions/json?" +
+                "origin=${origin.latitude},${origin.longitude}&" +
+                "destination=${destination.latitude},${destination.longitude}&" +
+                "key=$apiKey"
+
+        Thread {
+            val connection = URL(urlString).openConnection()
+            val response = connection.getInputStream().bufferedReader().use { it.readText() }
+            val json = JSONObject(response)
+            val status = json.getString("status")
+
+            if (status == "OK") {
+                val routes = json.getJSONArray("routes")
+                val points = routes.getJSONObject(0)
+                    .getJSONObject("overview_polyline")
+                    .getString("points")
+
+                val decodedPath = PolyUtil.decode(points)
+                onSuccess(decodedPath)
+            } else {
+                onFailure("Directions API Error: $status")
+            }
+        }.start()
     }
 
 

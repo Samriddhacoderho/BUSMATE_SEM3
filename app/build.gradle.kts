@@ -77,7 +77,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.multidex:multidex:2.0.1")
     implementation("com.google.maps.android:maps-compose:4.3.0")
-
+    implementation("com.google.maps.android:android-maps-utils:3.8.2")
     // Google Play Services Location (For GPS)
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
