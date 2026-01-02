@@ -35,5 +35,13 @@ interface BusRepositoryInterface {
 
     fun getAllBusesLive(callback: (List<BusModel?>) -> Unit)
 
+    fun getRoadSnappedRoute(
+        origin: LatLng,
+        destination: LatLng,
+        apiKey: String,
+        onSuccess: (List<LatLng>, Int) -> Unit, // Change from (List<LatLng>) -> Unit
+        onFailure: (String) -> Unit
+    )
+
 
 }
