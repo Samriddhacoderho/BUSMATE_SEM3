@@ -23,6 +23,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         // Convert LatLng to String "latitude,longitude" to match BusModel
                         val locationString = "${latLng.latitude},${latLng.longitude}"
 
+
                         // Update the specific bus's currentLocation field
                         busesRef.child(busUid).child("currentLocation").setValue(locationString)
                             .addOnFailureListener { e ->
@@ -78,8 +79,11 @@ class BusRepositoryImpl : BusRepositoryInterface {
                                 val newBusRef = busesRef.push()
                                 val busUid = newBusRef.key!!
 
-                                val updatedBus = bus.copy(uid = busUid, driver = null)
-
+                                val updatedBus = bus.copy(
+                                    uid = busUid,
+                                    driver = null,
+                                    busImage = bus.busImage
+                                )
                                 // 4️⃣ Save bus
                                 newBusRef.setValue(updatedBus.toMap())
                                     .addOnCompleteListener {

@@ -6,7 +6,7 @@ import com.google.android.gms.maps.model.LatLng
 interface BusRepositoryInterface {
 
     fun registerBus(
-        bus: BusModel,
+        bus: BusModel, // No change here, but BusModel must have the field
         callback: (String, Boolean) -> Unit
     )
 
