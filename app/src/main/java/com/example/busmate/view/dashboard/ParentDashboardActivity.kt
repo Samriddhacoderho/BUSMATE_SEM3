@@ -504,13 +504,27 @@ fun ParentDashboardScreen(
                     })
 
                     1 -> SupportScreen(supportViewModel)
-                    2 -> LiveLocationScreen(
+                    2 ->{
+                        // Logic to switch between Driver and Parent/Admin views
+                        val userRole = user?.typeofUser?.lowercase()
+
+                        if (userRole == "driver") {
+                            // NEW SCREEN FOR DRIVER
+                            DriverLocationScreen(
+                                viewModel = locationViewModel,
+                                driverUid = userId,
+                                busId = user?.schoolId ?: "" // Ensure you pass the correct Bus/Route ID field for the driver
+                            )
+                        } else {
+                        LiveLocationScreen(
                         viewModel = locationViewModel,
                         childViewModel = childViewModel,
                         accelViewModel = accelViewModel,
                         busId = selectedBusRouteId ?: "",
                         selectedChildId = selectedChildId // Correctly passed now
                     )
+                        }
+                    }
                     3 -> ProfileEditScreen()
                 }
             }
