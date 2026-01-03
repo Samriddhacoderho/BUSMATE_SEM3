@@ -134,27 +134,9 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Text(
-                "Parent Contact Information",
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ReadOnlyField(label = "Parent Name", value = parentName, icon = Icons.Default.Person)
-            ReadOnlyField(label = "Parent Phone", value = parentPhone, icon = Icons.Default.Phone)
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 20.dp),
-                thickness = 1.dp,
-                color = Color.LightGray
-            )
             // ✅ NEW: STUDENT IMAGE SECTION (CENTERED)
             Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
-
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -235,6 +217,25 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                     Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
+            Spacer(modifier = Modifier.height(32.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                "Parent Contact Information",
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ReadOnlyField(label = "Parent Name", value = parentName, icon = Icons.Default.Person)
+            ReadOnlyField(label = "Parent Phone", value = parentPhone, icon = Icons.Default.Phone)
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 20.dp),
+                thickness = 1.dp,
+                color = Color.LightGray
+            )
         }
     }
 }
