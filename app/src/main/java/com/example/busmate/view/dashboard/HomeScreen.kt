@@ -67,6 +67,7 @@ fun HomeScreen(
         mutableIntStateOf(notifications.size)
     }
 
+
     LaunchedEffect(notifications.size) {
         // Only trigger if a NEW notification arrives
         if (notifications.size > lastNotificationCount && notifications.isNotEmpty()) {
@@ -138,7 +139,10 @@ fun HomeScreen(
             }
         }
     }
-
+    SOSObserver(
+        userRole = model?.typeofUser,
+        userRouteId = model?.schoolId // Verify if parents store Route ID in schoolId
+    )
     /* =======================================================
        🔹 YOUR ORIGINAL UI BELOW (UNCHANGED)
        ======================================================= */
@@ -231,7 +235,6 @@ fun HomeScreen(
                     indicatorColor = BusMateOrange
                 )
             }
-
             if (notifications.isEmpty() &&
                 (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")
             ) {
@@ -244,13 +247,13 @@ fun HomeScreen(
                     )
                 }
             }
-
             // DRIVER BUTTONS (UNCHANGED)
             if (model?.typeofUser == "Driver") {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
+                            busViewModel.triggerSOS(model?.uid ?: "")
                             Toast.makeText(context, "Emergency Alert Sent!", Toast.LENGTH_LONG).show()
                         },
                         modifier = Modifier
@@ -578,5 +581,47 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
         message = "School closed on Friday",
         indicatorColor = BusMateOrange
     )
+}
+@Composable
+fun SOSObserver(userRole: String?, userRouteId: String?) {
+    val context = LocalContext.current
+
+    // ✅ Change Unit to userRole to ensure the listener stays synced with the user
+    LaunchedEffect(userRole) {
+        // 🛑 Stop here if user is a Driver (Driver doesn't need to hear their own SOS)
+        if (userRole?.lowercase() == "driver") return@LaunchedEffect
+
+        val db = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("emergency_alerts")
+        val query = db.orderByChild("timestamp").startAt(System.currentTimeMillis().toDouble())
+
+        query.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
+            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                for (alert in snapshot.children) {
+                    val alertRouteId = alert.child("routeId").getValue(String::class.java)
+                    val busNo = alert.child("busNumber").getValue(String::class.java) ?: "N/A"
+
+                    when (userRole?.lowercase()) {
+                        "admin" -> {
+                            NotificationHelper.showNotification(
+                                context = context,
+                                title = "Admin: SOS ALERT",
+                                message = "SOS:BUS $busNo (Route: ${alertRouteId ?: "N/A"}) -- has reported an emergency"
+                            )
+                        }
+                        "parent" -> {
+                            if (alertRouteId == userRouteId) {
+                                NotificationHelper.showNotification(
+                                    context = context,
+                                    title = "Parent: SOS ALERT",
+                                    message = "SOS:BUS $busNo -- has reported an emergency"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
+        })
+    }
 }
 //show child image in parent homescreen

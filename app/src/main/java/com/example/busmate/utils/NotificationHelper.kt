@@ -49,4 +49,5 @@ object NotificationHelper {
         // 4. Fire the notification
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
+
 }

@@ -308,4 +308,43 @@ class BusRepositoryImpl : BusRepositoryInterface {
             }
         }.start()
     }
+    // Inside BusRepositoryImpl.kt
+
+    // Inside BusRepositoryImpl.kt
+
+    override fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit) {
+        val emergencyRef = db.getReference("emergency_alerts")
+
+        // 1. Find the bus this driver is assigned to
+        busesRef.orderByChild("driver/uid").equalTo(driverUid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val busSnapshot = snapshot.children.firstOrNull()
+                    val routeId = busSnapshot?.child("routeId")?.getValue(String::class.java)
+                    val busNo = busSnapshot?.child("busNumber")?.getValue(String::class.java) ?: "Unknown"
+
+                    if (routeId == null) {
+                        callback(false, "No assigned bus found.")
+                        return
+                    }
+
+                    // 2. Prepare SOS Data
+                    val alertId = emergencyRef.push().key ?: return
+                    val alertData = mapOf(
+                        "alertId" to alertId,
+                        "busNumber" to busNo,
+                        "routeId" to routeId,
+                        "message" to "🚨 SOS: Bus $busNo has reported an emergency!",
+                        "timestamp" to System.currentTimeMillis()
+                    )
+
+                    // 3. Write to Firebase
+                    emergencyRef.child(alertId).setValue(alertData)
+                        .addOnCompleteListener { task ->
+                            callback(task.isSuccessful, if(task.isSuccessful) "SOS Sent" else "Failed")
+                        }
+                }
+                override fun onCancelled(error: DatabaseError) { callback(false, error.message) }
+            })
+    }
 }
