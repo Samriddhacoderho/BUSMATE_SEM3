@@ -278,3 +278,4 @@ fun EditField(label: String, value: String, onValueChange: (String) -> Unit) {
     )
 }
 //testing parent information in the child information
+//testing child information with image
