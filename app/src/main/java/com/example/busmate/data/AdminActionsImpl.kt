@@ -159,22 +159,16 @@ class AdminActionsImpl : AdminActionsInterface {
                         driver = child.child("driver")
                             .getValue(UserModel::class.java),
                         busImage = child.child("busImage").getValue(String::class.java).orEmpty()
-
                     )
-
                     buses.add(bus)
                 }
-
                 callback(true, buses)
             }
-
             override fun onCancelled(error: DatabaseError) {
                 callback(false, null)
             }
         })
     }
-
-
     override fun getAllDrivers(
         callback: (Boolean, List<UserModel>?) -> Unit
     ) {
@@ -187,13 +181,11 @@ class AdminActionsImpl : AdminActionsInterface {
                     }
                     callback(true, drivers)
                 }
-
                 override fun onCancelled(error: DatabaseError) {
                     callback(false, null)
                 }
             })
     }
-
     override fun assignBusToDriver(
         busId: String,
         driverId: String,

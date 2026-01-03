@@ -49,7 +49,6 @@ class AdminSearchChildActivity : ComponentActivity() {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminSearchScreen(viewModel: ChildViewModel, onBack: () -> Unit) {
