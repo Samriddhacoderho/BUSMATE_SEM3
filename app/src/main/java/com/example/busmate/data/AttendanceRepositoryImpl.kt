@@ -1,10 +1,10 @@
 package com.example.busmate.data
 
-import android.util.Log
 import com.example.busmate.model.ChildModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -38,7 +38,7 @@ class AttendanceRepositoryImpl: AttendanceRepository{
         })
     }
 
-    // Add to AttendanceRepository interface first, then implement:
+//     Add to AttendanceRepository interface first, then implement:
     override fun submitAttendance(
         busId: String,
         attendanceList: List<Map<String, Any?>>,
@@ -56,8 +56,66 @@ class AttendanceRepositoryImpl: AttendanceRepository{
         }
 
         attendanceRef.updateChildren(updates).addOnCompleteListener { task ->
+            sendAttendanceNotifications(busId)
             callback(task.isSuccessful)
         }
+    }
+
+    private fun sendAttendanceNotifications(routeId: String) {
+        val database = FirebaseDatabase.getInstance()
+
+        // 1. Get the Bus Number/Details first to make the message pretty
+        database.getReference("buses").orderByChild("busNumber").equalTo(routeId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    // Note: routeId in your JSON matches 'busNumber' in the buses node
+                    val busMsg = "Bus $routeId has updated today's attendance."
+
+                    // 2. Notify Admin
+                    val adminNotification = mapOf(
+                        "title" to "Attendance Update",
+                        "message" to busMsg,
+                        "timestamp" to ServerValue.TIMESTAMP,
+                        "type" to "attendance_update"
+                    )
+                    database.getReference("notifications").child("admin").push().setValue(adminNotification)
+
+                    // 3. Notify Relevant Parents
+                    database.getReference("users").addListenerForSingleValueEvent(object : ValueEventListener {
+                        override fun onDataChange(userSnapshot: DataSnapshot) {
+                            for (userSnap in userSnapshot.children) {
+                                val childrenSnap = userSnap.child("children")
+                                var isLinkedToBus = false
+
+                                if (childrenSnap.exists()) {
+                                    for (child in childrenSnap.children) {
+                                        val childBusId = child.child("busRouteId").getValue(String::class.java)
+                                        if (childBusId?.trim() == routeId.trim()) {
+                                            isLinkedToBus = true
+                                            break
+                                        }
+                                    }
+                                }
+
+                                if (isLinkedToBus) {
+                                    val parentUid = userSnap.key
+                                    if (parentUid != null) {
+                                        val parentNotification = mapOf(
+                                            "title" to "Attendance Alert",
+                                            "message" to "Attendance for your child's bus ($routeId) has been marked.",
+                                            "timestamp" to ServerValue.TIMESTAMP,
+                                            "type" to "attendance_update"
+                                        )
+                                        database.getReference("notifications").child(parentUid).push().setValue(parentNotification)
+                                    }
+                                }
+                            }
+                        }
+                        override fun onCancelled(error: DatabaseError) {}
+                    })
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     // Add to AttendanceRepository.kt
