@@ -120,7 +120,10 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
 
     /* ---------- NOTIFICATION TRIGGER LOGIC ---------- */
 
+    // In AccelerometerRepositoryImpl.kt
+
     override fun updateTripRunning(busId: String, isRunning: Boolean) {
+        // Keep your existing logic to update the bus status
         database.getReference("buses").child(busId).child("isTripRunning").setValue(isRunning)
 
         database.getReference("buses").child(busId).child("busNumber")
@@ -129,72 +132,87 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
                     val busNo = snapshot.getValue(String::class.java) ?: "Unknown"
                     val statusText = if (isRunning) "Started" else "Ended"
 
-                    val parentData = mapOf(
-                        "title" to "Trip $statusText",
-                        "message" to "Your child's bus ($busNo) has $statusText its journey.",
-                        "timestamp" to ServerValue.TIMESTAMP
-                    )
-
+                    // Data for the Admin (Global node)
                     val adminData = mapOf(
                         "title" to "Fleet Update",
-                        "message" to "Route $busNo has $statusText a trip.",
-                        "timestamp" to ServerValue.TIMESTAMP
+                        "message" to "Bus $busNo has $statusText a trip.",
+                        "timestamp" to ServerValue.TIMESTAMP,
+                        "type" to "trip_status"
                     )
 
+                    // Base data for Parents (will be customized per child name if needed,
+                    // but for now we use a general message for the route)
+                    val parentData = mapOf(
+                        "title" to "Bus $statusText",
+                        "message" to "Bus route $busNo has $statusText its journey.",
+                        "timestamp" to ServerValue.TIMESTAMP,
+                        "type" to "trip_status"
+                    )
+
+                    // Trigger the existing distribution logic
                     sendNotificationToAssociatedUsers(busId, parentData, adminData)
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
 
-
-
     override fun sendNotificationToAssociatedUsers(
-        busId: String,
+        busId: String, // This is usually the Firebase Key (-Oi...)
         parentData: Map<String, Any>,
         adminData: Map<String, Any>
     ) {
-        // 1. Notify Admin (Works because 'admin' is a fixed path)
+        // 1. Notify Admin (Existing)
         database.getReference("notifications").child("admin").push().setValue(adminData)
+        Log.d("ADMIN_TAG", busId)
 
-        // 2. Notify Parents (Using the logic found in BusDetailsActivity)
-        database.getReference("users").addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                // Loop through all users (just like you did to find driver/parent details)
-                for (userSnapshot in snapshot.children) {
-                    val parentUid = userSnapshot.key ?: continue
-                    val childrenNode = userSnapshot.child("children")
+        // 2. Notify Parents
+        database.getReference("buses").child(busId).get().addOnSuccessListener { busSnapshot ->
+            // IMPORTANT: Get the actual route number (e.g. "10") to match with child data
+            val busRouteNumber = busSnapshot.child("routeId").getValue(String::class.java)
+            Log.d("PARENT_TAG", "Bus ID: $busId, Route Number: $busRouteNumber")
 
-                    var isThisParentInvolved = false
+            database.getReference("users").addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var matchCount = 0
+                    for (userSnapshot in snapshot.children) {
+                        val typeofUser = userSnapshot.child("typeofUser").getValue(String::class.java)
 
-                    // Loop through children under this specific user
-                    for (childSnapshot in childrenNode.children) {
-                        val childBusRouteId = childSnapshot.child("busRouteId").getValue(String::class.java)
+                        if (typeofUser == "Parent") {
+                            val parentUid = userSnapshot.key ?: continue
+                            val childrenNode = userSnapshot.child("children")
+                            var shouldNotifyThisParent = false
 
-                        // If this child belongs to the bus that triggered the alert
-                        if (childBusRouteId == busId) {
-                            isThisParentInvolved = true
-                            break
+                            for (childSnapshot in childrenNode.children) {
+                                val childBusId = childSnapshot.child("busRouteId").getValue(String::class.java)
+
+                                // LOGGING: See what the code is comparing
+                                Log.d("PARENT_TAG", "Checking Parent $parentUid, Child Bus: $childBusId vs Bus Route: $busRouteNumber")
+
+                                if (childBusId == busRouteNumber || childBusId == busId) {
+                                    shouldNotifyThisParent = true
+                                    break
+                                }
+                            }
+
+                            if (shouldNotifyThisParent) {
+                                matchCount++
+                                database.getReference("notifications")
+                                    .child(parentUid)
+                                    .push()
+                                    .setValue(parentData)
+                                    .addOnSuccessListener {
+                                        Log.d("PARENT_TAG", "Successfully wrote notification to parent: $parentUid")
+                                    }
+                            }
                         }
                     }
-
-                    // If a match was found, send notification to notifications/{parentUid}
-                    if (isThisParentInvolved) {
-                        database.getReference("notifications")
-                            .child(parentUid)
-                            .push()
-                            .setValue(parentData)
-                            .addOnSuccessListener {
-                                Log.d("Notification", "Successfully sent to parent: $parentUid")
-                            }
-                    }
+                    Log.d("PARENT_TAG", "Finished scanning users. Total parents notified: $matchCount")
                 }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("Notification", "Database error: ${error.message}")
-            }
-        })
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("PARENT_TAG", "User scan cancelled: ${error.message}")
+                }
+            })
+        }
     }
     /* ---------- RECEIVER LOGIC (FETCHING FOR BUS PROFILE) ---------- */
 
@@ -261,3 +279,6 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
         }
     }
 }
+
+
+
