@@ -62,13 +62,14 @@ class TripMonitoringService : Service() {
 
             when (userType) {
                 "Admin" -> {
-                    Log.d("TripMonitor", "Role: Admin. Initializing Global Listeners.")
-                    setupAdminNotificationListener() // Speed Alerts
-                    setupAdminBusStatusListener()    // Trip Start/End for all buses
+                    setupAdminNotificationListener()
+                    setupAdminBusStatusListener()
                 }
                 "Parent" -> {
-                    Log.d("TripMonitor", "Role: Parent. Initializing Child Bus Listener.")
-                    setupParentBusListeners(uid)     // Trip Start/End for specific child
+                    // Keep your bus state listener if you want UI updates
+                    setupParentBusListeners(uid)
+                    // ADD THIS: For system tray notifications via notifications/{uid}
+                    setupParentNotificationListener(uid)
                 }
             }
         }
@@ -134,6 +135,10 @@ class TripMonitoringService : Service() {
     /**
      * PARENT: Listens ONLY to the bus associated with their children
      */
+    /**
+     * PARENT: Listens ONLY to the bus associated with their children.
+     * This now ONLY handles UI history/state, NOT system push notifications.
+     */
     private fun setupParentBusListeners(uid: String) {
         val childrenRef = database.getReference("users").child(uid).child("children")
         childrenRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -149,12 +154,15 @@ class TripMonitoringService : Service() {
                                 val isRunning = busSnapshot.child("isTripRunning").getValue(Boolean::class.java) ?: false
                                 val prevStatus = lastStatus[routeId]
 
+                                // Logic for UI and History only
                                 if (prevStatus != null && prevStatus != isRunning) {
                                     val title = if (isRunning) "Trip Started" else "Trip Ended"
                                     val msg = if (isRunning) "$childName's bus is starting!" else "$childName's bus has finished the trip."
 
-                                    NotificationHelper.showNotification(applicationContext, title, msg)
-                                    // Parents keep their own local history
+                                    // REMOVED: NotificationHelper.showNotification(...)
+                                    // This prevents the second redundant push notification.
+
+                                    // KEEP THIS: This ensures the "Notification Card" still appears in the UI
                                     saveNotificationToHistory(uid, title, msg)
                                 }
                                 lastStatus[routeId] = isRunning
@@ -164,6 +172,32 @@ class TripMonitoringService : Service() {
                         busQuery.addValueEventListener(listener)
                         busQueries[routeId] = busQuery
                         busListeners[routeId] = listener
+                    }
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    // In TripMonitoringService.kt
+
+    private fun setupParentNotificationListener(uid: String) {
+        val notificationRef = database.getReference("notifications").child(uid).limitToLast(1)
+        notificationRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (notif in snapshot.children) {
+                    val timestamp = notif.child("timestamp").getValue(Long::class.java) ?: 0L
+
+                    // Only process if it's a new notification since service started
+                    if (timestamp > serviceStartTime) {
+                        val title = notif.child("title").getValue(String::class.java) ?: "Bus Alert"
+                        val message = notif.child("message").getValue(String::class.java) ?: ""
+
+                        // --- THE FIX IS HERE ---
+                        // COMMENT OUT OR REMOVE THE LINE BELOW
+                        // NotificationHelper.showNotification(applicationContext, title, message)
+
+                        Log.d("TripService", "New notification detected in DB for UI, skipping duplicate push.")
                     }
                 }
             }
