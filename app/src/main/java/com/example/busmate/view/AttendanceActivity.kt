@@ -41,6 +41,8 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import org.json.JSONObject
 import java.util.concurrent.Executors
+import android.media.AudioManager
+import android.media.ToneGenerator
 
 class AttendanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -176,11 +178,16 @@ fun AttendanceScreen(
                         val student = children.find { it.studentId == scannedId }
                         if (student != null) {
                             if (!checkedStudents.any { it.studentId == scannedId }) {
+                                //Add Sound
+                                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                                toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 150) // Play a "Success" beep
+
                                 checkedStudents.add(student)
                                 Toast.makeText(context, "Scanned: ${student.firstName}", Toast.LENGTH_SHORT).show()
                             }
                             isScannerOpen = false // Close after scan
                         } else {
+                            isScannerOpen=false //Close After Scan
                             Toast.makeText(context, "Student ID $scannedId not found on this route!", Toast.LENGTH_SHORT).show()
                         }
                     }
