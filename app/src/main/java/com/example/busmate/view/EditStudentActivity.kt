@@ -29,6 +29,11 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
 
 class EditStudentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,6 +134,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Text(
                 "Parent Contact Information",
                 fontWeight = FontWeight.Bold,
@@ -145,7 +151,30 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                 thickness = 1.dp,
                 color = Color.LightGray
             )
+            // ✅ NEW: STUDENT IMAGE SECTION (CENTERED)
+            Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(12.dp))
 
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE9ECEF))
+                    .border(2.dp, busMateBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!child.profileImage.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = child.profileImage,
+                        contentDescription = "Student Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.LightGray)
+                }
+            }
+            // ✅ END OF IMAGE SECTION
             Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
 
