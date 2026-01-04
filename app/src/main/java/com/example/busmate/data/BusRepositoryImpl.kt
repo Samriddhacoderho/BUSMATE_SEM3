@@ -316,7 +316,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
     override fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit) {
         val emergencyRef = db.getReference("emergency_alerts")
 
-        // 1. Find the bus assigned to this driver
+        // 1️⃣ Find the bus assigned to this driver
         busesRef.orderByChild("driver/uid").equalTo(driverUid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -329,23 +329,28 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         return
                     }
 
-                    // 2. Prepare SOS Data with current timestamp
+                    // 2️⃣ Prepare SOS alert with audience info
                     val alertId = emergencyRef.push().key ?: return
                     val alertData = mapOf(
                         "alertId" to alertId,
                         "busNumber" to busNo,
                         "routeId" to routeId,
+                        "audience" to listOf("admin", "parent"), // 🔹 Important: driver excluded
                         "message" to "🚨 SOS: Bus $busNo has reported an emergency!",
-                        "timestamp" to System.currentTimeMillis() // REQUIRED for look-back
+                        "timestamp" to System.currentTimeMillis() // Required for look-back
                     )
 
-                    // 3. Write to Firebase
+                    // 3️⃣ Write alert to Firebase
                     emergencyRef.child(alertId).setValue(alertData)
                         .addOnCompleteListener { task ->
-                            callback(task.isSuccessful, if(task.isSuccessful) "SOS Sent" else "Failed")
+                            callback(task.isSuccessful, if (task.isSuccessful) "SOS Sent" else "Failed")
                         }
                 }
-                override fun onCancelled(error: DatabaseError) { callback(false, error.message) }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message ?: "Firebase Error")
+                }
             })
     }
+
 }

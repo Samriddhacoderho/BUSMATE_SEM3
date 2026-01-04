@@ -145,6 +145,17 @@ fun HomeScreen(
         userRole = model?.typeofUser,
         children = model?.children
     )
+    val filteredNotifications = remember(notifications, model?.typeofUser) {
+        notifications.filter { notification ->
+            when (model?.typeofUser?.lowercase()) {
+                "admin" -> notification["title"]?.startsWith("Admin") == true
+                "parent" -> notification["title"]?.startsWith("Parent") == true
+                "driver" -> notification["title"]?.startsWith("Driver") == true
+                else -> false
+            }
+        }
+    }
+
 
     /* =======================================================
        🔹 YOUR ORIGINAL UI BELOW (UNCHANGED)
@@ -231,13 +242,17 @@ fun HomeScreen(
             }
 
             // 🔔 DYNAMIC NOTIFICATIONS (UNCHANGED)
-            items(notifications) { notification ->
+            // Filter notifications by user role
+
+
+            items(filteredNotifications) { notification ->
                 NotificationItemScreen(
                     initial = notification["title"]?.take(1) ?: "!",
                     message = notification["message"] ?: "",
                     indicatorColor = BusMateOrange
                 )
             }
+
             if (notifications.isEmpty() &&
                 (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")
             ) {
@@ -587,35 +602,39 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
 }
 @Composable
 fun SOSObserver(
-    userRole: String?,
-    children: Map<String, ChildModel>?
+    userRole: String?,                  // "Admin", "Parent", or "Driver"
+    children: Map<String, ChildModel>? // Only needed for parents
 ) {
     val context = LocalContext.current
 
     LaunchedEffect(userRole) {
-        // Drivers do not see their own SOS
+        // 🔹 Drivers should never see SOS alerts
         if (userRole?.lowercase() == "driver") return@LaunchedEffect
 
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
             .getReference("emergency_alerts")
 
-        val lookBackTime = (System.currentTimeMillis() - 7200000).toDouble()
+        // Only consider alerts from last 2 hours
+        val lookBackTime = System.currentTimeMillis() - 7200000 // 2 hours in ms
+        val query = db.orderByChild("timestamp").startAt(lookBackTime.toDouble())
 
-        val query = db.orderByChild("timestamp").startAt(lookBackTime)
-
-        query.addValueEventListener(object :
-            com.google.firebase.database.ValueEventListener {
-
+        query.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
             override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
                 for (alert in snapshot.children) {
 
                     val alertRouteId = alert.child("routeId").getValue(String::class.java)
                     val busNo = alert.child("busNumber").getValue(String::class.java) ?: "N/A"
 
+                    // 🔹 Audience filtering
+                    val audience = alert.child("audience")
+                        .getValue(object : com.google.firebase.database.GenericTypeIndicator<List<String>>() {})
+                        ?: emptyList()
+
+                    if (!audience.contains(userRole?.lowercase())) continue // Skip if not for this role
+
                     when (userRole?.lowercase()) {
                         "admin" -> {
-                            // Admin sees all SOS
                             NotificationHelper.showNotification(
                                 context = context,
                                 title = "Admin: SOS ALERT",
@@ -623,11 +642,10 @@ fun SOSObserver(
                             )
                         }
                         "parent" -> {
-                            // Parent sees SOS if any child is on the route
+                            // Only notify if parent has a child on this route
                             val hasMatchingChild = children
                                 ?.values
-                                ?.any { it.busRouteId == alertRouteId }
-                                ?: false
+                                ?.any { it.busRouteId == alertRouteId } ?: false
 
                             if (hasMatchingChild) {
                                 NotificationHelper.showNotification(
@@ -645,6 +663,7 @@ fun SOSObserver(
         })
     }
 }
+
 
 //show child image in parent homescreen
 //testing parent get notification
