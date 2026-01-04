@@ -74,6 +74,17 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val message by viewModel.message.collectAsState()
     val activity=context as Activity
 
+    val isLengthValid = newPass.length >= 8
+    val hasUppercase = newPass.any { it.isUpperCase() }
+    val hasLowercase = newPass.any { it.isLowerCase() }
+    val hasSpecial = newPass.any { !it.isLetterOrDigit() }
+    val hasNumber = newPass.any { it.isDigit() }
+    val passwordsMatch = newPass == confirmPass && newPass.isNotEmpty()
+
+    // The button will only be clickable if all these are true
+    val isUIValidationComplete = isLengthValid && hasUppercase && hasLowercase &&
+            hasSpecial && hasNumber && oldPass.isNotEmpty() &&
+            newPass.isNotEmpty() && confirmPass.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
     fun handleChangePassword() {
@@ -83,6 +94,8 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading...") {
             snackbarHostState.showSnackbar(message)
+            // Add this line below to reset the message in the ViewModel
+            viewModel.clearMessage()
         }
     }
 
@@ -272,17 +285,23 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
 
 
                 Button(
-                    onClick = {handleChangePassword()},
+                    onClick = { handleChangePassword() },
+                    enabled = isUIValidationComplete, // Button stays disabled until UI rules pass
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryBlue,
+                        disabledContainerColor = Color.Gray // Visually grey out the button
+                    )
                 ) {
                     Text(
                         text = "Change Password",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        // Optional: make text lighter when disabled
+                        color = if (isUIValidationComplete) Color.White else Color.LightGray
                     )
                 }
 
@@ -306,22 +325,6 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     }
 }
 
-@Composable
-fun PasswordIndicators(password: String) {
-    val requirements = listOf(
-        "Minimum 12 characters" to { it: String -> it.length >= 12 },
-        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
-        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
-        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-        "One number" to { it: String -> it.any(Char::isDigit) }
-    )
-
-    Column {
-        requirements.forEach { (text, rule) ->
-            Requirement(text = text, passed = rule(password))
-        }
-    }
-}
 }
 @Composable
 fun Requirement(text: String, passed: Boolean) {
@@ -332,7 +335,7 @@ fun Requirement(text: String, passed: Boolean) {
         Icon(
             painter = painterResource(R.drawable.baseline_check_circle_24),
             contentDescription = null,
-            tint = if (passed) Color.Gray else Color.Red,
+            tint = if (passed) Color.Blue else Color.Red,
             modifier = Modifier
                 .padding(end = 8.dp)
                 .size(16.dp)
@@ -347,7 +350,7 @@ fun Requirement(text: String, passed: Boolean) {
 @Composable
 fun PasswordIndicators(password: String) {
     val requirements = listOf(
-        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "Minimum 8 characters" to { it: String -> it.length >= 8 },
         "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
         "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
         "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
