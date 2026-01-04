@@ -82,8 +82,9 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val passwordsMatch = newPass == confirmPass && newPass.isNotEmpty()
 
     // The button will only be clickable if all these are true
-    val isUIValidationComplete = isLengthValid && hasUppercase && hasLowercase && hasSpecial && hasNumber && passwordsMatch
-
+    val isUIValidationComplete = isLengthValid && hasUppercase && hasLowercase &&
+            hasSpecial && hasNumber && oldPass.isNotEmpty() &&
+            newPass.isNotEmpty() && confirmPass.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
     fun handleChangePassword() {
@@ -93,6 +94,8 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading...") {
             snackbarHostState.showSnackbar(message)
+            // Add this line below to reset the message in the ViewModel
+            viewModel.clearMessage()
         }
     }
 
@@ -322,22 +325,6 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     }
 }
 
-@Composable
-fun PasswordIndicators(password: String) {
-    val requirements = listOf(
-        "Minimum 8 characters" to { it: String -> it.length >= 8 },
-        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
-        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
-        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-        "One number" to { it: String -> it.any(Char::isDigit) }
-    )
-
-    Column {
-        requirements.forEach { (text, rule) ->
-            Requirement(text = text, passed = rule(password))
-        }
-    }
-}
 }
 @Composable
 fun Requirement(text: String, passed: Boolean) {
