@@ -648,3 +648,4 @@ fun SOSObserver(
 
 //show child image in parent homescreen
 //testing parent get notification
+// testing admin get sos notification
