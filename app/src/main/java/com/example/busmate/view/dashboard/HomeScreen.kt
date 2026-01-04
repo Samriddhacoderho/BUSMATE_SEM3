@@ -643,10 +643,9 @@ fun SOSObserver(
                         }
                         "parent" -> {
                             // Only notify if parent has a child on this route
-                            val hasMatchingChild = children
-                                ?.values
-                                ?.any { it.busRouteId == alertRouteId } ?: false
-
+                            val hasMatchingChild = children?.values?.any { child ->
+                                child.busRouteId == alertRouteId
+                            } ?: false
                             if (hasMatchingChild) {
                                 NotificationHelper.showNotification(
                                     context = context,
@@ -658,7 +657,6 @@ fun SOSObserver(
                     }
                 }
             }
-
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
         })
     }
