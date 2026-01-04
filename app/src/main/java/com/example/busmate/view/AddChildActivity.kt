@@ -145,9 +145,12 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally // Center the image picker
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
 
                     // --- IMAGE PICKER UI SECTION ---
                     Box(
@@ -231,6 +234,23 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
 
                     Spacer(modifier = Modifier.height(32.dp))
 
+                    // 4. UI VALIDATION (RED TEXT) ABOVE BUTTON
+                    val fieldsEmpty = firstName.isBlank() || studentId.isBlank() || busRouteId.isBlank() || pickUpLocation.isBlank() || dropOffLocation.isBlank()
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        if (fieldsEmpty) {
+                            Text("Please fill all the fields", color = Color.Red, fontSize = 12.sp)
+                        }
+                        if (selectedImageUri == null) {
+                            Text("Please upload child's photo", color = Color.Red, fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Button(
                         onClick = {
                             scope.launch {
@@ -260,7 +280,14 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                                 isGeocoding = false
                             }
                         },
-                        enabled = !isLoading && firstName.isNotBlank() && studentId.isNotBlank() && busRouteId.isNotBlank(),
+                        enabled = !isLoading &&
+                                firstName.isNotBlank() &&
+                                lastName.isNotBlank() && // Added check if you want last name required
+                                studentId.isNotBlank() &&
+                                busRouteId.isNotBlank() &&
+                                pickUpLocation.isNotBlank() &&
+                                dropOffLocation.isNotBlank() &&
+                                selectedImageUri != null,
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
                         if (isLoading) {
