@@ -321,6 +321,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val busSnapshot = snapshot.children.firstOrNull()
+
                     val routeId = busSnapshot?.child("routeId")?.getValue(String::class.java)
                     val busNo = busSnapshot?.child("busNumber")?.getValue(String::class.java) ?: "Unknown"
 
@@ -336,7 +337,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         "busNumber" to busNo,
                         "routeId" to routeId,
                         "audience" to listOf("admin", "parent"), // 🔹 Important: driver excluded
-                        "message" to "🚨 SOS: Bus $busNo has reported an emergency!",
+//                        "message" to "🚨 SOS: Bus $busNo has reported an emergency!",
                         "timestamp" to System.currentTimeMillis() // Required for look-back
                     )
 
