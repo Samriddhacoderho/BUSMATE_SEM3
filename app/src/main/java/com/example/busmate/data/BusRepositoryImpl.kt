@@ -312,10 +312,11 @@ class BusRepositoryImpl : BusRepositoryInterface {
 
     // Inside BusRepositoryImpl.kt
 
+    // Inside BusRepositoryImpl.kt
     override fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit) {
         val emergencyRef = db.getReference("emergency_alerts")
 
-        // 1. Find the bus this driver is assigned to
+        // 1. Find the bus assigned to this driver
         busesRef.orderByChild("driver/uid").equalTo(driverUid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -328,14 +329,14 @@ class BusRepositoryImpl : BusRepositoryInterface {
                         return
                     }
 
-                    // 2. Prepare SOS Data
+                    // 2. Prepare SOS Data with current timestamp
                     val alertId = emergencyRef.push().key ?: return
                     val alertData = mapOf(
                         "alertId" to alertId,
                         "busNumber" to busNo,
                         "routeId" to routeId,
                         "message" to "🚨 SOS: Bus $busNo has reported an emergency!",
-                        "timestamp" to System.currentTimeMillis()
+                        "timestamp" to System.currentTimeMillis() // REQUIRED for look-back
                     )
 
                     // 3. Write to Firebase

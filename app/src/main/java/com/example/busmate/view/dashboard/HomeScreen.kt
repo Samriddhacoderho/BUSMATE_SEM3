@@ -139,10 +139,12 @@ fun HomeScreen(
             }
         }
     }
+    // Inside HomeScreen.kt
     SOSObserver(
         userRole = model?.typeofUser,
-        userRouteId = model?.schoolId // Verify if parents store Route ID in schoolId
+        children = model?.children
     )
+
     /* =======================================================
        🔹 YOUR ORIGINAL UI BELOW (UNCHANGED)
        ======================================================= */
@@ -583,45 +585,64 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
     )
 }
 @Composable
-fun SOSObserver(userRole: String?, userRouteId: String?) {
+fun SOSObserver(
+    userRole: String?,
+    children: Map<String, ChildModel>?
+) {
     val context = LocalContext.current
 
-    // ✅ Change Unit to userRole to ensure the listener stays synced with the user
     LaunchedEffect(userRole) {
-        // 🛑 Stop here if user is a Driver (Driver doesn't need to hear their own SOS)
+        // Drivers do not see their own SOS
         if (userRole?.lowercase() == "driver") return@LaunchedEffect
 
-        val db = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("emergency_alerts")
-        val query = db.orderByChild("timestamp").startAt(System.currentTimeMillis().toDouble())
+        val db = com.google.firebase.database.FirebaseDatabase
+            .getInstance()
+            .getReference("emergency_alerts")
 
-        query.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
+        val lookBackTime = (System.currentTimeMillis() - 7200000).toDouble()
+
+        val query = db.orderByChild("timestamp").startAt(lookBackTime)
+
+        query.addValueEventListener(object :
+            com.google.firebase.database.ValueEventListener {
+
             override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
                 for (alert in snapshot.children) {
+
                     val alertRouteId = alert.child("routeId").getValue(String::class.java)
                     val busNo = alert.child("busNumber").getValue(String::class.java) ?: "N/A"
 
                     when (userRole?.lowercase()) {
                         "admin" -> {
+                            // Admin sees all SOS
                             NotificationHelper.showNotification(
                                 context = context,
                                 title = "Admin: SOS ALERT",
-                                message = "SOS:BUS $busNo (Route: ${alertRouteId ?: "N/A"}) -- has reported an emergency"
+                                message = "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
                             )
                         }
                         "parent" -> {
-                            if (alertRouteId == userRouteId) {
+                            // Parent sees SOS if any child is on the route
+                            val hasMatchingChild = children
+                                ?.values
+                                ?.any { it.busRouteId == alertRouteId }
+                                ?: false
+
+                            if (hasMatchingChild) {
                                 NotificationHelper.showNotification(
                                     context = context,
                                     title = "Parent: SOS ALERT",
-                                    message = "SOS:BUS $busNo -- has reported an emergency"
+                                    message = "SOS: BUS $busNo has reported an emergency"
                                 )
                             }
                         }
                     }
                 }
             }
+
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
         })
     }
 }
+
 //show child image in parent homescreen
