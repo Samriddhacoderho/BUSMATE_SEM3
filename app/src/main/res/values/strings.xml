@@ -40,5 +40,6 @@
     <string name="title_activity_guide_line">GuideLineActivity</string>
     <string name="title_activity_parent_attendance">ParentAttendanceActivity</string>
     <string name="title_activity_driver_routes">DriverRoutes</string>
+    <string name="title_activity_sosobserver">SOSObserver</string>
 
 </resources>

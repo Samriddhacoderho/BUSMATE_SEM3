@@ -43,4 +43,5 @@ interface BusRepositoryInterface {
         onSuccess: (List<LatLng>, Int) -> Unit,
         onFailure: (String) -> Unit
     )
+    fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit)
 }
