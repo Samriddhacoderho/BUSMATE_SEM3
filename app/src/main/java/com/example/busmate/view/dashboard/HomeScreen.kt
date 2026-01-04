@@ -91,7 +91,8 @@ fun HomeScreen(
     }
 
     /* =======================================================
-       🔹 USER MODEL STATE (UNCHANGED)
+       🔹 USER MODEL STATE (UNCH
+       ANGED)
        ======================================================= */
 
     var model by remember {
@@ -646,3 +647,4 @@ fun SOSObserver(
 }
 
 //show child image in parent homescreen
+//testing parent get notification
