@@ -141,10 +141,13 @@ fun HomeScreen(
         }
     }
     // Inside HomeScreen.kt
-    SOSObserver(
-        userRole = model?.typeofUser,
-        children = model?.children
-    )
+    if (model?.typeofUser?.lowercase() != "driver") {
+        SOSObserver(
+            userRole = model?.typeofUser,
+            children = model?.children
+        )
+    }
+
     val filteredNotifications = remember(notifications, model?.typeofUser) {
         notifications.filter { notification ->
             when (model?.typeofUser?.lowercase()) {
@@ -603,37 +606,45 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
 @Composable
 fun SOSObserver(
     userRole: String?,                  // "Admin", "Parent", or "Driver"
-    children: Map<String, ChildModel>? // Only needed for parents
+    children: Map<String, ChildModel>?  // Only needed for parents
 ) {
     val context = LocalContext.current
 
-    LaunchedEffect(userRole) {
-        // 🔹 Drivers should never see SOS alerts
-        if (userRole?.lowercase() == "driver") return@LaunchedEffect
+    // 🔒 HARD BLOCK: Drivers must NEVER attach listener
+    if (userRole == null || userRole.lowercase() == "driver") return
+
+    DisposableEffect(userRole) {
 
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
             .getReference("emergency_alerts")
 
         // Only consider alerts from last 2 hours
-        val lookBackTime = System.currentTimeMillis() - 7200000 // 2 hours in ms
-        val query = db.orderByChild("timestamp").startAt(lookBackTime.toDouble())
+        val lookBackTime = System.currentTimeMillis() - 7200000
+        val query = db.orderByChild("timestamp")
+            .startAt(lookBackTime.toDouble())
 
-        query.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
+        val listener = object : com.google.firebase.database.ValueEventListener {
+
             override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
                 for (alert in snapshot.children) {
 
-                    val alertRouteId = alert.child("routeId").getValue(String::class.java)
-                    val busNo = alert.child("busNumber").getValue(String::class.java) ?: "N/A"
+                    val alertRouteId =
+                        alert.child("routeId").getValue(String::class.java)
+
+                    val busNo =
+                        alert.child("busNumber").getValue(String::class.java) ?: "N/A"
 
                     // 🔹 Audience filtering
                     val audience = alert.child("audience")
-                        .getValue(object : com.google.firebase.database.GenericTypeIndicator<List<String>>() {})
-                        ?: emptyList()
+                        .getValue(
+                            object : com.google.firebase.database.GenericTypeIndicator<List<String>>() {}
+                        ) ?: emptyList()
 
-                    if (!audience.contains(userRole?.lowercase())) continue // Skip if not for this role
+                    if (!audience.contains(userRole.lowercase())) continue
 
-                    when (userRole?.lowercase()) {
+                    when (userRole.lowercase()) {
+
                         "admin" -> {
                             NotificationHelper.showNotification(
                                 context = context,
@@ -641,11 +652,13 @@ fun SOSObserver(
                                 message = "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
                             )
                         }
+
                         "parent" -> {
-                            // Only notify if parent has a child on this route
-                            val hasMatchingChild = children?.values?.any { child ->
-                                child.busRouteId == alertRouteId
-                            } ?: false
+                            val hasMatchingChild =
+                                children?.values?.any { child ->
+                                    child.busRouteId == alertRouteId
+                                } == true
+
                             if (hasMatchingChild) {
                                 NotificationHelper.showNotification(
                                     context = context,
@@ -657,10 +670,19 @@ fun SOSObserver(
                     }
                 }
             }
+
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
-        })
+        }
+
+        query.addValueEventListener(listener)
+
+        // 🔥 CRITICAL: REMOVE LISTENER
+        onDispose {
+            query.removeEventListener(listener)
+        }
     }
 }
+
 
 
 //show child image in parent homescreen
