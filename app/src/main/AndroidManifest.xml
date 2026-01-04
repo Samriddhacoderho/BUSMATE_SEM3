@@ -27,22 +27,6 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
-            android:name=".view.SOSObserver"
-            android:exported="true"
-            android:label="@string/title_activity_sosobserver"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.DriverRoutes"
-            android:exported="false"
-            android:label="@string/title_activity_driver_routes"
-            android:theme="@style/Theme.BUSMATE" />
-        <activity
             android:name=".view.ParentAttendanceActivity"
             android:exported="false"
             android:label="@string/title_activity_parent_attendance"
