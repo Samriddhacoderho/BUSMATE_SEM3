@@ -228,7 +228,7 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                             }
                         }
                     }
-
+//make static to dynamic option in dropdown option of route id
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
 
