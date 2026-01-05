@@ -309,7 +309,7 @@ class BusRepositoryImpl : BusRepositoryInterface {
         }.start()
     }
     override fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit) {
-        val emergencyRef = db.getReference("emergency_alerts")
+        val emergencyRef = db.getReference("notifications")
 
         // 1️⃣ Find the bus assigned to this driver
         busesRef.orderByChild("driver/uid").equalTo(driverUid)
