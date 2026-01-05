@@ -56,5 +56,11 @@ class BusViewModel(
     fun getBusByDriverUid(driverUid: String, callback: (BusModel?) -> Unit) {
         repository.getBusByDriverUid(driverUid, callback)
     }
+    fun triggerSOS(driverUid: String) {
+        repository.triggerSOS(driverUid) { success, msg ->
+            _message.value = msg
+        }
+    }
+
 
 }
