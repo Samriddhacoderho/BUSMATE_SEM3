@@ -74,6 +74,17 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val message by viewModel.message.collectAsState()
     val activity=context as Activity
 
+    val isLengthValid = newPass.length >= 8
+    val hasUppercase = newPass.any { it.isUpperCase() }
+    val hasLowercase = newPass.any { it.isLowerCase() }
+    val hasSpecial = newPass.any { !it.isLetterOrDigit() }
+    val hasNumber = newPass.any { it.isDigit() }
+    val passwordsMatch = newPass == confirmPass && newPass.isNotEmpty()
+
+    // The button will only be clickable if all these are true
+    val isUIValidationComplete = isLengthValid && hasUppercase && hasLowercase &&
+            hasSpecial && hasNumber && oldPass.isNotEmpty() &&
+            newPass.isNotEmpty() && confirmPass.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
     fun handleChangePassword() {
@@ -83,6 +94,8 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading...") {
             snackbarHostState.showSnackbar(message)
+            // Add this line below to reset the message in the ViewModel
+            viewModel.clearMessage()
         }
     }
 
@@ -105,223 +118,213 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                 .padding(padding) // Respect scaffold padding
         ) {
 
-        //  BLUE TOP SECTION (same as login screen)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.45f)
-                .background(BusMateBlue),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-
-            Spacer(modifier = Modifier.height(45.dp))
-
-            Image(
-                painter = painterResource(com.example.busmate.R.drawable.logo),
-                contentDescription = "Logo",
-                colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                modifier = Modifier.size(160.dp)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Change Password",
-                color = Color.White,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        IconButton(
-            onClick = {
-                // This triggers the standard activity back navigation
-                (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
-            },
-            modifier = Modifier
-                .padding(top = 40.dp, start = 12.dp) // Adjust padding to avoid status bar
-                .align(Alignment.TopStart)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.outline_arrow_back_24),
-                contentDescription = "Back",
-                tint = Color.White,
-                modifier = Modifier.size(30.dp)
-            )
-        }
-        // ⚪ WHITE CARD THAT OVERLAPS (same shape as login)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .align(Alignment.BottomCenter)
-                .offset(y = (-30).dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-        ) {
-
+            //  BLUE TOP SECTION (same as login screen)
             Column(
                 modifier = Modifier
-                    .verticalScroll(scrollState)
-                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.45f)
+                    .background(BusMateBlue),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
             ) {
 
-                // 🔹 OLD PASSWORD
-                Text("Old Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(45.dp))
 
-                OutlinedTextField(
-                    value = oldPass,
-                    onValueChange = { oldPass = it },
-                    placeholder = { Text("********") },
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showOld = !showOld }) {
-                            Icon(
-                                painter = painterResource(
-                                    if (showOld) R.drawable.baseline_visibility_off_24
-                                    else R.drawable.baseline_visibility_24
-                                ),
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    visualTransformation = if (showOld) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        focusedLabelColor = PrimaryBlue
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // 🔹 NEW PASSWORD
-                Text("New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = newPass,
-                    onValueChange = { newPass = it },
-                    placeholder = { Text("Enter new password") },
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showNew = !showNew }) {
-                            Icon(
-                                painter = painterResource(
-                                    if (showNew) R.drawable.baseline_visibility_off_24
-                                    else R.drawable.baseline_visibility_24
-                                ),
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        focusedLabelColor = PrimaryBlue
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                Image(
+                    painter = painterResource(com.example.busmate.R.drawable.logo),
+                    contentDescription = "Logo",
+                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                    modifier = Modifier.size(160.dp)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 🔸 Password Requirements
-                PasswordIndicators(password = newPass)
-
-                Spacer(modifier = Modifier.height(25.dp))
-
-                // 🔹 CONFIRM PASSWORD
-                Text("Confirm New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = confirmPass,
-                    onValueChange = { confirmPass = it },
-                    placeholder = { Text("Re-enter new password") },
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showConfirm = !showConfirm }) {
-                            Icon(
-                                painter = painterResource(
-                                    if (showConfirm) R.drawable.baseline_visibility_off_24
-                                    else R.drawable.baseline_visibility_24
-                                ),
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        focusedLabelColor = PrimaryBlue
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(35.dp))
-
-
-                Button(
-                    onClick = {handleChangePassword()},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                ) {
-                    Text(
-                        text = "Change Password",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Forgot Password
                 Text(
-                    text = "Forgot Your Password?",
-                    color = PrimaryBlue,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = {
-                        val intent= Intent(context, ResetPasswordActivity::class.java)
-                        context.startActivity(intent)
-                        activity.finish()
-                    })
+                    text = "Change Password",
+                    color = Color.White,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center
                 )
+            }
 
-                Spacer(modifier = Modifier.height(25.dp))
+            IconButton(
+                onClick = {
+                    // This triggers the standard activity back navigation
+                    (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
+                },
+                modifier = Modifier
+                    .padding(top = 40.dp, start = 12.dp) // Adjust padding to avoid status bar
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.outline_arrow_back_24),
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            // ⚪ WHITE CARD THAT OVERLAPS (same shape as login)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .align(Alignment.BottomCenter)
+                    .offset(y = (-30).dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(scrollState)
+                        .padding(24.dp)
+                ) {
+
+                    // 🔹 OLD PASSWORD
+                    Text("Old Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = oldPass,
+                        onValueChange = { oldPass = it },
+                        placeholder = { Text("********") },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showOld = !showOld }) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (showOld) R.drawable.baseline_visibility_off_24
+                                        else R.drawable.baseline_visibility_24
+                                    ),
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        visualTransformation = if (showOld) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            focusedLabelColor = PrimaryBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 🔹 NEW PASSWORD
+                    Text("New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = newPass,
+                        onValueChange = { newPass = it },
+                        placeholder = { Text("Enter new password") },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showNew = !showNew }) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (showNew) R.drawable.baseline_visibility_off_24
+                                        else R.drawable.baseline_visibility_24
+                                    ),
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            focusedLabelColor = PrimaryBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 🔸 Password Requirements
+                    PasswordIndicators(password = newPass)
+
+                    Spacer(modifier = Modifier.height(25.dp))
+
+                    // 🔹 CONFIRM PASSWORD
+                    Text("Confirm New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = confirmPass,
+                        onValueChange = { confirmPass = it },
+                        placeholder = { Text("Re-enter new password") },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showConfirm = !showConfirm }) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (showConfirm) R.drawable.baseline_visibility_off_24
+                                        else R.drawable.baseline_visibility_24
+                                    ),
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            focusedLabelColor = PrimaryBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(35.dp))
+
+
+                    Button(
+                        onClick = { handleChangePassword() },
+                        enabled = isUIValidationComplete, // Button stays disabled until UI rules pass
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            disabledContainerColor = Color.Gray // Visually grey out the button
+                        )
+                    ) {
+                        Text(
+                            text = "Change Password",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            // Optional: make text lighter when disabled
+                            color = if (isUIValidationComplete) Color.White else Color.LightGray
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Forgot Password
+                    Text(
+                        text = "Forgot Your Password?",
+                        color = PrimaryBlue,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().clickable(onClick = {
+                            val intent= Intent(context, ResetPasswordActivity::class.java)
+                            context.startActivity(intent)
+                            activity.finish()
+                        })
+                    )
+
+                    Spacer(modifier = Modifier.height(25.dp))
+                }
             }
         }
     }
-}
 
-@Composable
-fun PasswordIndicators(password: String) {
-    val requirements = listOf(
-        "Minimum 12 characters" to { it: String -> it.length >= 12 },
-        "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
-        "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
-        "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
-        "One number" to { it: String -> it.any(Char::isDigit) }
-    )
-
-    Column {
-        requirements.forEach { (text, rule) ->
-            Requirement(text = text, passed = rule(password))
-        }
-    }
-}
 }
 @Composable
 fun Requirement(text: String, passed: Boolean) {
@@ -332,7 +335,7 @@ fun Requirement(text: String, passed: Boolean) {
         Icon(
             painter = painterResource(R.drawable.baseline_check_circle_24),
             contentDescription = null,
-            tint = if (passed) Color.Gray else Color.Red,
+            tint = if (passed) Color.Blue else Color.Red,
             modifier = Modifier
                 .padding(end = 8.dp)
                 .size(16.dp)
@@ -347,7 +350,7 @@ fun Requirement(text: String, passed: Boolean) {
 @Composable
 fun PasswordIndicators(password: String) {
     val requirements = listOf(
-        "Minimum 12 characters" to { it: String -> it.length >= 12 },
+        "Minimum 8 characters" to { it: String -> it.length >= 8 },
         "One uppercase character" to { it: String -> it.any(Char::isUpperCase) },
         "One lowercase character" to { it: String -> it.any(Char::isLowerCase) },
         "One special character" to { it: String -> it.any { c -> !c.isLetterOrDigit() } },
