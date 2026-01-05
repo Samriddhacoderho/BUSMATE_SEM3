@@ -74,7 +74,18 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
     val message by viewModel.message.collectAsState()
     val activity=context as Activity
 
+    val isLengthValid = newPass.length >= 8
+    val hasUppercase = newPass.any { it.isUpperCase() }
+    val hasLowercase = newPass.any { it.isLowerCase() }
+    val hasSpecial = newPass.any { !it.isLetterOrDigit() }
+    val hasNumber = newPass.any { it.isDigit() }
+    val passwordsMatch = newPass == confirmPass && newPass.isNotEmpty()
 
+    // The button will only be clickable if all these are true
+    val isUIValidationComplete = isLengthValid && hasUppercase && hasLowercase &&
+            hasSpecial && hasNumber && oldPass.isNotEmpty() &&
+            newPass.isNotEmpty() && confirmPass.isNotEmpty()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     fun handleChangePassword() {
         viewModel.changePassword(oldPass, newPass, confirmPass)
