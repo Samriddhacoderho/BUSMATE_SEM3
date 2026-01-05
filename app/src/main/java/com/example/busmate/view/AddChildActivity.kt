@@ -21,6 +21,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,9 +69,11 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
-    var busRouteId by remember { mutableStateOf("") }
     var pickUpLocation by remember { mutableStateOf("") }
     var dropOffLocation by remember { mutableStateOf("") }
+    var busRouteId by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    val routeOptions = (1010..1040).map { it.toString() }
 
     // --- NEW IMAGE PICKER STATE ---
     var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -139,9 +145,12 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally // Center the image picker
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
 
                     // --- IMAGE PICKER UI SECTION ---
                     Box(
@@ -174,7 +183,48 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                     AddChildInputField(firstName, { firstName = it }, "First Name", Icons.Default.Person)
                     AddChildInputField(lastName, { lastName = it }, "Last Name", Icons.Default.Person, isOptional = true)
                     AddChildInputField(studentId, { studentId = it }, "Student ID", Icons.Default.Badge, keyboardType = KeyboardType.Number)
-                    AddChildInputField(busRouteId, { busRouteId = it }, "Bus Route ID", Icons.Default.DirectionsBus)
+
+                    @OptIn(ExperimentalMaterial3Api::class)
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = busRouteId,
+                            onValueChange = {},
+                            readOnly = true, // User must select from dropdown
+                            label = { Text("Bus Route ID *") },
+                            placeholder = { Text("Select bus route") },
+                            leadingIcon = { Icon(Icons.Default.DirectionsBus, null, tint = Color(0xFF1976D2)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF1976D2),
+                                focusedLabelColor = Color(0xFF1976D2)
+                            ),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            routeOptions.forEach { selectionOption ->
+                                DropdownMenuItem(
+                                    text = { Text(selectionOption) },
+                                    onClick = {
+                                        busRouteId = selectionOption
+                                        expanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
+                            }
+                        }
+                    }
 
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
@@ -183,6 +233,23 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                     AddChildInputField(dropOffLocation, { dropOffLocation = it }, "Dropoff Location", Icons.Default.PinDrop)
 
                     Spacer(modifier = Modifier.height(32.dp))
+
+                    // 4. UI VALIDATION (RED TEXT) ABOVE BUTTON
+                    val fieldsEmpty = firstName.isBlank() || studentId.isBlank() || busRouteId.isBlank() || pickUpLocation.isBlank() || dropOffLocation.isBlank()
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        if (fieldsEmpty) {
+                            Text("Please fill all the fields", color = Color.Red, fontSize = 12.sp)
+                        }
+                        if (selectedImageUri == null) {
+                            Text("Please upload child's photo", color = Color.Red, fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
                         onClick = {
@@ -213,7 +280,14 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                                 isGeocoding = false
                             }
                         },
-                        enabled = !isLoading && firstName.isNotBlank() && studentId.isNotBlank() && busRouteId.isNotBlank(),
+                        enabled = !isLoading &&
+                                firstName.isNotBlank() &&
+                                lastName.isNotBlank() && // Added check if you want last name required
+                                studentId.isNotBlank() &&
+                                busRouteId.isNotBlank() &&
+                                pickUpLocation.isNotBlank() &&
+                                dropOffLocation.isNotBlank() &&
+                                selectedImageUri != null,
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
                         if (isLoading) {
