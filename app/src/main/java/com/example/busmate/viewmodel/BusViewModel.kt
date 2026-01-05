@@ -61,6 +61,5 @@ class BusViewModel(
             _message.value = msg
         }
     }
-
-
+    //testing triggersos
 }
