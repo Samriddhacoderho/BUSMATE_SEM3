@@ -93,7 +93,8 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 //    }
     fun changePassword(oldPass: String, newPass: String, confirmPass: String) {
 
-        _message.value = "Loading..."
+        _message.value = ""
+
 
         if (oldPass.isBlank() || newPass.isBlank() || confirmPass.isBlank()) {
             _message.value = "All password fields must be filled."
@@ -101,14 +102,20 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         }
 
         if (newPass != confirmPass) {
-            _message.value = "Passwords do not match."
+            _message.value = "New Password and Confirm Password don't match."
             return
         }
 
-        if (newPass.length < 6) {
-            _message.value = "Password must be at least 6 characters."
+        if (newPass.length < 8) {
+            _message.value = "Password must be at least 8 characters."
             return
         }
+        if (newPass == oldPass) {
+            _message.value = "New password cannot be the same as the old password."
+            return
+        }
+
+        _message.value = "Loading..."
 
         repository.changePassword(oldPass, newPass) { success, msg ->
             _message.value = msg
