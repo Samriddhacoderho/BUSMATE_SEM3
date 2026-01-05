@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,7 +35,6 @@ import com.example.busmate.viewmodel.LocationViewModel
 
 class TripActivity : ComponentActivity() {
 
-    // Register the permission launcher for Android 13+ FCM requirements
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -47,7 +47,6 @@ class TripActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // FCM Requirement: Request Notification Permission for Android 13+
         askNotificationPermission()
 
         val driverUid = intent.getStringExtra("EXTRA_DRIVER_UID") ?: ""
@@ -87,7 +86,17 @@ fun TripScreen(
         )
     }
 
-    // Effect to handle tracking based on trip status
+    // --- NEW: Permission Launcher for GPS ---
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            accelerometerViewModel.startMeasurement(driverUid, busId)
+        } else {
+            Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     LaunchedEffect(state.isRunning) {
         if (state.isRunning) {
             locationViewModel.startTracking(busId = busId, driverUid = driverUid)
@@ -111,9 +120,9 @@ fun TripScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Large Speed Display
+        // Large Speed Display (Now shows REAL GPS speed)
         Text(
-            text = "%.1f".format(state.speedMps * 3.6), // Convert MPS to KM/H
+            text = "%.1f".format(state.speedMps * 3.6),
             fontSize = 100.sp,
             fontWeight = FontWeight.Black
         )
@@ -124,11 +133,18 @@ fun TripScreen(
         Button(
             onClick = {
                 if (state.isRunning) {
-                    // Trigger: Updates 'isTripRunning' to false (Parent app hears this)
                     accelerometerViewModel.stopMeasurement(busId)
                 } else {
-                    // Trigger: Updates 'isTripRunning' to true (Parent app hears this)
-                    accelerometerViewModel.startMeasurement(driverUid, busId)
+                    // --- NEW: Check permission before starting GPS ---
+                    val permissionCheck = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                        accelerometerViewModel.startMeasurement(driverUid, busId)
+                    } else {
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
                 }
             },
             modifier = Modifier
