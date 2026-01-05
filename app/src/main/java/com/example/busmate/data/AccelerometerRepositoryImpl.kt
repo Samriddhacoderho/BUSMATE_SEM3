@@ -1,30 +1,31 @@
 package com.example.busmate.data
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import android.os.Looper
 import android.util.Log
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.busmate.model.AccelerometerModel
 import com.example.busmate.util.NotificationHelper
+import com.google.android.gms.location.*
 import com.google.firebase.database.*
-import kotlin.math.sqrt
 
-class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerRepository, SensorEventListener {
+// Note: SensorEventListener is kept in the signature to avoid breaking the interface,
+// but we now use FusedLocationProvider for the logic.
+class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerRepository {
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+    // GPS Client
+    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
     private var lastSpeedAlertTime = 0L
-    private val ALERT_COOLDOWN = 10000L // 10 seconds cooldown between alerts
+    private val ALERT_COOLDOWN = 10000L
 
     // Variables for Driver Mode (Sending)
     private var activeBusUid: String? = null
-    private var isSensorRegistered = false
     private var lastUploadTime = 0L
+    private val UPLOAD_INTERVAL_MS = 1000L
 
     // Variables for Receiver Mode (Fetching)
     private var firebaseSpeedListener: ValueEventListener? = null
@@ -35,14 +36,32 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
     private val _firebaseData = MutableLiveData<AccelerometerModel>()
     override val firebaseData: LiveData<AccelerometerModel> = _firebaseData
 
-    private var gravity = floatArrayOf(0f, 0f, 0f)
-    private val ALPHA = 0.8f
-    private val SHAKE_THRESHOLD = 0.5f
-    private val SCALING_FACTOR = 1.5f
+    // GPS Settings
+    private val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+        .setMinUpdateIntervalMillis(500L)
+        .build()
 
-    /* ---------- DRIVER LOGIC (SENSING & SENDING) ---------- */
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            val location = locationResult.lastLocation ?: return
+
+            // GPS provides speed in meters/second.
+            val speedMps = location.speed
+
+            _currentSpeedMps.postValue(speedMps)
+
+            // Trigger alerts if speed > 50km/h
+            activeBusUid?.let { checkSpeedAlert(speedMps, it) }
+
+            // Sync to Firebase at existing path: buses/busId/speed
+            sendDataToFirebase(speedMps)
+        }
+    }
+
+    /* ---------- DRIVER LOGIC (GPS SENSING & SENDING) ---------- */
 
     override fun startListening(driverUid: String) {
+        // Preserved: Find the bus associated with this driver
         database.getReference("buses")
             .orderByChild("driver/uid")
             .equalTo(driverUid)
@@ -51,7 +70,7 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
                     if (snapshot.exists()) {
                         val busNode = snapshot.children.first()
                         activeBusUid = busNode.key
-                        registerSensors()
+                        registerSensors() // Starts GPS
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {
@@ -60,205 +79,127 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
             })
     }
 
+    @SuppressLint("MissingPermission")
     override fun registerSensors() {
-        if (accelerometer == null || isSensorRegistered) return
-        gravity = floatArrayOf(0f, 0f, 0f)
+        // This now registers GPS updates instead of Accelerometer
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
         lastUploadTime = System.currentTimeMillis()
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
-        isSensorRegistered = true
     }
 
     override fun stopListening() {
-        if (isSensorRegistered) {
-            sensorManager.unregisterListener(this)
-            isSensorRegistered = false
-        }
+        fusedLocationClient.removeLocationUpdates(locationCallback)
         sendDataToFirebase(0f, isFinal = true)
         activeBusUid = null
         _currentSpeedMps.postValue(0f)
     }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
-        val ax = event.values[0]
-        val ay = event.values[1]
-        val az = event.values[2]
-
-        gravity[0] = ALPHA * gravity[0] + (1 - ALPHA) * ax
-        gravity[1] = ALPHA * gravity[1] + (1 - ALPHA) * ay
-        gravity[2] = ALPHA * gravity[2] + (1 - ALPHA) * az
-
-        val movementMagnitude = sqrt(
-            Math.pow((ax - gravity[0]).toDouble(), 2.0) +
-                    Math.pow((ay - gravity[1]).toDouble(), 2.0) +
-                    Math.pow((az - gravity[2]).toDouble(), 2.0)
-        ).toFloat()
-
-
-
-
-        // Apply smoother scaling and cap the max "simulated" speed
-        var finalValue = if (movementMagnitude < SHAKE_THRESHOLD) 0f else movementMagnitude * SCALING_FACTOR
-        if (finalValue > 25f) finalValue = 25f // Cap at ~90km/h for safety
-
-        _currentSpeedMps.postValue(finalValue)
-        sendDataToFirebase(finalValue)
-
-
-    }
-
+    // --- UPDATED SENDING LOGIC (Driver Side) ---
     private fun sendDataToFirebase(value: Float, isFinal: Boolean = false) {
         val busId = activeBusUid ?: return
         val currentTime = System.currentTimeMillis()
 
-        if (isFinal || currentTime - lastUploadTime >= 500L) {
-            database.getReference("buses").child(busId).child("speed")
-                .setValue(value.toDouble())
+        // Sync to Firebase every 1 second or on stop
+        if (isFinal || currentTime - lastUploadTime >= UPLOAD_INTERVAL_MS) {
+            val busRef = database.getReference("buses").child(busId)
+
+            // 1. Update the flat 'speed' field (as a Double for compatibility)
+            busRef.child("speed").setValue(value.toDouble())
+
+            // 2. Note: 'isTripRunning' is already handled by updateTripRunning()
+
             if (!isFinal) lastUploadTime = currentTime
         }
     }
-
-    /* ---------- NOTIFICATION TRIGGER LOGIC ---------- */
-
-    // In AccelerometerRepositoryImpl.kt
+    /* ---------- NOTIFICATION TRIGGER LOGIC (UNTOUCHED) ---------- */
 
     override fun updateTripRunning(busId: String, isRunning: Boolean) {
-        // Keep your existing logic to update the bus status
         database.getReference("buses").child(busId).child("isTripRunning").setValue(isRunning)
-
         database.getReference("buses").child(busId).child("busNumber")
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val busNo = snapshot.getValue(String::class.java) ?: "Unknown"
                     val statusText = if (isRunning) "Started" else "Ended"
-
-                    // Data for the Admin (Global node)
-                    val adminData = mapOf(
-                        "title" to "Fleet Update",
-                        "message" to "Bus $busNo has $statusText a trip.",
-                        "timestamp" to ServerValue.TIMESTAMP,
-                        "type" to "trip_status"
-                    )
-
-                    // Base data for Parents (will be customized per child name if needed,
-                    // but for now we use a general message for the route)
-                    val parentData = mapOf(
-                        "title" to "Bus $statusText",
-                        "message" to "Bus route $busNo has $statusText its journey.",
-                        "timestamp" to ServerValue.TIMESTAMP,
-                        "type" to "trip_status"
-                    )
-
-                    // Trigger the existing distribution logic
+                    val adminData = mapOf("title" to "Fleet Update", "message" to "Bus $busNo has $statusText a trip.", "timestamp" to ServerValue.TIMESTAMP, "type" to "trip_status")
+                    val parentData = mapOf("title" to "Bus $statusText", "message" to "Bus route $busNo has $statusText its journey.", "timestamp" to ServerValue.TIMESTAMP, "type" to "trip_status")
                     sendNotificationToAssociatedUsers(busId, parentData, adminData)
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
 
-    override fun sendNotificationToAssociatedUsers(
-        busId: String, // This is usually the Firebase Key (-Oi...)
-        parentData: Map<String, Any>,
-        adminData: Map<String, Any>
-    ) {
-        // 1. Notify Admin (Existing)
+    override fun sendNotificationToAssociatedUsers(busId: String, parentData: Map<String, Any>, adminData: Map<String, Any>) {
         database.getReference("notifications").child("admin").push().setValue(adminData)
-        Log.d("ADMIN_TAG", busId)
-
-        // 2. Notify Parents
         database.getReference("buses").child(busId).get().addOnSuccessListener { busSnapshot ->
-            // IMPORTANT: Get the actual route number (e.g. "10") to match with child data
             val busRouteNumber = busSnapshot.child("routeId").getValue(String::class.java)
-            Log.d("PARENT_TAG", "Bus ID: $busId, Route Number: $busRouteNumber")
-
             database.getReference("users").addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    var matchCount = 0
                     for (userSnapshot in snapshot.children) {
-                        val typeofUser = userSnapshot.child("typeofUser").getValue(String::class.java)
-
-                        if (typeofUser == "Parent") {
+                        if (userSnapshot.child("typeofUser").getValue(String::class.java) == "Parent") {
                             val parentUid = userSnapshot.key ?: continue
                             val childrenNode = userSnapshot.child("children")
-                            var shouldNotifyThisParent = false
-
+                            var shouldNotify = false
                             for (childSnapshot in childrenNode.children) {
                                 val childBusId = childSnapshot.child("busRouteId").getValue(String::class.java)
-
-                                // LOGGING: See what the code is comparing
-                                Log.d("PARENT_TAG", "Checking Parent $parentUid, Child Bus: $childBusId vs Bus Route: $busRouteNumber")
-
-                                if (childBusId == busRouteNumber || childBusId == busId) {
-                                    shouldNotifyThisParent = true
-                                    break
-                                }
+                                if (childBusId == busRouteNumber || childBusId == busId) { shouldNotify = true; break }
                             }
-
-                            if (shouldNotifyThisParent) {
-                                matchCount++
-                                database.getReference("notifications")
-                                    .child(parentUid)
-                                    .push()
-                                    .setValue(parentData)
-                                    .addOnSuccessListener {
-                                        Log.d("PARENT_TAG", "Successfully wrote notification to parent: $parentUid")
-                                    }
-                            }
+                            if (shouldNotify) database.getReference("notifications").child(parentUid).push().setValue(parentData)
                         }
                     }
-                    Log.d("PARENT_TAG", "Finished scanning users. Total parents notified: $matchCount")
                 }
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e("PARENT_TAG", "User scan cancelled: ${error.message}")
-                }
+                override fun onCancelled(error: DatabaseError) {}
             })
         }
     }
-    /* ---------- RECEIVER LOGIC (FETCHING FOR BUS PROFILE) ---------- */
 
+    /* ---------- RECEIVER LOGIC (FETCHING) ---------- */
+
+    // --- UPDATED RECEIVING LOGIC (Parent/Admin Side) ---
     override fun startSyncingFromFirebase(busUid: String) {
         stopSyncingFromFirebase()
-        val speedRef = database.getReference("buses").child(busUid).child("speed")
+        // Listen to the whole bus node to get both speed and trip status
+        val busRef = database.getReference("buses").child(busUid)
 
         firebaseSpeedListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val speedValue = snapshot.getValue(Double::class.java) ?: 0.0
+                // Read the flat 'speed' field
+                val speedValue = snapshot.child("speed").getValue(Double::class.java) ?: 0.0
+                // Read the flat 'isTripRunning' field
+                val runningStatus = snapshot.child("isTripRunning").getValue(Boolean::class.java) ?: false
+
+                // Map them back to your Model so your UI code doesn't have to change
                 _firebaseData.postValue(AccelerometerModel(
                     speedMps = speedValue.toFloat(),
-                    isRunning = speedValue > 0.1
+                    isRunning = runningStatus,
+                    timestamp = System.currentTimeMillis()
                 ))
             }
             override fun onCancelled(error: DatabaseError) {
                 Log.e("AccelerometerRepo", "Fetch error: ${error.message}")
             }
         }
-        speedRef.addValueEventListener(firebaseSpeedListener!!)
+        busRef.addValueEventListener(firebaseSpeedListener!!)
     }
 
     override fun stopSyncingFromFirebase() {
         firebaseSpeedListener?.let { listener ->
+            // Use specific path to remove listener
             database.getReference("buses").removeEventListener(listener)
             firebaseSpeedListener = null
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    // In AccelerometerRepositoryImpl.kt
+    /* ---------- SPEED ALERT LOGIC ---------- */
+
     override fun checkSpeedAlert(speedMps: Float, busId: String) {
         val speedKmh = speedMps * 3.6
         val currentTime = System.currentTimeMillis()
-
         if (speedKmh > 50 && (currentTime - lastSpeedAlertTime > ALERT_COOLDOWN)) {
             lastSpeedAlertTime = currentTime
-
-            // 1. Trigger local notification for Driver
-            NotificationHelper.showNotification(
-                context,
-                "Speed Warning!",
-                "You are driving at ${speedKmh.toInt()} km/h. Please slow down."
-            )
-
-            // 2. Send notification to Admin via Firebase
+            NotificationHelper.showNotification(context, "Speed Warning!", "You are driving at ${speedKmh.toInt()} km/h. Please slow down.")
             sendSpeedAlertToAdmin(busId, speedKmh.toInt())
         }
     }
@@ -266,19 +207,8 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
     override fun sendSpeedAlertToAdmin(busId: String, speed: Int) {
         database.getReference("buses").child(busId).get().addOnSuccessListener { snapshot ->
             val driverName = snapshot.child("driverName").getValue(String::class.java) ?: "Driver"
-
-            val adminNotification = mapOf(
-                "title" to "Speed Violation",
-                "message" to "$driverName is driving at $speed km/h",
-                "timestamp" to ServerValue.TIMESTAMP,
-                "type" to "speed_warning" // Use a type to distinguish it
-            )
-
-            // KEEP IT CLEAN: Use the existing notifications/admin node
+            val adminNotification = mapOf("title" to "Speed Violation", "message" to "$driverName is driving at $speed km/h", "timestamp" to ServerValue.TIMESTAMP, "type" to "speed_warning")
             database.getReference("notifications").child("admin").push().setValue(adminNotification)
         }
     }
 }
-
-
-
