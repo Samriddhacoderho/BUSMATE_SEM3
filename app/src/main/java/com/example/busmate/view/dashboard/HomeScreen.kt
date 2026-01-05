@@ -600,7 +600,7 @@ fun SOSObserver(
 
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
-            .getReference("emergency_alerts")
+            .getReference("notifications")
 
         // Only consider alerts from last 2 hours
         val lookBackTime = System.currentTimeMillis() - 7200000
