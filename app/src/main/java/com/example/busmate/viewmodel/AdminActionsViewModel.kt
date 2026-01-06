@@ -40,11 +40,14 @@ package com.example.busmate.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AdminActionsInterface
+import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.data.UserRepositoryInterface
 import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
 class AdminActionsViewModel(
-    private val repo: AdminActionsInterface
+    private val repo: AdminActionsInterface,
+    private val userRepo: UserRepositoryInterface
 ) : ViewModel() {
 
     fun getUserbyID(
@@ -95,5 +98,12 @@ class AdminActionsViewModel(
         callback: (Boolean, String) -> Unit
     ) {
         repo.assignBusToDriver(busId, driverId, callback)
+    }
+
+    // AdminActionsViewModel.kt
+
+    // Add this function
+    fun verifyAdminPassword(password: String, callback: (Boolean, String) -> Unit) {
+        userRepo.verifyPassword(password, callback)
     }
 }

@@ -113,6 +113,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
+    //Biometric
+    implementation("androidx.biometric:biometric:1.4.0-alpha02")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
