@@ -166,5 +166,25 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
             }
         }
     }
+    // Add this function to your ChildRepositoryImpl
+    override fun getAllAvailableRoutes(callback: (List<String>) -> Unit) {
+        val busesRef = FirebaseDatabase.getInstance().getReference("buses")
+        busesRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val routes = mutableListOf<String>()
+                for (busInSnap in snapshot.children) {
+                    val routeId = busInSnap.child("routeId").getValue(String::class.java)
+                    if (routeId != null) {
+                        routes.add(routeId)
+                    }
+                }
+                callback(routes.distinct()) // Use distinct to avoid duplicates
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(emptyList())
+            }
+        })
+    }
 }
 

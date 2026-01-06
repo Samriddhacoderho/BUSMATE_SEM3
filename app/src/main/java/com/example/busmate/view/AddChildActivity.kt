@@ -87,6 +87,11 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val availableRoutes by viewModel.availableRoutes.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchAvailableRoutes()
+    }
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading" && message != "Uploading data...") {
@@ -188,44 +193,42 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                     ) {
                         OutlinedTextField(
                             value = busRouteId,
                             onValueChange = {},
-                            readOnly = true, // User must select from dropdown
-                            label = { Text("Bus Route ID *") },
-                            placeholder = { Text("Select bus route") },
-                            leadingIcon = { Icon(Icons.Default.DirectionsBus, null, tint = Color(0xFF1976D2)) },
+                            readOnly = true, // User must pick from the list
+                            label = { Text("Select Bus Route *") },
+                            leadingIcon = { Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = Color(0xFF1976D2)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF1976D2),
-                                focusedLabelColor = Color(0xFF1976D2)
-                            ),
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
                         )
 
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            routeOptions.forEach { selectionOption ->
+                            if (availableRoutes.isEmpty()) {
                                 DropdownMenuItem(
-                                    text = { Text(selectionOption) },
-                                    onClick = {
-                                        busRouteId = selectionOption
-                                        expanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    text = { Text("No routes available") },
+                                    onClick = { expanded = false }
                                 )
+                            } else {
+                                availableRoutes.forEach { route ->
+                                    DropdownMenuItem(
+                                        text = { Text(route) },
+                                        onClick = {
+                                            busRouteId = route
+                                            expanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
-
+//make static to dynamic option in dropdown option of route id
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
 
@@ -344,3 +347,4 @@ private suspend fun getCoords(context: android.content.Context, address: String)
     }
 }
 //testing add child image
+//testing drop down option dynamic route id

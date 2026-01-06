@@ -22,6 +22,8 @@ class ChildViewModel(
     // ✅ EXPOSE children as Compose State
     private val _children = MutableStateFlow<List<ChildModel>>(emptyList())
     val children: StateFlow<List<ChildModel>> = _children
+    private val _availableRoutes = MutableStateFlow<List<String>>(emptyList())
+    val availableRoutes: StateFlow<List<String>> = _availableRoutes
 
     // UPDATED: Added context and imageUri parameters
     fun addChild(
@@ -108,4 +110,11 @@ class ChildViewModel(
         _isSuccess.value = false
         _message.value = ""
     }
+    // Add these to your ChildViewModel class
+    fun fetchAvailableRoutes() {
+        repository.getAllAvailableRoutes { routes ->
+            _availableRoutes.value = routes
+        }
+    }
 }
+//testing fetchAvailableRoutes
