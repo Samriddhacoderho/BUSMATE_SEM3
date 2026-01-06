@@ -673,7 +673,3 @@ fun SOSObserver(
         }
     }
 }
-
-//show child image in parent homescreen
-//testing sos
-//testing
