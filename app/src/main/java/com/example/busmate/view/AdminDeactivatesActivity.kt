@@ -1,9 +1,7 @@
 package com.example.busmate.view
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -22,14 +20,17 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.AdminActionsViewModel
+import com.example.busmate.utils.BiometricHelper // Ensure this import matches your package
 import kotlinx.coroutines.launch
 
-class AdminDeactivatesActivity : ComponentActivity() {
+// Changed from ComponentActivity to FragmentActivity for Biometric support
+class AdminDeactivatesActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -42,8 +43,10 @@ class AdminDeactivatesActivity : ComponentActivity() {
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun AdminManageAccountScreen() {
+    // Repositories and ViewModels
     val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
-    val context = LocalContext.current as Activity
+    val context = LocalContext.current as FragmentActivity
+    val biometricHelper = remember { BiometricHelper(context) }
 
     // -------------------- State Variables --------------------
     var schoolId by remember { mutableStateOf("") }
@@ -65,7 +68,7 @@ fun AdminManageAccountScreen() {
     var selectedReason by remember { mutableStateOf("") }
     var expandedReason by remember { mutableStateOf(false) }
 
-    // --- NEW: Password Verification States ---
+    // Password Verification States
     var showPasswordDialog by remember { mutableStateOf(false) }
     var adminPassword by remember { mutableStateOf("") }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -121,10 +124,25 @@ fun AdminManageAccountScreen() {
         selectedAction = ""; selectedReason = ""; showUserDetails = false
     }
 
-    // --- NEW: Helper to trigger verification before action ---
+    // --- UPDATED: Helper to trigger Biometric check or Password fallback ---
     fun verifyAndExecute(action: () -> Unit) {
         pendingAction = action
-        showPasswordDialog = true
+
+        if (biometricHelper.isBiometricAvailable()) {
+            biometricHelper.showBiometricPrompt(
+                onSuccess = {
+                    // Biometric success: run the action (deactivate or delete)
+                    action()
+                },
+                onError = { error ->
+                    // Fallback to password dialog if biometric fails or is cancelled
+                    showPasswordDialog = true
+                }
+            )
+        } else {
+            // No biometric available on device: show password dialog directly
+            showPasswordDialog = true
+        }
     }
 
     // ---------------------- UI ----------------------
@@ -135,11 +153,10 @@ fun AdminManageAccountScreen() {
             SnackbarHost(snackbarHostState) {
                 Snackbar(
                     snackbarData = it,
-                    containerColor = if (messageShow.contains("User Deleted") || messageShow.contains(
-                            "Deactivated"
-                        ) || messageShow.contains("Reactivated")
-                    )
-                        Color.Green else Color.Red,
+                    containerColor = if (messageShow.contains("User Deleted") ||
+                        messageShow.contains("Deactivated") ||
+                        messageShow.contains("Reactivated")
+                    ) Color.Green else Color.Red,
                     contentColor = Color.White
                 )
             }
@@ -215,8 +232,7 @@ fun AdminManageAccountScreen() {
 
                     Button(
                         onClick = {
-                            if (schoolId.isBlank()) schoolIdError =
-                                "School ID is required" else onclickSearchButton()
+                            if (schoolId.isBlank()) schoolIdError = "School ID is required" else onclickSearchButton()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -267,16 +283,14 @@ fun AdminManageAccountScreen() {
                                 DropdownMenuItem(
                                     text = { Text(if (model?.status == "active") "Deactivate Account" else "Reactivate Account") },
                                     onClick = {
-                                        selectedAction =
-                                            if (model?.status == "active") "Deactivate Account" else "Reactivate Account"
+                                        selectedAction = if (model?.status == "active") "Deactivate Account" else "Reactivate Account"
                                         selectedReason = ""; expandedAction = false
                                     }
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Delete Account") },
                                     onClick = {
-                                        selectedAction = "Delete Account"; selectedReason =
-                                        ""; expandedAction = false
+                                        selectedAction = "Delete Account"; selectedReason = ""; expandedAction = false
                                     })
                             }
                         }
@@ -311,7 +325,6 @@ fun AdminManageAccountScreen() {
 
                         Spacer(Modifier.height(30.dp))
 
-                        // --- UPDATED: Confirm Button now triggers Verification ---
                         Button(
                             onClick = {
                                 when (selectedAction) {
@@ -332,7 +345,7 @@ fun AdminManageAccountScreen() {
             }
         }
 
-        // --- NEW: Admin Password Dialog ---
+        // --- Admin Password Dialog (Manual Fallback) ---
         if (showPasswordDialog) {
             AlertDialog(
                 onDismissRequest = { showPasswordDialog = false },
@@ -353,38 +366,29 @@ fun AdminManageAccountScreen() {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        // Note: You must implement verifyAdminPassword in your ViewModel/Repo
-                        // For now, this calls the pending action if password is not blank
                         if (adminPassword.isNotBlank()) {
-                            viewModel.verifyAdminPassword(adminPassword) { success, message ->
+                            viewModel.verifyAdminPassword(adminPassword) { success, _ ->
                                 if (success) {
                                     showPasswordDialog = false
                                     adminPassword = ""
-                                    pendingAction?.invoke() // ONLY runs if password is correct
+                                    pendingAction?.invoke() // Executes Deactivate or Delete
                                 } else {
                                     showPasswordDialog = false
                                     adminPassword = ""
-                                    // Show error if password is wrong
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Incorrect Password. Action Denied.")
                                     }
                                 }
                             }
-                        }else{
-                            showPasswordDialog=false
-                            adminPassword=""
+                        } else {
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Please enter your password. You cannot leave it empty")
+                                snackbarHostState.showSnackbar("Password cannot be empty")
                             }
-
                         }
-
                     }) { Text("Verify") }
                 },
                 dismissButton = {
-                    TextButton(onClick = {
-                        showPasswordDialog = false
-                    }) { Text("Cancel") }
+                    TextButton(onClick = { showPasswordDialog = false }) { Text("Cancel") }
                 }
             )
         }
@@ -404,9 +408,7 @@ fun AdminManageAccountScreen() {
                     }
                 },
                 dismissButton = {
-                    OutlinedButton(onClick = {
-                        showDeleteDialog = false
-                    }) { Text("Cancel") }
+                    OutlinedButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
                 }
             )
         }
