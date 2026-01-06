@@ -12,47 +12,65 @@ import com.example.busmate.model.AccelerometerModel
 class AccelerometerViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: AccelerometerRepository = AccelerometerRepositoryImpl(application.applicationContext)
 
-    // Store the active bus ID here
+    // Store the active bus ID here for speed alert logic
     private var currentBusId: String = ""
 
     private val _state = mutableStateOf(AccelerometerModel())
     val state: State<AccelerometerModel> = _state
 
-    // Combine your observers into this one
+    // Observer to bridge Repository data to Compose State
     private val speedObserver = Observer<Float> { newSpeed ->
         _state.value = _state.value.copy(speedMps = newSpeed)
 
-        // Trigger the speed check if we have a valid bus ID
+        // Trigger the speed check (Now using accurate GPS speed)
         if (currentBusId.isNotEmpty()) {
             repository.checkSpeedAlert(newSpeed, currentBusId)
         }
     }
 
     init {
+        // Start observing the Repository's speed source
         repository.currentSpeedMps.observeForever(speedObserver)
     }
 
+    /**
+     * Called by TripActivity when "START TRIP" is clicked.
+     */
     fun startMeasurement(driverUid: String, busRouteId: String) {
-        currentBusId = busRouteId // Save the bus ID for the speed checker
+        currentBusId = busRouteId
+        // Update local UI state
         _state.value = _state.value.copy(isRunning = true)
-        repository.startListening(driverUid)
+
+        // 1. Update Firebase 'isTripRunning: true'
         if (busRouteId.isNotEmpty()) {
             repository.updateTripRunning(busRouteId, true)
         }
+
+        // 2. Start GPS Listening
+        repository.startListening(driverUid)
     }
 
+    /**
+     * Called by TripActivity when "STOP TRIP" is clicked.
+     */
     fun stopMeasurement(busRouteId: String) {
+        // 1. Stop GPS updates
         repository.stopListening()
-        currentBusId = "" // Clear the bus ID
-        _state.value = _state.value.copy(isRunning = false, speedMps = 0f)
+
+        // 2. Update Firebase 'isTripRunning: false'
         if (busRouteId.isNotEmpty()) {
             repository.updateTripRunning(busRouteId, false)
         }
+
+        // 3. Reset local state
+        currentBusId = ""
+        _state.value = _state.value.copy(isRunning = false, speedMps = 0f)
     }
 
     override fun onCleared() {
         super.onCleared()
         repository.stopListening()
+        // Prevent memory leaks
         repository.currentSpeedMps.removeObserver(speedObserver)
     }
 }
