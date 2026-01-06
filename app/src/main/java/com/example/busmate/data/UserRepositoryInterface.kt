@@ -75,4 +75,8 @@ interface UserRepositoryInterface {
         value: Any,
         callback: (Boolean, String) -> Unit
     )
+
+    // UserRepositoryImpl.kt
+
+    fun verifyPassword(password: String, callback: (Boolean, String) -> Unit)
 }
