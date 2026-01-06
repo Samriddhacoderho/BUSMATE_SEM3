@@ -109,6 +109,10 @@ dependencies {
     implementation("com.google.zxing:core:3.5.1")
     implementation(libs.androidx.compose.animation)
 
+    //Speedometer
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
