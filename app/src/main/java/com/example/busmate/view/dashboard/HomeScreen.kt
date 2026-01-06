@@ -229,8 +229,10 @@ fun HomeScreen(
                 }
             }
 
+            val latestNotifications = notifications.takeLast(5).reversed()
+
             // 🔔 DYNAMIC NOTIFICATIONS (UNCHANGED)
-            items(notifications) { notification ->
+            items(latestNotifications) { notification ->
                 NotificationItemScreen(
                     initial = notification["title"]?.take(1) ?: "!",
                     message = notification["message"] ?: "",
@@ -504,6 +506,7 @@ fun NotificationsAlertHeaderScreen() {
     )
 }
 
+
 @Composable
 fun NotificationItemScreen(
     initial: String,
@@ -513,14 +516,13 @@ fun NotificationItemScreen(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .height(70.dp),
+            .padding(vertical = 4.dp), // Reduced padding so they stack nicely
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxWidth()
+                .padding(16.dp), // Padding inside the card
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -536,10 +538,17 @@ fun NotificationItemScreen(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Text(message, fontSize = 14.sp)
+            // Removed fixed height from the Row and Card to allow text wrapping
+            Text(
+                text = message,
+                fontSize = 14.sp,
+                lineHeight = 18.sp, // Better readability for multi-line text
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
+
 
 @Composable
 fun WelcomeCardAdmin(adminName: String?) {
