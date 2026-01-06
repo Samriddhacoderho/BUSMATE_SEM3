@@ -47,18 +47,17 @@ class BusRepositoryImpl : BusRepositoryInterface {
     ) {
         val busNumber = bus.busNumber.trim()
         val licensePlate = bus.licensePlate.trim()
+        val routeId = bus.routeId.trim()
 
-        if (busNumber.isBlank() || licensePlate.isBlank()) {
-            callback("Missing required fields (Bus Number or License Plate)", false)
+        if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank()) {
+            callback("Missing required fields", false)
             return
         }
 
         // 1️⃣ Check unique Bus Number
         busesRef.orderByChild("busNumber").equalTo(busNumber)
             .addListenerForSingleValueEvent(object : ValueEventListener {
-
                 override fun onDataChange(busNumberSnap: DataSnapshot) {
-
                     if (busNumberSnap.exists()) {
                         callback("Bus Number '$busNumber' already exists.", false)
                         return
@@ -67,47 +66,44 @@ class BusRepositoryImpl : BusRepositoryInterface {
                     // 2️⃣ Check unique License Plate
                     busesRef.orderByChild("licensePlate").equalTo(licensePlate)
                         .addListenerForSingleValueEvent(object : ValueEventListener {
-
                             override fun onDataChange(licenseSnap: DataSnapshot) {
-
                                 if (licenseSnap.exists()) {
-                                    callback(
-                                        "License Plate '$licensePlate' is already assigned to another bus.",
-                                        false
-                                    )
+                                    callback("License Plate '$licensePlate' is already assigned to another bus.", false)
                                     return
                                 }
 
-                                // 3️⃣ Generate Firebase UID
-                                val newBusRef = busesRef.push()
-                                val busUid = newBusRef.key!!
+                                // 3️⃣ NEW: Check if Route ID is already assigned
+                                busesRef.orderByChild("routeId").equalTo(routeId)
+                                    .addListenerForSingleValueEvent(object : ValueEventListener {
+                                        override fun onDataChange(routeSnap: DataSnapshot) {
+                                            if (routeSnap.exists()) {
+                                                callback("Another bus is already assigned to this route.", false)
+                                                return
+                                            }
 
-                                val updatedBus = bus.copy(
-                                    uid = busUid,
-                                    driver = null,
-                                    busImage = bus.busImage
-                                )
-                                // 4️⃣ Save bus
-                                newBusRef.setValue(updatedBus.toMap())
-                                    .addOnCompleteListener {
+                                            // 4️⃣ Proceed with Registration
+                                            val newBusRef = busesRef.push()
+                                            val busUid = newBusRef.key!!
+                                            val updatedBus = bus.copy(
+                                                uid = busUid,
+                                                driver = null,
+                                                busImage = bus.busImage
+                                            )
 
-                                        if (it.isSuccessful) {
-                                            Log.d(
-                                                "BusRepo",
-                                                "Bus registered successfully: $busUid"
-                                            )
-                                            callback(
-                                                "Bus $busNumber registered successfully!",
-                                                true
-                                            )
-                                        } else {
-                                            callback(
-                                                it.exception?.message
-                                                    ?: "Failed to register bus",
-                                                false
-                                            )
+                                            newBusRef.setValue(updatedBus.toMap())
+                                                .addOnCompleteListener { task ->
+                                                    if (task.isSuccessful) {
+                                                        callback("Bus $busNumber registered successfully!", true)
+                                                    } else {
+                                                        callback(task.exception?.message ?: "Failed to register bus", false)
+                                                    }
+                                                }
                                         }
-                                    }
+
+                                        override fun onCancelled(error: DatabaseError) {
+                                            callback(error.message, false)
+                                        }
+                                    })
                             }
 
                             override fun onCancelled(error: DatabaseError) {
