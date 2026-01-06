@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.R
 import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.AccelRecieverViewModel
@@ -57,7 +58,7 @@ class BusProfileScreen : ComponentActivity() {
 @Composable
 fun BusProfileMainScreen() {
 
-    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
     val buses = remember { mutableStateListOf<BusModel>() }
 
     LaunchedEffect(Unit) {
@@ -125,7 +126,7 @@ fun SingleBusProfile(bus: BusModel) {
         )
     }
 
-    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
 
     // ✅ FIX: Compose-safe activity result launcher
     val launcher = rememberLauncherForActivityResult(

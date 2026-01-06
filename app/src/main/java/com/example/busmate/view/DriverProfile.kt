@@ -40,6 +40,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.AdminActionsViewModel
 import coil3.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.example.busmate.data.UserRepositoryImpl
 
 class DriverProfileScreen : ComponentActivity() {
 
@@ -58,7 +59,7 @@ class DriverProfileScreen : ComponentActivity() {
 @Composable
 fun DriverProfileMainScreen(selectMode: Boolean) {
 
-    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl()) }
+    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
     val drivers = remember { mutableStateListOf<UserModel>() }
 
     LaunchedEffect(Unit) {

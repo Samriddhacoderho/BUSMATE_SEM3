@@ -46,7 +46,8 @@ import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
 class AdminActionsViewModel(
-    private val repo: AdminActionsInterface
+    private val repo: AdminActionsInterface,
+    private val userRepo: UserRepositoryInterface
 ) : ViewModel() {
 
     fun getUserbyID(
@@ -103,10 +104,6 @@ class AdminActionsViewModel(
 
     // Add this function
     fun verifyAdminPassword(password: String, callback: (Boolean, String) -> Unit) {
-        val repo= UserRepositoryImpl()
-        // We reuse the changePassword logic logic or a simple re-auth
-        // For simplicity, we can assume you have access to UserRepository logic
-        // Or you can add a dedicated 'verify' method in your repo.
-        repo.verifyPassword(password, callback)
+        userRepo.verifyPassword(password, callback)
     }
 }
