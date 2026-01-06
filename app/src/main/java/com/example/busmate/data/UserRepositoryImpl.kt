@@ -428,4 +428,24 @@ class UserRepositoryImpl : UserRepositoryInterface {
             }
         }
     }
+
+    // UserRepositoryImpl.kt
+
+    override fun verifyPassword(password: String, callback: (Boolean, String) -> Unit) {
+        val user = auth.currentUser
+        val email = user?.email
+
+        if (email != null) {
+            val credential = EmailAuthProvider.getCredential(email, password)
+            user.reauthenticate(credential).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Verified")
+                } else {
+                    callback(false, "Invalid Admin Password")
+                }
+            }
+        } else {
+            callback(false, "Admin session not found")
+        }
+    }
 }
