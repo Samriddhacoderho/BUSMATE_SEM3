@@ -48,12 +48,21 @@ import androidx.compose.ui.draw.clip
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.core.content.ContextCompat
 import com.example.busmate.service.TripMonitoringService
-import com.example.busmate.util.NotificationHelper
-import com.google.firebase.messaging.FirebaseMessaging
 import coil3.compose.AsyncImage
+import com.example.busmate.ui.theme.BusMateOrange
 import com.google.firebase.database.ValueEventListener
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -109,6 +118,9 @@ fun ParentDashboardScreen(
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
     var isViewingBusDetails by remember { mutableStateOf(false) }
+    var showNotificationOverlay by remember { mutableStateOf(false) }
+    // Track the count of notifications the user has already acknowledged
+    var lastSeenNotificationCount by remember { mutableIntStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -458,7 +470,12 @@ fun ParentDashboardScreen(
                                 colorFilter = if (isDarkModeEnabled)
                                     ColorFilter.tint(PlaceholderBusColor)
                                 else null,
-                                modifier = Modifier.height(70.dp)
+                                modifier = Modifier.height(70.dp).clickable(onClick = {
+                                    selectedItem = 0
+                                    isViewingBusDetails = false
+                                    selectedBusRouteId = null
+                                    selectedChildId = null
+                                })
                             )
                         }
                         IconButton(onClick = {}) {
@@ -468,12 +485,38 @@ fun ParentDashboardScreen(
                                 tint = Color.Black
                             )
                         }
-                        IconButton(onClick = {}) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                        IconButton(onClick = {
+                            showNotificationOverlay = !showNotificationOverlay
+                            // Once clicked, we set the 'seen' count to match the current list size to hide the badge
+                            lastSeenNotificationCount = dynamicNotifications.size
+                        }) {
+                            val unreadCount = dynamicNotifications.size - lastSeenNotificationCount
+                            val displayCount = if (unreadCount > 5) 5 else unreadCount
+
+                            if (displayCount > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = Color.White
+                                        ) {
+                                            Text(displayCount.toString())
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = "Notifications",
+                                        tint = if (showNotificationOverlay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            } else {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = if (showNotificationOverlay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }
@@ -496,6 +539,7 @@ fun ParentDashboardScreen(
         ) { padding ->
 
             Box(Modifier.fillMaxSize().padding(padding)) {
+                Log.d("CHECK_NOTIFICATIONS_COUNT", dynamicNotifications.toString())
                 when (selectedItem) {
                     0 -> HomeScreen(children = children,notifications=dynamicNotifications, onOpenLiveLocation = { busId, studentId ->
                         selectedBusRouteId = busId
@@ -516,19 +560,81 @@ fun ParentDashboardScreen(
                                 busId = user?.schoolId ?: "" // Ensure you pass the correct Bus/Route ID field for the driver
                             )
                         } else {
-                        LiveLocationScreen(
-                        viewModel = locationViewModel,
-                        childViewModel = childViewModel,
-                        accelViewModel = accelViewModel,
-                        busId = selectedBusRouteId ?: "",
-                        selectedChildId = selectedChildId // Correctly passed now
-                    )
+                            LiveLocationScreen(
+                                viewModel = locationViewModel,
+                                childViewModel = childViewModel,
+                                accelViewModel = accelViewModel,
+                                busId = selectedBusRouteId ?: "",
+                                selectedChildId = selectedChildId // Correctly passed now
+                            )
                         }
                     }
                     3 -> ProfileEditScreen()
                 }
             }
         }
+        // Add this at the end of ParentDashboardScreen, after the Scaffold
+
+        // Remove the 'if (showNotificationOverlay)' wrapper
+        AnimatedVisibility(
+            visible = showNotificationOverlay,
+            enter = expandVertically(
+                animationSpec = tween(durationMillis = 400),
+                expandFrom = Alignment.Top
+            ) + fadeIn(),
+            exit = shrinkVertically(
+                animationSpec = tween(durationMillis = 300),
+                shrinkTowards = Alignment.Top
+            ) + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable { showNotificationOverlay = false }
+                    .padding(top = 80.dp, end = 16.dp, start = 16.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                Card(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .clickable(enabled = false) { }
+                        .animateContentSize(),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Recent Alerts",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        val displayList = dynamicNotifications.takeLast(5).reversed()
+
+                        if (displayList.isEmpty()) {
+                            Text("No notifications", color = Color.Gray, fontSize = 14.sp)
+                        } else {
+                            displayList.forEach { notification ->
+                                NotificationItemScreen(
+                                    initial = notification["title"]?.take(1) ?: "!",
+                                    message = notification["message"] ?: "",
+                                    indicatorColor = BusMateOrange
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        TextButton(
+                            onClick = { showNotificationOverlay = false },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Close")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-
