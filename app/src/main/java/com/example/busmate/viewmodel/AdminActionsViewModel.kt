@@ -40,6 +40,8 @@ package com.example.busmate.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.AdminActionsInterface
+import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.data.UserRepositoryInterface
 import com.example.busmate.model.BusModel
 import com.example.busmate.model.UserModel
 
@@ -95,5 +97,16 @@ class AdminActionsViewModel(
         callback: (Boolean, String) -> Unit
     ) {
         repo.assignBusToDriver(busId, driverId, callback)
+    }
+
+    // AdminActionsViewModel.kt
+
+    // Add this function
+    fun verifyAdminPassword(password: String, callback: (Boolean, String) -> Unit) {
+        val repo= UserRepositoryImpl()
+        // We reuse the changePassword logic logic or a simple re-auth
+        // For simplicity, we can assume you have access to UserRepository logic
+        // Or you can add a dedicated 'verify' method in your repo.
+        repo.verifyPassword(password, callback)
     }
 }
