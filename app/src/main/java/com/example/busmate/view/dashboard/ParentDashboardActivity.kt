@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -57,6 +58,10 @@ import coil3.compose.AsyncImage
 import com.example.busmate.ui.theme.BusMateOrange
 import com.google.firebase.database.ValueEventListener
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -569,66 +574,63 @@ fun ParentDashboardScreen(
             }
         }
         // Add this at the end of ParentDashboardScreen, after the Scaffold
-        if (showNotificationOverlay) {
-            // Replace the existing notification overlay block with this:
-            androidx.compose.animation.AnimatedVisibility(
-                visible = showNotificationOverlay,
-                enter = androidx.compose.animation.expandVertically(
-                    animationSpec = tween(durationMillis = 400),
-                    expandFrom = Alignment.Top
-                ) + androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.shrinkVertically(
-                    animationSpec = tween(durationMillis = 300),
-                    shrinkTowards = Alignment.Top
-                ) + androidx.compose.animation.fadeOut()
+
+        // Remove the 'if (showNotificationOverlay)' wrapper
+        AnimatedVisibility(
+            visible = showNotificationOverlay,
+            enter = expandVertically(
+                animationSpec = tween(durationMillis = 400),
+                expandFrom = Alignment.Top
+            ) + fadeIn(),
+            exit = shrinkVertically(
+                animationSpec = tween(durationMillis = 300),
+                shrinkTowards = Alignment.Top
+            ) + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable { showNotificationOverlay = false }
+                    .padding(top = 80.dp, end = 16.dp, start = 16.dp),
+                contentAlignment = Alignment.TopEnd
             ) {
-                Box(
+                Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)) // Dim background
-                        .clickable { showNotificationOverlay = false } // Tap outside to close
-                        .padding(top = 80.dp, end = 16.dp, start = 16.dp),
-                    contentAlignment = Alignment.TopEnd
+                        .width(320.dp)
+                        .clickable(enabled = false) { }
+                        .animateContentSize(),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(8.dp)
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .width(320.dp)
-                            .clickable(enabled = false) { } // Prevent clicks on card from closing overlay
-                            .animateContentSize(), // Smoothly resizes when list changes
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Recent Alerts",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Recent Alerts",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                            val displayList = dynamicNotifications.takeLast(5).reversed()
+                        val displayList = dynamicNotifications.takeLast(5).reversed()
 
-                            if (displayList.isEmpty()) {
-                                Text("No notifications", color = Color.Gray, fontSize = 14.sp)
-                            } else {
-                                // Using a Column instead of LazyColumn here for the overlay
-                                // to allow the Card to wrap its content height naturally
-                                displayList.forEach { notification ->
-                                    NotificationItemScreen(
-                                        initial = notification["title"]?.take(1) ?: "!",
-                                        message = notification["message"] ?: "",
-                                        indicatorColor = BusMateOrange
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
+                        if (displayList.isEmpty()) {
+                            Text("No notifications", color = Color.Gray, fontSize = 14.sp)
+                        } else {
+                            displayList.forEach { notification ->
+                                NotificationItemScreen(
+                                    initial = notification["title"]?.take(1) ?: "!",
+                                    message = notification["message"] ?: "",
+                                    indicatorColor = BusMateOrange
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
+                        }
 
-                            TextButton(
-                                onClick = { showNotificationOverlay = false },
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text("Close")
-                            }
+                        TextButton(
+                            onClick = { showNotificationOverlay = false },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Close")
                         }
                     }
                 }
