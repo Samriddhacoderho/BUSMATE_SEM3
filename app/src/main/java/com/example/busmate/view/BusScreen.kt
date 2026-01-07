@@ -62,6 +62,7 @@ fun BusScreenUI(
     var licensePlate by remember { mutableStateOf("") }
     var routeId by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
+    var submitted by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     val userRepo = UserRepositoryImpl() // To use uploadImage
     val context = LocalContext.current
@@ -74,6 +75,12 @@ fun BusScreenUI(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val isLoading = message == "Loading"
+
+    val isFormValid = busNumber.isNotBlank() &&
+            licensePlate.isNotBlank() &&
+            routeId.isNotBlank() && // Removed the duplicate routeId check
+            capacity.isNotBlank() &&
+            selectedImageUri != null // Added this to ensure button grays out if no photo
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
@@ -228,38 +235,66 @@ fun BusScreenUI(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        // Show this if the user hasn't picked an image
+                        if (selectedImageUri == null) {
+                            Text(
+                                text = "• Please upload a bus photo",
+                                color = Color.Red,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        // Show this if any text field is empty
+                        if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacity.isBlank()) {
+                            Text(
+                                text = "• Please fill all required fields",
+                                color = Color.Red,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
                     Button(
                         onClick = {
-                            val capacityInt = capacity.toIntOrNull()
-                            if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Please fill all bus details correctly.")
-                                }
-                            } else {
-                                // Check if an image is selected
-                                // Inside BusScreen.kt Button onClick
-                                if (selectedImageUri != null) {
-                                    userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
+                            submitted = true
+                            if (isFormValid){
+
+                                val capacityInt = capacity.toIntOrNull()
+                                if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Please fill all bus details correctly.")
+                                    }
+                                } else {
+                                    // Check if an image is selected
+                                    // Inside BusScreen.kt Button onClick
+                                    if (selectedImageUri != null) {
+                                        userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
+                                            viewModel.registerBus(
+                                                busNumber = busNumber,
+                                                licensePlate = licensePlate,
+                                                routeId = routeId,
+                                                capacity = capacityInt,
+                                                busImage = imageUrl ?: "" // ✅ Now this works!
+                                            )
+                                        }
+                                    } else {
                                         viewModel.registerBus(
                                             busNumber = busNumber,
                                             licensePlate = licensePlate,
                                             routeId = routeId,
                                             capacity = capacityInt,
-                                            busImage = imageUrl ?: "" // ✅ Now this works!
+                                            busImage = "" // ✅ Now this works!
                                         )
                                     }
-                                } else {
-                                    viewModel.registerBus(
-                                        busNumber = busNumber,
-                                        licensePlate = licensePlate,
-                                        routeId = routeId,
-                                        capacity = capacityInt,
-                                        busImage = "" // ✅ Now this works!
-                                    )
                                 }
                             }
                         },
-                        enabled = !isLoading,
+                        enabled = isFormValid && !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
