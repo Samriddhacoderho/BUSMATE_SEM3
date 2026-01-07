@@ -245,6 +245,7 @@ fun ParentDashboardScreen(
     }
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen, //swipe to close only
         drawerContent = {
             ModalDrawerSheet(Modifier.width(300.dp)) {
                 Box(
