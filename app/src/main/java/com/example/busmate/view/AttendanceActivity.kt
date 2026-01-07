@@ -43,6 +43,9 @@ import org.json.JSONObject
 import java.util.concurrent.Executors
 import android.media.AudioManager
 import android.media.ToneGenerator
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 
 class AttendanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -296,14 +299,25 @@ fun StudentAttendanceCard(
             Box(
                 modifier = Modifier
                     .size(50.dp)
+                    .clip(CircleShape) // Ensures the image is circular
                     .background(MaterialTheme.colorScheme.primary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = child.firstName.take(1).uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                if (!child.profileImage.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = child.profileImage,
+                        contentDescription = "Student Photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Fallback to first letter if no image is in Firebase
+                    Text(
+                        text = child.firstName.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
