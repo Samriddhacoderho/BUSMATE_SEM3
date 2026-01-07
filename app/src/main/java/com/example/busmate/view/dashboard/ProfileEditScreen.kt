@@ -67,6 +67,7 @@ import com.example.busmate.view.LoginScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.example.busmate.view.DarkMoodSettingActivity
 import coil3.compose.AsyncImage
+import com.example.busmate.view.HelpAndSupportActivity
 
 
 // --- Colors and Theme (Simplified placeholders based on the image's black and white style) ---
@@ -155,7 +156,10 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
                     icon = Icons.Default.HelpOutline,
                     label = "Help & Support",
                     showArrow = true,
-                    onClick = { /* Handle click */ }
+                    onClick = {
+                        val intent = Intent(context, HelpAndSupportActivity::class.java)
+                        context.startActivity(intent)
+                    }
                 )
                 ProfileMenuItem(
                     icon = Icons.AutoMirrored.Filled.Logout,
