@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.busmate.data.UserRepositoryImpl
 import coil3.compose.AsyncImage
 import com.example.busmate.util.NotificationHelper
+import com.example.busmate.util.SOSPrefs
 
 
 @Composable
@@ -140,6 +141,7 @@ fun HomeScreen(
     }
     if (model?.typeofUser?.lowercase() != "driver") {
         SOSObserver(
+            userId = model?.uid ?: return,
             userRole = model?.typeofUser,
             children = model?.children
         )
@@ -597,81 +599,106 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
 }
 @Composable
 fun SOSObserver(
-    userRole: String?,                  // "Admin", "Parent", or "Driver"
-    children: Map<String, ChildModel>?  // Only needed for parents
+    userId: String,                     // 🔥 ADD THIS
+    userRole: String?,
+    children: Map<String, ChildModel>?
 ) {
     val context = LocalContext.current
 
-    // 🔒 HARD BLOCK: Drivers must NEVER attach listener
     if (userRole == null || userRole.lowercase() == "driver") return
 
-    DisposableEffect(userRole) {
+    DisposableEffect(userId, userRole) {
 
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
             .getReference("notifications")
-        // Only consider alerts from last 2 hours
-        val lookBackTime = System.currentTimeMillis() - 7200000
 
+        // 🔥 PER-USER last seen time
+        val lastSeenTime = SOSPrefs.getLastSeen(context, userId)
+
+        // 🔥 Listen ONLY to unseen SOS for THIS USER
         val query = db.orderByChild("timestamp")
-            .startAt(lookBackTime.toDouble())
-        val listener = object : com.google.firebase.database.ValueEventListener {
-            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                for (alert in snapshot.children) {
-                    val alertRouteId =
-                        alert.child("routeId").getValue(String::class.java)
-                    val busNo =
-                        alert.child("busNumber").getValue(String::class.java) ?: "N/A"
+            .startAt(lastSeenTime.toDouble() + 1)
 
-                    // 🔹 Audience filtering
-                    val audience = alert.child("audience")
-                        .getValue(
-                            object : com.google.firebase.database.GenericTypeIndicator<List<String>>() {}
-                        ) ?: emptyList()
+        val listener = object : com.google.firebase.database.ChildEventListener {
 
-                    if (!audience.contains(userRole.lowercase())) continue
+            override fun onChildAdded(
+                snapshot: com.google.firebase.database.DataSnapshot,
+                previousChildName: String?
+            ) {
+                val timestamp =
+                    snapshot.child("timestamp").getValue(Long::class.java) ?: return
 
-                    when (userRole.lowercase()) {
+                val alertRouteId =
+                    snapshot.child("routeId").getValue(String::class.java)
 
-                        "admin" -> {
+                val busNo =
+                    snapshot.child("busNumber").getValue(String::class.java) ?: "N/A"
+
+                val audience = snapshot.child("audience")
+                    .getValue(
+                        object : com.google.firebase.database.GenericTypeIndicator<List<String>>() {}
+                    ) ?: emptyList()
+
+                if (!audience.contains(userRole.lowercase())) return
+
+                var shown = false
+
+                when (userRole.lowercase()) {
+
+                    "admin" -> {
+                        NotificationHelper.showNotification(
+                            context,
+                            "Admin: SOS ALERT",
+                            "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
+                        )
+                        shown = true
+                    }
+
+                    "parent" -> {
+                        val hasMatchingChild =
+                            children?.values?.any {
+                                it.busRouteId == alertRouteId
+                            } == true
+
+                        if (hasMatchingChild) {
                             NotificationHelper.showNotification(
-                                context = context,
-                                title = "Admin: SOS ALERT",
-                                message = "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
+                                context,
+                                "Parent: SOS ALERT",
+                                "SOS: BUS $busNo has reported an emergency"
                             )
-                        }
-
-                        "parent" -> {
-                            val hasMatchingChild =
-                                children?.values?.any { child ->
-                                    child.busRouteId == alertRouteId
-                                } == true
-
-                            if (hasMatchingChild) {
-                                NotificationHelper.showNotification(
-                                    context = context,
-                                    title = "Parent: SOS ALERT",
-                                    message = "SOS: BUS $busNo has reported an emergency"
-                                )
-                            }
+                            shown = true
                         }
                     }
                 }
+
+                // ✅ Mark this SOS as seen FOR THIS USER ONLY
+                if (shown) {
+                    SOSPrefs.setLastSeen(context, userId, timestamp)
+                }
             }
+
+            override fun onChildChanged(
+                snapshot: com.google.firebase.database.DataSnapshot,
+                previousChildName: String?
+            ) {}
+
+            override fun onChildRemoved(snapshot: com.google.firebase.database.DataSnapshot) {}
+            override fun onChildMoved(
+                snapshot: com.google.firebase.database.DataSnapshot,
+                previousChildName: String?
+            ) {}
+
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
         }
 
-        query.addValueEventListener(listener)
+        query.addChildEventListener(listener)
 
-        // 🔥 CRITICAL: REMOVE LISTENER
         onDispose {
             query.removeEventListener(listener)
         }
     }
 }
-
-
-
 
 
 
