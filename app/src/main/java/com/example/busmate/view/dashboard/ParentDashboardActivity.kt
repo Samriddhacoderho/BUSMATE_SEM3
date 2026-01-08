@@ -94,7 +94,6 @@ fun ParentDashboardScreen(
 
     /* ---------- VIEW MODELS ---------- */
     val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
-    val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
     val application = context.applicationContext as android.app.Application
@@ -212,7 +211,6 @@ fun ParentDashboardScreen(
 
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
-        NavItem("Support", Icons.Filled.SupportAgent),
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
@@ -548,8 +546,7 @@ fun ParentDashboardScreen(
                         selectedItem = 2
                     })
 
-                    1 -> SupportScreen(supportViewModel)
-                    2 ->{
+                    1 ->{
                         // Logic to switch between Driver and Parent/Admin views
                         val userRole = user?.typeofUser?.lowercase()
 
@@ -570,7 +567,7 @@ fun ParentDashboardScreen(
                             )
                         }
                     }
-                    3 -> ProfileEditScreen()
+                    2 -> ProfileEditScreen()
                 }
             }
         }
