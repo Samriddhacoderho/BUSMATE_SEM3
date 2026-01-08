@@ -5,6 +5,8 @@ import android.content.Context
 object SOSPrefs {
 
     private const val PREF_NAME = "sos_prefs"
+    private fun activeKey(userId: String) = "active_sos_$userId"
+
 
     private fun keyForUser(userId: String): String {
         return "last_seen_sos_time_$userId"
@@ -30,6 +32,18 @@ object SOSPrefs {
             .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
             .edit()
             .remove(keyForUser(userId))
+            .apply()
+    }
+    fun isSOSActive(context: Context, userId: String): Boolean {
+        return context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(activeKey(userId), false)
+    }
+    fun setSOSActive(context: Context, userId: String, active: Boolean) {
+        context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(activeKey(userId), active)
             .apply()
     }
 }

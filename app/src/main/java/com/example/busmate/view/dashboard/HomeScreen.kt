@@ -1,5 +1,4 @@
 package com.example.busmate.view.dashboard
-
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
@@ -67,6 +66,22 @@ fun HomeScreen(
     var lastNotificationCount by rememberSaveable {
         mutableIntStateOf(notifications.size)
     }
+    var model by remember {
+        mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
+    }
+    val userId = model?.uid
+
+    val showSOSDialog = remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            showSOSDialog.value = SOSPrefs.isSOSActive(context, userId)
+        }
+    }
+
+
+
 
     LaunchedEffect(notifications.size) {
         // Only trigger if a NEW notification arrives
@@ -93,11 +108,6 @@ fun HomeScreen(
     /* =======================================================
        🔹 USER MODEL STATE (UNCHANGED)
        ======================================================= */
-
-    var model by remember {
-        mutableStateOf(activity.intent.getParcelableExtra<UserModel>("model"))
-    }
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -125,7 +135,6 @@ fun HomeScreen(
     val navigateToAddBus = {
         context.startActivity(Intent(context, BusScreen::class.java))
     }
-
     val navigateToTrip = {
         busViewModel.getBusByDriverUid(model?.uid ?: "") { bus ->
             if (bus != null) {
@@ -307,13 +316,17 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
-
+        }
+        if (showSOSDialog.value && userId != null) {
+            SOSAlertDialog(
+                onClose = {
+                    SOSPrefs.setSOSActive(context, userId, false)
+                    showSOSDialog.value = false
+                }
+            )
         }
     }
 }
-
-
-
 @Composable
 fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
     Column(
@@ -570,7 +583,6 @@ fun WelcomeCardAdmin(adminName: String?) {
         )
     }
 }
-
 @Composable
 fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
     Row(
@@ -585,12 +597,10 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
-
         OutlinedButton(onClick = onAddBusClick) {
             Text("Add Bus")
         }
     }
-
     NotificationItemScreen(
         initial = "S",
         message = "School closed on Friday",
@@ -675,6 +685,7 @@ fun SOSObserver(
                 // ✅ Mark this SOS as seen FOR THIS USER ONLY
                 if (shown) {
                     SOSPrefs.setLastSeen(context, userId, timestamp)
+                    SOSPrefs.setSOSActive(context, userId, true)
                 }
             }
 
@@ -699,6 +710,36 @@ fun SOSObserver(
         }
     }
 }
+@Composable
+fun SOSAlertDialog(
+    onClose: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {}, // ❌ prevent outside dismiss
+        confirmButton = {
+            Button(
+                onClick = onClose,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Text("Close", color = Color.White)
+            }
+        },
+        title = {
+            Text(
+                text = "🚨 EMERGENCY SOS",
+                fontWeight = FontWeight.Bold,
+                color = Color.Red
+            )
+        },
+        text = {
+            Text(
+                text = "An emergency has been reported.\nPlease take immediate action.",
+                fontSize = 16.sp
+            )
+        }
+    )
+}
+
 
 
 
