@@ -12,6 +12,14 @@ object SOSPrefs {
         return "last_seen_sos_time_$userId"
     }
 
+    /* ────────────────
+       KEYS
+       ──────────────── */
+
+    private fun lastSeenKey(userId: String) = "last_seen_sos_time_$userId"
+    private fun sosTitleKey(userId: String) = "sos_title_$userId"
+    private fun sosMessageKey(userId: String) = "sos_message_$userId"
+
     fun getLastSeen(context: Context, userId: String): Long {
         return context
             .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -46,5 +54,38 @@ object SOSPrefs {
             .putBoolean(activeKey(userId), active)
             .apply()
     }
+    fun saveSOSContent(
+        context: Context,
+        userId: String,
+        title: String,
+        message: String
+    ) {
+        context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(sosTitleKey(userId), title)
+            .putString(sosMessageKey(userId), message)
+            .apply()
+    }
+
+    fun getSOSTitle(context: Context, userId: String): String {
+        return context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .getString(sosTitleKey(userId), "SOS ALERT")
+            ?: "SOS ALERT"
+    }
+
+    fun getSOSMessage(context: Context, userId: String): String {
+        return context
+            .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+            .getString(
+                sosMessageKey(userId),
+                "An emergency has been reported."
+            )
+            ?: "An emergency has been reported."
+    }
+
+
+
 }
 //testing sosprefs and sos alert bug
