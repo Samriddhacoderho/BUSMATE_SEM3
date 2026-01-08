@@ -74,15 +74,22 @@ fun HomeScreen(
     val showSOSDialog = remember {
         mutableStateOf(false)
     }
+    val sosTitle = remember { mutableStateOf("") }
+    val sosMessage = remember { mutableStateOf("") }
+    LaunchedEffect(userId) {
+        if (userId != null && SOSPrefs.isSOSActive(context, userId)) {
+            showSOSDialog.value = true
+            sosTitle.value = SOSPrefs.getSOSTitle(context, userId)
+            sosMessage.value = SOSPrefs.getSOSMessage(context, userId)
+        }
+    }
+
+
     LaunchedEffect(userId) {
         if (userId != null) {
             showSOSDialog.value = SOSPrefs.isSOSActive(context, userId)
         }
     }
-
-
-
-
     LaunchedEffect(notifications.size) {
         // Only trigger if a NEW notification arrives
         if (notifications.size > lastNotificationCount && notifications.isNotEmpty()) {
@@ -152,7 +159,12 @@ fun HomeScreen(
         SOSObserver(
             userId = model?.uid ?: return,
             userRole = model?.typeofUser,
-            children = model?.children
+            children = model?.children,
+            onSOSReceived = { title, message ->
+                sosTitle.value = title
+                sosMessage.value = message
+                showSOSDialog.value = true
+            }
         )
     }
 
@@ -319,12 +331,15 @@ fun HomeScreen(
         }
         if (showSOSDialog.value && userId != null) {
             SOSAlertDialog(
+                title = sosTitle.value,
+                message = sosMessage.value,
                 onClose = {
                     SOSPrefs.setSOSActive(context, userId, false)
                     showSOSDialog.value = false
                 }
             )
         }
+
     }
 }
 @Composable
@@ -611,8 +626,11 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
 fun SOSObserver(
     userId: String,                     // 🔥 ADD THIS
     userRole: String?,
-    children: Map<String, ChildModel>?
-) {
+    children: Map<String, ChildModel>?,
+    onSOSReceived: (String, String) -> Unit
+
+)
+{
     val context = LocalContext.current
 
     if (userRole == null || userRole.lowercase() == "driver") return
@@ -653,15 +671,16 @@ fun SOSObserver(
                 if (!audience.contains(userRole.lowercase())) return
 
                 var shown = false
+                var title = ""
+                var message = ""
 
                 when (userRole.lowercase()) {
 
                     "admin" -> {
-                        NotificationHelper.showNotification(
-                            context,
-                            "Admin: SOS ALERT",
-                            "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
-                        )
+                        title = "Admin: SOS ALERT"
+                        message = "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
+
+                        NotificationHelper.showNotification(context, title, message)
                         shown = true
                     }
 
@@ -672,20 +691,21 @@ fun SOSObserver(
                             } == true
 
                         if (hasMatchingChild) {
-                            NotificationHelper.showNotification(
-                                context,
-                                "Parent: SOS ALERT",
-                                "SOS: BUS $busNo has reported an emergency"
-                            )
+                            title = "Parent: SOS ALERT"
+                            message = "SOS: BUS $busNo has reported an emergency"
+
+                            NotificationHelper.showNotification(context, title, message)
                             shown = true
                         }
                     }
                 }
-
                 // ✅ Mark this SOS as seen FOR THIS USER ONLY
                 if (shown) {
                     SOSPrefs.setLastSeen(context, userId, timestamp)
                     SOSPrefs.setSOSActive(context, userId, true)
+                    SOSPrefs.saveSOSContent(context, userId, title, message)
+                    onSOSReceived(title, message)
+
                 }
             }
 
@@ -712,6 +732,8 @@ fun SOSObserver(
 }
 @Composable
 fun SOSAlertDialog(
+    title: String,
+    message: String,
     onClose: () -> Unit
 ) {
     AlertDialog(
@@ -726,14 +748,14 @@ fun SOSAlertDialog(
         },
         title = {
             Text(
-                text = "🚨 EMERGENCY SOS",
+                text = title,
                 fontWeight = FontWeight.Bold,
                 color = Color.Red
             )
         },
         text = {
             Text(
-                text = "An emergency has been reported.\nPlease take immediate action.",
+                text = message,
                 fontSize = 16.sp
             )
         }
