@@ -477,13 +477,6 @@ fun ParentDashboardScreen(
                                 })
                             )
                         }
-                        IconButton(onClick = {}) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = Color.Black
-                            )
-                        }
                         IconButton(onClick = {
                             showNotificationOverlay = !showNotificationOverlay
                             // Once clicked, we set the 'seen' count to match the current list size to hide the badge
@@ -545,7 +538,6 @@ fun ParentDashboardScreen(
                         selectedChildId = studentId
                         selectedItem = 1
                     })
-
                     1 ->{
                         // Logic to switch between Driver and Parent/Admin views
                         val userRole = user?.typeofUser?.lowercase()
