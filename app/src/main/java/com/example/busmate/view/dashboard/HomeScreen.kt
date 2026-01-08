@@ -610,20 +610,16 @@ fun SOSObserver(
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
             .getReference("notifications")
-
         // Only consider alerts from last 2 hours
         val lookBackTime = System.currentTimeMillis() - 7200000
+
         val query = db.orderByChild("timestamp")
             .startAt(lookBackTime.toDouble())
-
         val listener = object : com.google.firebase.database.ValueEventListener {
-
             override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
                 for (alert in snapshot.children) {
-
                     val alertRouteId =
                         alert.child("routeId").getValue(String::class.java)
-
                     val busNo =
                         alert.child("busNumber").getValue(String::class.java) ?: "N/A"
 
