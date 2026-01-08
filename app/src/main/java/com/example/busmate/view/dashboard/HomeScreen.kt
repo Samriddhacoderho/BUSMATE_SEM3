@@ -152,7 +152,10 @@ fun HomeScreen(
         SOSObserver(
             userId = model?.uid ?: return,
             userRole = model?.typeofUser,
-            children = model?.children
+            children = model?.children,
+            onSOSReceived = {
+                showSOSDialog.value = true   // 🔥 IMMEDIATE
+            }
         )
     }
 
@@ -611,7 +614,8 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
 fun SOSObserver(
     userId: String,                     // 🔥 ADD THIS
     userRole: String?,
-    children: Map<String, ChildModel>?
+    children: Map<String, ChildModel>?,
+    onSOSReceived: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -686,6 +690,7 @@ fun SOSObserver(
                 if (shown) {
                     SOSPrefs.setLastSeen(context, userId, timestamp)
                     SOSPrefs.setSOSActive(context, userId, true)
+                    onSOSReceived()
                 }
             }
 
