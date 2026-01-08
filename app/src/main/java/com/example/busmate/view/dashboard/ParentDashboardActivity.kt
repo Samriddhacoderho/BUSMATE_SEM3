@@ -536,7 +536,7 @@ fun ParentDashboardScreen(
                     0 -> HomeScreen(children = children,notifications=dynamicNotifications, onOpenLiveLocation = { busId, studentId ->
                         selectedBusRouteId = busId
                         selectedChildId = studentId
-                        selectedItem = 2
+                        selectedItem = 1
                     })
                     1 ->{
                         // Logic to switch between Driver and Parent/Admin views
