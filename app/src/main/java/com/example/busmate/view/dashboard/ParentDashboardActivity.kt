@@ -94,7 +94,6 @@ fun ParentDashboardScreen(
 
     /* ---------- VIEW MODELS ---------- */
     val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
-    val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
     val childViewModel = remember { ChildViewModel(ChildRepositoryImpl()) }
     val locationViewModel = remember { LocationViewModel(LocationImpl(context)) }
     val application = context.applicationContext as android.app.Application
@@ -212,7 +211,6 @@ fun ParentDashboardScreen(
 
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
-        NavItem("Support", Icons.Filled.SupportAgent),
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
@@ -479,13 +477,6 @@ fun ParentDashboardScreen(
                                 })
                             )
                         }
-                        IconButton(onClick = {}) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = Color.Black
-                            )
-                        }
                         IconButton(onClick = {
                             showNotificationOverlay = !showNotificationOverlay
                             // Once clicked, we set the 'seen' count to match the current list size to hide the badge
@@ -545,11 +536,9 @@ fun ParentDashboardScreen(
                     0 -> HomeScreen(children = children,notifications=dynamicNotifications, onOpenLiveLocation = { busId, studentId ->
                         selectedBusRouteId = busId
                         selectedChildId = studentId
-                        selectedItem = 2
+                        selectedItem = 1
                     })
-
-                    1 -> SupportScreen(supportViewModel)
-                    2 ->{
+                    1 ->{
                         // Logic to switch between Driver and Parent/Admin views
                         val userRole = user?.typeofUser?.lowercase()
 
@@ -570,7 +559,7 @@ fun ParentDashboardScreen(
                             )
                         }
                     }
-                    3 -> ProfileEditScreen()
+                    2 -> ProfileEditScreen()
                 }
             }
         }

@@ -1,11 +1,23 @@
-package com.example.busmate.view.dashboard
+package com.example.busmate.view
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
+import com.example.busmate.data.SupportRepositoryImpl
+import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.viewmodel.SupportViewModel
+import com.example.busmate.viewmodel.UserViewModel
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,16 +32,50 @@ import com.example.busmate.model.SupportModel
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.LightGrayBackground
-import com.example.busmate.viewmodel.SupportViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Composable
-fun SupportScreen(viewModel: SupportViewModel) {
+class HelpAndSupportActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
+            val userViewModel = remember { UserViewModel(UserRepositoryImpl()) } // Initialize this
 
+            BusMateTheme {
+                SupportScreen(
+                    viewModel = supportViewModel,
+                    userViewModel = userViewModel // Pass it here
+                )
+            }
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SupportScreen(
+    viewModel: SupportViewModel,
+    userViewModel: UserViewModel = remember { UserViewModel(UserRepositoryImpl()) } // Add this
+) {
     val context = LocalContext.current
     val activity = context as Activity
-    val model = activity.intent.getParcelableExtra<UserModel>("model")
+
+    // Try to get from intent, otherwise use the ViewModel state
+    val intentModel = activity.intent.getParcelableExtra<UserModel>("model")
+    val userState by userViewModel.user.collectAsState()
+    val model = intentModel ?: userState // Use intent if available, else use ViewModel
+
+    // Trigger load if model is null
+    LaunchedEffect(Unit) {
+        if (intentModel == null) {
+            val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            userViewModel.loadUserProfile(currentUid)
+        }
+    }
+
+//    val model = activity.intent.getParcelableExtra<UserModel>("model")
 
     val message by viewModel.message.collectAsState()
     val supportMessages by viewModel.supportMessages.collectAsState()
@@ -79,6 +125,25 @@ fun SupportScreen(viewModel: SupportViewModel) {
     }
 
     Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text("Help & Support", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                },
+                navigationIcon = {
+                    IconButton(onClick = { activity.finish() }) { // Closes activity and goes back
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = BusMateBlue
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
