@@ -51,5 +51,7 @@ interface BusRepositoryInterface {
         imageUri: Uri,
         callback: (String?) -> Unit
     )
+    fun observeAllBuses(callback: (List<BusModel>) -> Unit)
+
 
 }
