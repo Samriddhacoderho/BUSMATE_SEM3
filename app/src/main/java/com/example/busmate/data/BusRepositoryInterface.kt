@@ -52,6 +52,9 @@ interface BusRepositoryInterface {
         callback: (String?) -> Unit
     )
     fun observeAllBuses(callback: (List<BusModel>) -> Unit)
-
+    fun updateBus(
+        bus: BusModel,
+        callback: (Boolean, String) -> Unit
+    )
 
 }
