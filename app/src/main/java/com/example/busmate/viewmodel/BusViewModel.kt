@@ -1,5 +1,7 @@
 package com.example.busmate.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
@@ -72,8 +74,12 @@ class BusViewModel(
             _message.value = msg
         }
     }
-
-
-    //testing triggersos
+    fun uploadBusImage(
+        context: Context,
+        imageUri: Uri,
+        callback: (String?) -> Unit
+    ) {
+        repository.uploadBusImage(context, imageUri, callback)
+    }
 }
 //testing
