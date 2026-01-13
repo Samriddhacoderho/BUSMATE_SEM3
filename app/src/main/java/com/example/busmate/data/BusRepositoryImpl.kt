@@ -381,5 +381,15 @@ class BusRepositoryImpl : BusRepositoryInterface {
             }
         }
     }
-
+    override fun observeAllBuses(callback: (List<BusModel>) -> Unit) {
+        busesRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = snapshot.children.mapNotNull {
+                    it.getValue(BusModel::class.java)
+                }
+                callback(list)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
 }
