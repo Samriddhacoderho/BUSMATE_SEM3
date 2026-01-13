@@ -16,6 +16,9 @@ class BusViewModel(
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
+    private val _buses = MutableStateFlow<List<BusModel>>(emptyList())
+    val buses: StateFlow<List<BusModel>> = _buses
+
     fun registerBus(
         busNumber: String,
         licensePlate: String,
