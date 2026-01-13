@@ -316,6 +316,8 @@ fun ParentDashboardScreen(
                             scope.launch {
                                 drawerState.close()
                                 when (item.label) {
+                                    "Search Bus" -> { context.startActivity(Intent(context, SearchBusActivity::class.java)) }
+
                                     "Bus Details" -> {
                                         // ✅ Launch as Activity now
                                         context.startActivity(
