@@ -29,6 +29,11 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.MapPickerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_map_picker"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.HelpAndSupportActivity"
             android:exported="false"
             android:label="@string/title_activity_help_and_support"
