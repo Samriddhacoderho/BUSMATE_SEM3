@@ -1,5 +1,7 @@
 package com.example.busmate.data
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.example.busmate.model.BusModel
 import com.google.firebase.database.*
@@ -341,6 +343,43 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 }
             })
     }
+    override fun uploadBusImage(
+        context: Context,
+        imageUri: Uri,
+        callback: (String?) -> Unit
+    ) {
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
+        executor.execute {
+            try {
+                val inputStream =
+                    context.contentResolver.openInputStream(imageUri)
+
+                val cloudinary = com.cloudinary.Cloudinary(
+                    mapOf(
+                        "cloud_name" to "dithceay5",
+                        "api_key" to "242833732537939",
+                        "api_secret" to "qQvbql8xsRUmWuyP2xR-rutoxx0"
+                    )
+                )
+
+                val uploadResult = cloudinary.uploader()
+                    .upload(inputStream, com.cloudinary.utils.ObjectUtils.emptyMap())
+
+                var imageUrl = uploadResult["url"] as String?
+                imageUrl = imageUrl?.replace("http://", "https://")
+
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    callback(imageUrl)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    callback(null)
+                }
+            }
+        }
+    }
 
 }
