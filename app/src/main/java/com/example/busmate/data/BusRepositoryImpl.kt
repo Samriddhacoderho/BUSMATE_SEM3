@@ -392,4 +392,18 @@ class BusRepositoryImpl : BusRepositoryInterface {
             override fun onCancelled(error: DatabaseError) {}
         })
     }
+    override fun updateBus(
+        bus: BusModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        busesRef.child(bus.uid)
+            .updateChildren(bus.toMap())
+            .addOnCompleteListener {
+                callback(
+                    it.isSuccessful,
+                    if (it.isSuccessful) "Bus updated successfully"
+                    else "Failed to update bus"
+                )
+            }
+    }
 }
