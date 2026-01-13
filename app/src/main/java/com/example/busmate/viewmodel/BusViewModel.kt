@@ -61,6 +61,12 @@ class BusViewModel(
             _message.value = msg
         }
     }
+    fun observeAllBuses() {
+        repository.observeAllBuses {
+            _buses.value = it
+        }
+    }
+
     //testing triggersos
 }
 //testing
