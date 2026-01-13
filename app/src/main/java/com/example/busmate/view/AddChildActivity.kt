@@ -261,10 +261,10 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
 
-                    MapLocationField(label = "Choose Pickup Location from map", value = pickUpLocation) {
+                    MapLocationField(label = "Choose Pickup Location", value = pickUpLocation) {
                         pickUpLauncher.launch(Intent(context, MapPickerActivity::class.java))
                     }
-                    MapLocationField(label = "Choose Dropoff Location from map", value = dropOffLocation) {
+                    MapLocationField(label = "Choose Dropoff Location", value = dropOffLocation) {
                         dropOffLauncher.launch(Intent(context, MapPickerActivity::class.java))
                     }
 
