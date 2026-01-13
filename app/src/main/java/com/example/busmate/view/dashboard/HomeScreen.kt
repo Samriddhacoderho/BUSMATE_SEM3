@@ -231,8 +231,8 @@ fun HomeScreen(
                                         bus.driver == null ->
                                             Toast.makeText(context, "Driver not assigned yet", Toast.LENGTH_LONG).show()
 
-                                        bus.speed <= 0.1 ->
-                                            Toast.makeText(context, "Trip has not started yet", Toast.LENGTH_LONG).show()
+                                        !bus.isTripRunning ->
+                                            Toast.makeText(context, "The trip has not started yet", Toast.LENGTH_LONG).show()
 
                                         else -> onOpenLiveLocation(bus.uid, child.studentId)
                                     }
