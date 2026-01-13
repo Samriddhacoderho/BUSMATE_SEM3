@@ -1,5 +1,7 @@
 package com.example.busmate.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
@@ -13,6 +15,9 @@ class BusViewModel(
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
+
+    private val _buses = MutableStateFlow<List<BusModel>>(emptyList())
+    val buses: StateFlow<List<BusModel>> = _buses
 
     fun registerBus(
         busNumber: String,
@@ -61,6 +66,23 @@ class BusViewModel(
             _message.value = msg
         }
     }
-    //testing triggersos
+    fun observeAllBuses() {
+        repository.observeAllBuses {
+            _buses.value = it
+        }
+    }
+    fun updateBus(bus: BusModel) {
+        _message.value = "Saving..."
+        repository.updateBus(bus) { _, msg ->
+            _message.value = msg
+        }
+    }
+    fun uploadBusImage(
+        context: Context,
+        imageUri: Uri,
+        callback: (String?) -> Unit
+    ) {
+        repository.uploadBusImage(context, imageUri, callback)
+    }
 }
 //testing
