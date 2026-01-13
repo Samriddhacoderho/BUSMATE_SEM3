@@ -1,5 +1,7 @@
 package com.example.busmate.data
 
+import android.content.Context
+import android.net.Uri
 import com.example.busmate.model.BusModel
 import com.google.android.gms.maps.model.LatLng
 
@@ -44,4 +46,10 @@ interface BusRepositoryInterface {
         onFailure: (String) -> Unit
     )
     fun triggerSOS(driverUid: String, callback: (Boolean, String) -> Unit)
+    fun uploadBusImage(
+        context: Context,
+        imageUri: Uri,
+        callback: (String?) -> Unit
+    )
+
 }
