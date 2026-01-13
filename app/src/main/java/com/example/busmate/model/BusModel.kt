@@ -16,6 +16,7 @@ data class BusModel(
     var currentLocation: String = "Depot",
     var speed: Double = 0.0,
     var driver: UserModel? = null, // nullable for Realtime DB safety
+    var tripType: String = "Pickup", // NEW: "Pickup" or "Drop-off"
     @get:PropertyName("isTripRunning")
     @set:PropertyName("isTripRunning")
     @get:JvmName("isTripRunning")
@@ -33,6 +34,7 @@ data class BusModel(
             "currentLocation" to currentLocation,
             "speed" to speed,
             "driver" to driver?.toMap(),
+            "tripType" to tripType,
             "isTripRunning" to isTripRunning
         )
     }
