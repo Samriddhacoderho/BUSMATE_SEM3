@@ -87,6 +87,7 @@ dependencies {
     implementation("com.google.maps.android:android-maps-utils:3.8.2")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.android.gms:play-services-maps:19.1.0")
+    implementation("com.google.android.libraries.places:places:3.3.0")
 
     // Cloudinary & Image Loading
     implementation("com.cloudinary:cloudinary-android:2.1.0")
@@ -109,8 +110,7 @@ dependencies {
     implementation("com.google.zxing:core:3.5.1")
     implementation(libs.androidx.compose.animation)
 
-    //Speedometer
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    //Speedometer Permission for gps
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     //Biometric
