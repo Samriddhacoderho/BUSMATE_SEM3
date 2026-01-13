@@ -223,8 +223,8 @@ fun ParentDashboardScreen(
             NavItem("Manage Account", Icons.Default.PersonOff),
             NavItem("Search Child", Icons.Default.Search),
             NavItem("View Attendance", Icons.Default.ChildCare),
-            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
-
+            NavItem("Guidelines and Rules", Icons.Default.RuleFolder),
+            NavItem("Search Bus", Icons.Default.Search),
         )
 
         "driver" -> listOf(
@@ -316,6 +316,8 @@ fun ParentDashboardScreen(
                             scope.launch {
                                 drawerState.close()
                                 when (item.label) {
+                                    "Search Bus" -> { context.startActivity(Intent(context, SearchBusActivity::class.java)) }
+
                                     "Bus Details" -> {
                                         // ✅ Launch as Activity now
                                         context.startActivity(
