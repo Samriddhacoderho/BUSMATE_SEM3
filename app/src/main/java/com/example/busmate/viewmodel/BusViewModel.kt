@@ -66,6 +66,13 @@ class BusViewModel(
             _buses.value = it
         }
     }
+    fun updateBus(bus: BusModel) {
+        _message.value = "Saving..."
+        repository.updateBus(bus) { _, msg ->
+            _message.value = msg
+        }
+    }
+
 
     //testing triggersos
 }
