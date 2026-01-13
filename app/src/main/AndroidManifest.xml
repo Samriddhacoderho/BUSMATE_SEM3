@@ -29,27 +29,10 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
-            android:name=".view.EditBusActivity"
-            android:exported="true"
-            android:label="@string/title_activity_edit_bus"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.SearchBusActivity"
-            android:exported="true"
-            android:label="@string/title_activity_search_bus"
-            android:theme="@style/Theme.BUSMATE">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:name=".view.MapPickerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_map_picker"
+            android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.HelpAndSupportActivity"
             android:exported="false"
