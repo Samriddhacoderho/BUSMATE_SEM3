@@ -25,6 +25,12 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.busmate.view.MapPickerActivity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
 // ASSUMPTION: You must import your concrete repository implementation here
-import com.example.busmate.data.ChildRepositoryImpl // <-- Crucial Import
+import com.example.busmate.data.ChildRepositoryImpl
 import androidx.lifecycle.ViewModel // Import needed for ChildViewModel signature
 import com.example.busmate.viewmodel.ChildViewModel
 import kotlinx.coroutines.launch
@@ -73,7 +79,31 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
     var dropOffLocation by remember { mutableStateOf("") }
     var busRouteId by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    val routeOptions = (1010..1040).map { it.toString() }
+    var pickUpLat by remember { mutableStateOf(0.0) }
+    var pickUpLng by remember { mutableStateOf(0.0) }
+    var dropOffLat by remember { mutableStateOf(0.0) }
+    var dropOffLng by remember { mutableStateOf(0.0) }
+
+    // 1. Define Launchers for MapPickerActivity
+    val pickUpLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            pickUpLat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
+            pickUpLng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
+            pickUpLocation = result.data?.getStringExtra("address") ?: ""
+        }
+    }
+
+    val dropOffLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            dropOffLat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
+            dropOffLng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
+            dropOffLocation = result.data?.getStringExtra("address") ?: ""
+        }
+    }
 
     // --- NEW IMAGE PICKER STATE ---
     var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -82,8 +112,7 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
     ) { uri -> selectedImageUri = uri }
     // ------------------------------
 
-    var isGeocoding by remember { mutableStateOf(false) }
-    val isLoading = message == "Loading" || message == "Uploading data..." || isGeocoding
+    val isLoading = message == "Loading" || message == "Uploading data..."
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -232,8 +261,12 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Pickup/Dropoff Location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
 
-                    AddChildInputField(pickUpLocation, { pickUpLocation = it }, "Pickup Location", Icons.Default.PinDrop)
-                    AddChildInputField(dropOffLocation, { dropOffLocation = it }, "Dropoff Location", Icons.Default.PinDrop)
+                    MapLocationField(label = "Pickup Location", value = pickUpLocation) {
+                        pickUpLauncher.launch(Intent(context, MapPickerActivity::class.java))
+                    }
+                    MapLocationField(label = "Dropoff Location", value = dropOffLocation) {
+                        dropOffLauncher.launch(Intent(context, MapPickerActivity::class.java))
+                    }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
@@ -256,40 +289,23 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
 
                     Button(
                         onClick = {
-                            scope.launch {
-                                isGeocoding = true
-                                val pAddr = getCoords(context, pickUpLocation)
-                                val dAddr = getCoords(context, dropOffLocation)
-
-                                if (pAddr != null && dAddr != null) {
-                                    // UPDATED: Now passing context and selectedImageUri
-                                    viewModel.addChild(
-                                        context = context,
-                                        imageUri = selectedImageUri,
-                                        firstName = firstName,
-                                        lastName = lastName,
-                                        studentId = studentId,
-                                        busRouteId = busRouteId,
-                                        pickUpLocation = pickUpLocation,
-                                        dropOffLocation = dropOffLocation,
-                                        pLat = pAddr.latitude,
-                                        pLng = pAddr.longitude,
-                                        dLat = dAddr.latitude,
-                                        dLng = dAddr.longitude
-                                    )
-                                } else {
-                                    Toast.makeText(context, "Invalid address. Please try again.", Toast.LENGTH_SHORT).show()
-                                }
-                                isGeocoding = false
-                            }
+                            viewModel.addChild(
+                                context = context,
+                                imageUri = selectedImageUri,
+                                firstName = firstName,
+                                lastName = lastName,
+                                studentId = studentId,
+                                busRouteId = busRouteId,
+                                pickUpLocation = pickUpLocation,
+                                dropOffLocation = dropOffLocation,
+                                pLat = pickUpLat, // Use stored state
+                                pLng = pickUpLng, // Use stored state
+                                dLat = dropOffLat, // Use stored state
+                                dLng = dropOffLng  // Use stored state
+                            )
                         },
-                        enabled = !isLoading &&
-                                firstName.isNotBlank() &&
-                                lastName.isNotBlank() && // Added check if you want last name required
-                                studentId.isNotBlank() &&
-                                busRouteId.isNotBlank() &&
-                                pickUpLocation.isNotBlank() &&
-                                dropOffLocation.isNotBlank() &&
+                        enabled = !isLoading && firstName.isNotBlank() && studentId.isNotBlank() &&
+                                pickUpLocation.isNotBlank() && dropOffLocation.isNotBlank() &&
                                 selectedImageUri != null,
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
@@ -334,17 +350,27 @@ fun AddChildInputField(
     )
 }
 
-// Helper function (Moved outside to fix nesting issue)
-private suspend fun getCoords(context: android.content.Context, address: String): android.location.Address? {
-    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        try {
-            val geocoder = android.location.Geocoder(context)
-            // Adding ", Kathmandu" helps the prototype be more accurate
-            geocoder.getFromLocationName("$address, Kathmandu", 1)?.firstOrNull()
-        } catch (e: Exception) {
-            null
-        }
-    }
+@Composable
+fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label + " *") },
+        trailingIcon = {
+            IconButton(onClick = onClick) {
+                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF1976D2))
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
+        enabled = false, // Disables typing but allows the clickable modifier to work
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = Color.Black,
+            disabledBorderColor = Color.Gray,
+            disabledLabelColor = Color.DarkGray
+        )
+    )
 }
-//testing add child image
-//testing drop down option dynamic route id
