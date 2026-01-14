@@ -29,6 +29,11 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.AdminAddChildActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_add_child"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.MapPickerActivity"
             android:exported="false"
             android:label="@string/title_activity_map_picker"
@@ -36,12 +41,12 @@
         <activity
             android:name=".view.SearchBusActivity"
             android:exported="false"
-            android:label="@string/title_activity_map_picker"
+            android:label="@string/title_activity_search_bus"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.EditBusActivity"
             android:exported="false"
-            android:label="@string/title_activity_map_picker"
+            android:label="@string/title_activity_edit_bus"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.HelpAndSupportActivity"

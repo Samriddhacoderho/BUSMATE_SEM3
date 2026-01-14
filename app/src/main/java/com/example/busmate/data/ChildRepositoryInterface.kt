@@ -16,5 +16,44 @@ interface ChildRepositoryInterface {
     fun updateChild(model: ChildModel, callback: (String, Boolean) -> Unit)
     fun getAllAvailableRoutes(callback: (List<String>) -> Unit)
 
+    fun adminPreAddStudentId(studentId: String, callback: (String, Boolean) -> Unit)
+
 }
 //testing getAllAvailableRoutes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
