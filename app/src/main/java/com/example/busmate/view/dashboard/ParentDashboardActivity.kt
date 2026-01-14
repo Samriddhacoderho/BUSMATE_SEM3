@@ -59,6 +59,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import com.example.busmate.view.admin.AdminAddChildActivity
 import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
 import com.example.busmate.view.admin.AdminDeactivatesActivity
 import com.example.busmate.view.admin.AdminSearchChildActivity
@@ -227,7 +228,7 @@ fun ParentDashboardScreen(
     )
     val drawerItems = when (user?.typeofUser?.lowercase()) {
         "admin" -> listOf(
-            NavItem("Create Account", Icons.Default.PersonAdd),
+            NavItem("Create User Account", Icons.Default.PersonAdd),
             NavItem("Add Bus", Icons.Default.DirectionsBus),
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
@@ -236,6 +237,7 @@ fun ParentDashboardScreen(
             NavItem("View Attendance", Icons.Default.ChildCare),
             NavItem("Guidelines and Rules", Icons.Default.RuleFolder),
             NavItem("Search Bus", Icons.Default.Search),
+            NavItem("Create Child Account",Icons.Default.ManageAccounts)
         )
 
         "driver" -> listOf(
@@ -451,6 +453,9 @@ fun ParentDashboardScreen(
                                             Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
                                         }
                                     }
+                                    "Create Child Account" ->context.startActivity(
+                                        Intent(context, AdminAddChildActivity::class.java)
+                                    )
 
                                 }
                             }

@@ -42,15 +42,7 @@ import com.example.busmate.model.UserModel
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
-class SplashScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            SplashScreenUI()
-        }
-    }
-}
+
 
 @Composable
 fun SplashScreenUI() {
