@@ -16,7 +16,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -78,6 +80,7 @@ fun TripScreen(
 ) {
     val state by accelerometerViewModel.state
     val context = LocalContext.current
+    var selectedTripType by remember { mutableStateOf("Pickup") } // Global choice
 
     val locationViewModel = remember {
         LocationViewModel(
@@ -93,7 +96,8 @@ fun TripScreen(
         if (isGranted) {
             accelerometerViewModel.startMeasurement(driverUid, busId)
         } else {
-            Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -129,6 +133,23 @@ fun TripScreen(
         Text(text = "KM/H", fontSize = 24.sp, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(60.dp))
+        // New Toggle for Global State
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Type: ", fontWeight = FontWeight.Bold)
+            FilterChip(
+                selected = selectedTripType == "Pickup",
+                onClick = { if (!state.isRunning) selectedTripType = "Pickup" },
+                label = { Text("Pickup") }
+            )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = selectedTripType == "Drop-off",
+                onClick = { if (!state.isRunning) selectedTripType = "Drop-off" },
+                label = { Text("Drop-off") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
 
         Button(
             onClick = {
