@@ -33,7 +33,7 @@ import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateGreen
 import com.example.busmate.ui.theme.BusMateOrange
 import com.example.busmate.view.AddChildActivity
-import com.example.busmate.view.BusScreen
+import com.example.busmate.view.admin.BusScreen
 import com.example.busmate.view.TripActivity
 import com.example.busmate.viewmodel.BusViewModel
 import androidx.lifecycle.Lifecycle
