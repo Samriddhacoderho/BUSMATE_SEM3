@@ -156,19 +156,40 @@ class LocationViewModel(
     // Add this to LocationViewModel.kt
     fun fetchDriverRouteWithWaypoints(
         origin: LatLng,
-        destination: LatLng,
+        schoolLocation: LatLng, // Added school location parameter
         students: List<ChildModel>,
+        tripType: String,        // Added tripType parameter ("Pickup" or "Drop-off")
         apiKey: String
     ) {
-        // 1. Map student objects to LatLng points
-        val studentWaypoints = students.map { LatLng(it.pickUpLat, it.pickUpLng) }
+        if (students.isEmpty()) return
 
-        // 2. Call the repository with waypoints
+        val waypoints: List<LatLng>
+        val finalDestination: LatLng
+
+        if (tripType == "Pickup") {
+            // Sequence: Current -> All Student Pickups -> School
+            waypoints = students.map { LatLng(it.pickUpLat, it.pickUpLng) }
+            finalDestination = schoolLocation
+        } else {
+            // Sequence: Current -> School -> Student Drop-offs -> Last Student
+            // 1. First stop is always the school to pick up the kids
+            val firstStop = schoolLocation
+
+            // 2. Middle stops are the student drop-off locations (except the last one)
+            val studentDropOffs = students.map { LatLng(it.dropOffLat, it.dropOffLng) }
+
+            // Combine School with all drop-offs except the very last one
+            waypoints = listOf(firstStop) + studentDropOffs.dropLast(1)
+
+            // 3. Final destination is the last student's house
+            finalDestination = studentDropOffs.last()
+        }
+
         busRepo.getRoadSnappedRoute(
             origin = origin,
-            destination = destination,
+            destination = finalDestination,
             apiKey = apiKey,
-            waypoints = studentWaypoints, // This is the key to connecting markers
+            waypoints = waypoints,
             onSuccess = { points, distance ->
                 _polylinePoints.value = points
                 currentRouteDistanceMeters = distance

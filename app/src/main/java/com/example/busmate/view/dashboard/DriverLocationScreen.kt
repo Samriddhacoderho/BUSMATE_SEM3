@@ -37,6 +37,7 @@ fun DriverLocationScreen(
     val currentGpsLocation by viewModel.location.collectAsState()
     val students by viewModel.driverStudents.collectAsState()
     val snappedPath by viewModel.polylinePoints.collectAsState()
+    var previewTripType by remember { mutableStateOf("Pickup") }
 
     // 1. Define Kathmandu Coordinates
     val kathmandu = remember { LatLng(27.7172, 85.3240) }
@@ -72,25 +73,62 @@ fun DriverLocationScreen(
     }
 
     // Road Snapping Logic
-    LaunchedEffect(currentGpsLocation, students) {
+    LaunchedEffect(currentGpsLocation, students, previewTripType) {
         if (currentGpsLocation != null && students.isNotEmpty() && apiKey.isNotEmpty()) {
             viewModel.fetchDriverRouteWithWaypoints(
                 origin = currentGpsLocation!!,
-                destination = schoolLatLng, // Deerwalk
-                students = students,        // Passes all students to connect them
+                schoolLocation = schoolLatLng, // Deerwalk
+                students = students,
+                tripType = previewTripType,    // Local toggle value
                 apiKey = apiKey
             )
         }
     }
 
     Scaffold { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Header
-            Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFF2567E8), shadowElevation = 4.dp) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Header with Local Toggle
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF2567E8),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Driver Route", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("Total Students: ${students.size}", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                        Text(
+                            text = "Route Preview",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                        Row(modifier = Modifier.padding(top = 8.dp)) {
+                            FilterChip(
+                                selected = previewTripType == "Pickup",
+                                onClick = { previewTripType = "Pickup" },
+                                label = { Text("Pickup Mode") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color.White,
+                                    labelColor = if (previewTripType == "Pickup") Color(0xFF2567E8) else Color.White
+                                )
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            FilterChip(
+                                selected = previewTripType == "Drop-off",
+                                onClick = { previewTripType = "Drop-off" },
+                                label = { Text("Drop-off Mode") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color.White,
+                                    labelColor = if (previewTripType == "Drop-off") Color(0xFF2567E8) else Color.White
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -99,34 +137,42 @@ fun DriverLocationScreen(
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = permissionGranted,
-                        isTrafficEnabled = false
-                    ),
+                    properties = MapProperties(isMyLocationEnabled = true),
                     uiSettings = MapUiSettings(zoomControlsEnabled = false)
                 ) {
-                    // Path
                     if (snappedPath.isNotEmpty()) {
                         Polyline(
                             points = snappedPath,
                             color = Color(0xFF2567E8),
-                            width = 16f,
+                            width = 12f,
                             jointType = JointType.ROUND,
                             startCap = RoundCap(),
                             endCap = RoundCap()
                         )
                     }
 
-                    // Student Markers
+                    // FIXED: Student Markers now move their position based on toggle
                     students.forEach { student ->
+                        // Determine the correct LatLng based on the toggle
+                        val currentTargetLocation = if (previewTripType == "Pickup") {
+                            LatLng(student.pickUpLat, student.pickUpLng)
+                        } else {
+                            LatLng(student.dropOffLat, student.dropOffLng)
+                        }
+
                         Marker(
-                            state = rememberMarkerState(position = LatLng(student.pickUpLat, student.pickUpLng)),
-                            title = student.firstName,
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                            // This position now updates dynamically
+                            state = rememberMarkerState(position = currentTargetLocation),
+                            title = "${student.firstName} ${student.lastName}",
+                            snippet = if (previewTripType == "Pickup") "Pickup Point" else "Drop-off Point",
+                            icon = BitmapDescriptorFactory.defaultMarker(
+                                if (previewTripType == "Pickup") BitmapDescriptorFactory.HUE_AZURE
+                                else BitmapDescriptorFactory.HUE_ORANGE
+                            )
                         )
                     }
 
-                    // School Marker
+                    // School Marker (Deerwalk)
                     Marker(
                         state = rememberMarkerState(position = schoolLatLng),
                         title = "Deerwalk Institute",
@@ -134,10 +180,12 @@ fun DriverLocationScreen(
                     )
                 }
 
-                // Zoom Controls
+                // UI Controls
                 Column(
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FloatingActionButton(
                         onClick = { scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomIn()) } },
@@ -153,11 +201,21 @@ fun DriverLocationScreen(
                         onClick = {
                             val builder = LatLngBounds.Builder()
                             currentGpsLocation?.let { builder.include(it) }
-                            students.forEach { builder.include(LatLng(it.pickUpLat, it.pickUpLng)) }
+
+                            // FIXED: Include the correct points (Pick vs Drop) when centering
+                            students.forEach { student ->
+                                if (previewTripType == "Pickup") {
+                                    builder.include(LatLng(student.pickUpLat, student.pickUpLng))
+                                } else {
+                                    builder.include(LatLng(student.dropOffLat, student.dropOffLng))
+                                }
+                            }
+
                             builder.include(schoolLatLng)
                             scope.launch {
-                                // This ensures the map snaps to your location/route immediately on click
-                                cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(builder.build(), 200))
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newLatLngBounds(builder.build(), 200)
+                                )
                             }
                         },
                         containerColor = Color(0xFF2567E8),
