@@ -31,7 +31,6 @@ import com.example.busmate.R
 import com.example.busmate.data.*
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -39,7 +38,6 @@ import androidx.compose.material.icons.filled.Search
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ChildEventListener
 import android.os.Build
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -57,11 +55,24 @@ import com.example.busmate.service.TripMonitoringService
 import coil3.compose.AsyncImage
 import com.example.busmate.ui.theme.BusMateOrange
 import com.google.firebase.database.ValueEventListener
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
+import com.example.busmate.view.admin.AdminDeactivatesActivity
+import com.example.busmate.view.admin.AdminSearchChildActivity
+import com.example.busmate.view.admin.BusProfileScreen
+import com.example.busmate.view.admin.BusScreen
+import com.example.busmate.view.admin.CreateAccountScreenActivity
+import com.example.busmate.view.admin.DriverProfileScreen
+import com.example.busmate.view.admin.GuideLineActivity
+import com.example.busmate.view.admin.SearchBusActivity
+import com.example.busmate.view.driver.AttendanceActivity
+import com.example.busmate.view.parent.BusDetailsActivity
+import com.example.busmate.view.parent.DriverProfileActivity
+import com.example.busmate.view.parent.ParentAttendanceActivity
+import com.example.busmate.view.parent.StudentIdCard
 
 
 class ParentDashboardActivity : ComponentActivity() {

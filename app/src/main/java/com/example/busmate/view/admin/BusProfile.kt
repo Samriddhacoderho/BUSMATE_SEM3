@@ -1,9 +1,8 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.example.busmate.R
 import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.data.UserRepositoryImpl
@@ -201,7 +201,7 @@ fun SingleBusProfile(bus: BusModel) {
                 ) {
                     if (bus.busImage.isNotEmpty()) {
                         // ✅ Load the actual image registered by the admin
-                        coil3.compose.AsyncImage(
+                        AsyncImage(
                             model = bus.busImage,
                             contentDescription = "Bus Image",
                             modifier = Modifier.fillMaxSize(),

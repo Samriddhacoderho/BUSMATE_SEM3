@@ -1,11 +1,9 @@
-package com.example.busmate.view
+package com.example.busmate.view.auth
 
-import android.R.attr.password
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
+import android.util.Patterns
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,11 +35,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.ui.theme.BusMateBlue
-import com.example.busmate.view.ui.theme.BUSMATETheme
 import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateOrange
@@ -51,7 +47,7 @@ import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
 fun isValidEmail(email: String): Boolean {
-    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
 
 class SignUpScreen : ComponentActivity() {
