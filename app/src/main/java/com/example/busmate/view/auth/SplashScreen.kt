@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.auth
 
 import android.app.Activity
 import android.content.Context
@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,8 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.airbnb.lottie.LottieComposition
-import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -39,10 +36,10 @@ import kotlinx.coroutines.delay
 import android.content.Context.CONNECTIVITY_SERVICE
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.busmate.model.UserModel
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 class SplashScreen : ComponentActivity() {
@@ -80,7 +77,7 @@ fun SplashScreenUI() {
             delay(2000)
 
             val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
-            val gson = com.google.gson.Gson()
+            val gson = Gson()
             val userJson = sharedPreferences.getString("user_model", null)
 
             if (userJson != null) {

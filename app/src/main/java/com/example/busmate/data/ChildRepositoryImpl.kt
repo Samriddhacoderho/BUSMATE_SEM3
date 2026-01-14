@@ -16,57 +16,63 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
     private val studentIndexRef = db.getReference("studentIdIndex")
     private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
-    override fun addChild(
-        model: ChildModel,
-        callback: (String, Boolean) -> Unit
-    ) {
 
-        val parentUid = auth.currentUser?.uid
-        if (parentUid == null) {
-            callback("User not logged in", false)
-            return
-        }
-
-        // 1️⃣ Check uniqueness of Student ID
-        studentIndexRef.child(model.studentId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-
-                if (snapshot.exists()) {
-                    callback(
-                        "Registration failed: Student ID ${model.studentId} already exists",
-                        false
-                    )
-                    return@addOnSuccessListener
+    override fun adminPreAddStudentId(studentId: String, callback: (String, Boolean) -> Unit) {
+        // 1. First, check if this ID already exists in the studentIdIndex node
+        studentIndexRef.child(studentId).get().addOnSuccessListener { snapshot ->
+            if (snapshot.exists()) {
+                // 2. If it exists, check its status to give a specific error message
+                val status = snapshot.child("status").getValue(String::class.java)
+                if (status == "used") {
+                    callback("Error: ID $studentId is already registered to a parent.", false)
+                } else {
+                    callback("Error: ID $studentId is already added and available.", false)
                 }
-
-                // 2️⃣ Atomic multi-path update
-                val updates = hashMapOf<String, Any>(
-                    "/users/$parentUid/children/${model.studentId}" to model,
-                    "/studentIdIndex/${model.studentId}" to mapOf(
-                        "parentUid" to parentUid,
-                        "timestamp" to System.currentTimeMillis()
-                    )
-                )
-
-                db.reference.updateChildren(updates)
+            } else {
+                // 3. If it doesn't exist, only then add it as "available"
+                val data = mapOf("status" to "available")
+                studentIndexRef.child(studentId).setValue(data)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            callback(
-                                "Child ${model.firstName} successfully added",
-                                true
-                            )
+                            callback("Student ID $studentId added successfully", true)
                         } else {
-                            callback(
-                                "Failed to add child: ${task.exception?.message}",
-                                false
-                            )
+                            callback("Failed to add ID: ${task.exception?.message}", false)
                         }
                     }
             }
-            .addOnFailureListener {
-                callback("Failed to verify Student ID", false)
+        }.addOnFailureListener {
+            callback("Database error: ${it.message}", false)
+        }
+    }
+
+    override fun addChild(model: ChildModel, callback: (String, Boolean) -> Unit) {
+        val parentUid = auth.currentUser?.uid ?: return callback("User not logged in", false)
+
+        studentIndexRef.child(model.studentId).get().addOnSuccessListener { snapshot ->
+            // Check if the Admin actually pre-added this ID
+            if (!snapshot.exists()) {
+                callback("Invalid Student ID. Please contact school admin.", false)
+                return@addOnSuccessListener
             }
+
+            // Check if the ID is already used
+            val status = snapshot.child("status").getValue(String::class.java)
+            if (status == "used") {
+                callback("This Student ID is already registered to another account.", false)
+                return@addOnSuccessListener
+            }
+
+            // Proceed with update
+            val updates = hashMapOf<String, Any>()
+            updates["/users/$parentUid/children/${model.studentId}"] = model.toMap()
+            updates["/studentIdIndex/${model.studentId}/status"] = "used" // Mark as used
+            updates["/studentIdIndex/${model.studentId}/parentUid"] = parentUid
+
+            db.reference.updateChildren(updates).addOnCompleteListener { task ->
+                if (task.isSuccessful) callback("Child added successfully", true)
+                else callback("Database error", false)
+            }
+        }
     }
 
     override fun observeChildren(
@@ -89,6 +95,7 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
+
     // ChildRepositoryImpl.kt
     override fun observeAllChildren(callback: (List<ChildModel>) -> Unit) {
         FirebaseDatabase.getInstance().getReference("users")
@@ -106,9 +113,11 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                     }
                     callback(allChildren)
                 }
+
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
+
     override fun updateChild(model: ChildModel, callback: (String, Boolean) -> Unit) {
         // 1. Find which parent this student belongs to using the index
         studentIndexRef.child(model.studentId).get().addOnSuccessListener { snapshot ->
@@ -135,7 +144,11 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
     // Inside ChildRepositoryImpl.kt
 
 
-    fun uploadChildImage(context: android.content.Context, imageUri: android.net.Uri, callback: (String?) -> Unit) {
+    fun uploadChildImage(
+        context: android.content.Context,
+        imageUri: android.net.Uri,
+        callback: (String?) -> Unit
+    ) {
         executor.execute {
             try {
                 val inputStream = context.contentResolver.openInputStream(imageUri)
@@ -149,7 +162,8 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                     )
                 )
 
-                val uploadResponse = cloudinary.uploader().upload(inputStream, com.cloudinary.utils.ObjectUtils.emptyMap())
+                val uploadResponse = cloudinary.uploader()
+                    .upload(inputStream, com.cloudinary.utils.ObjectUtils.emptyMap())
                 var imageUrl = uploadResponse["url"] as String?
 
                 // Convert to https to avoid security issues on Android
@@ -166,6 +180,7 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
             }
         }
     }
+
     // Add this function to your ChildRepositoryImpl
     override fun getAllAvailableRoutes(callback: (List<String>) -> Unit) {
         val busesRef = FirebaseDatabase.getInstance().getReference("buses")
