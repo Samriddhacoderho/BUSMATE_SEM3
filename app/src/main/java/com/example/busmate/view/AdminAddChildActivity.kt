@@ -5,9 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,38 +51,95 @@ class AdminAddChildActivity : ComponentActivity() {
 
 @Composable
 fun AddStudentIdScreen(viewModel: ChildViewModel) {
+
     var studentId by remember { mutableStateOf("") }
     val message by viewModel.message.collectAsState()
-    val scope = rememberCoroutineScope()
+
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Admin: Pre-register Student ID", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        containerColor = Color.White
+    ) { padding ->
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedTextField(
-            value = studentId,
-            onValueChange = { studentId = it },
-            label = { Text("Enter Student ID") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = { viewModel.preRegisterStudentId(studentId) },
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            Text("Add to Database")
-        }
 
-        if (message.isNotEmpty()) {
-            Text(text = message, color = if (message.contains("success")) Color.Green else Color.Red)
+            // 🔵 TOP BRANDING SECTION
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.45f)
+                    .background(com.example.busmate.ui.theme.BusMateBlue),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Admin Panel",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Pre-register Student ID",
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+
+            // ⚪ CARD SECTION
+            androidx.compose.material3.Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .align(Alignment.BottomCenter),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    OutlinedTextField(
+                        value = studentId,
+                        onValueChange = { studentId = it },
+                        label = { Text("Enter Student ID") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        onClick = {
+                            viewModel.preRegisterStudentId(studentId)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text("Add to Database")
+                    }
+
+                    if (message.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = message,
+                            color = if (message.contains("success", true))
+                                Color(0xFF2E7D32) else Color.Red
+                        )
+                    }
+                }
+            }
         }
     }
 }
