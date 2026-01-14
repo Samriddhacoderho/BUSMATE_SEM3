@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.all
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
@@ -86,7 +87,7 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
                 Spacer(modifier = Modifier.height(48.dp))
 
                 Image(
-                    painter = painterResource(com.example.busmate.R.drawable.logo),
+                    painter = painterResource(R.drawable.logo),
                     contentDescription = "Logo",
                     colorFilter = ColorFilter.tint(PlaceholderBusColor),
                     modifier = Modifier.size(200.dp)

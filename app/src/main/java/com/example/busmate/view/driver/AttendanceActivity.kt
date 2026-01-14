@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.driver
 
 import android.Manifest
 import android.os.Bundle

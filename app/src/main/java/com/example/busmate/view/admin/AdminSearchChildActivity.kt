@@ -1,75 +1,74 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.busmate.data.BusRepositoryImpl
-import com.example.busmate.model.BusModel
+import com.example.busmate.data.ChildRepositoryImpl
+import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.viewmodel.BusViewModel
+import com.example.busmate.viewmodel.ChildViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.Edit
 
-class SearchBusActivity : ComponentActivity() {
+class AdminSearchChildActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        val viewModel = BusViewModel(BusRepositoryImpl())
+        val viewModel = ChildViewModel(ChildRepositoryImpl()) // Initialize ViewModel
+
         setContent {
             BusMateTheme {
-                SearchBusScreen(viewModel) { finish() }
+                // CALLING THE FUNCTION HERE MAKES IT "USED"
+                AdminSearchScreen(
+                    viewModel = viewModel,
+                    onBack = { finish() }
+                )
             }
-
         }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBusScreen(
-    viewModel: BusViewModel,
-    onBack: () -> Unit
-) {
+fun AdminSearchScreen(viewModel: ChildViewModel, onBack: () -> Unit) {
     val busMateBlue = Color(0xFF2567E8)
-    val context = LocalContext.current
-    val buses by viewModel.buses.collectAsState()
-    var searchText by remember { mutableStateOf("") }
+    val context = LocalContext.current // Needed for Navigation
+    val childrenList by viewModel.children.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit) {
-        viewModel.observeAllBuses()
+        viewModel.observeAllChildren()
     }
 
-    val filteredBuses = buses.filter {
-        it.busNumber.contains(searchText, true) ||
-                it.routeId.contains(searchText, true)
+    val filteredChildren = childrenList.filter {
+        it.firstName.contains(searchQuery, ignoreCase = true) ||
+                it.lastName.contains(searchQuery, ignoreCase = true) ||
+                it.studentId.contains(searchQuery)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search Bus", color = Color.White, fontWeight = FontWeight.SemiBold) },
+                title = { Text("Search Students", color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -85,7 +84,6 @@ fun SearchBusScreen(
                 .padding(padding)
                 .background(Color(0xFFF5F5F5))
         ) {
-            // Blue header box matching Admin Search Student
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,9 +92,9 @@ fun SearchBusScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 OutlinedTextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    placeholder = { Text(text = "Search by Bus Number or Route ID") },
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text(text = "Enter student name or ID...") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 10.dp),
@@ -115,24 +113,28 @@ fun SearchBusScreen(
                 )
             }
 
-            if (filteredBuses.isEmpty() && searchText.isNotEmpty()) {
+            if (filteredChildren.isEmpty() && searchQuery.isNotEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No buses found matching '$searchText'", color = Color.Gray)
+                    Text("No students found matching '$searchQuery'", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .offset(y = (-30).dp) // Overlap effect
+                        .offset(y = (-30).dp)
                         .padding(horizontal = 20.dp)
                 ) {
-                    items(filteredBuses) { bus ->
-                        BusItem(bus) {
-                            context.startActivity(
-                                Intent(context, EditBusActivity::class.java)
-                                    .putExtra("bus_data", bus)
-                            )
-                        }
+                    items(filteredChildren) { child ->
+                        // UPDATED: Added onClick logic here
+                        AdminStudentCard(
+                            child = child,
+                            onClick = {
+                                val intent = Intent(context, EditStudentActivity::class.java).apply {
+                                    putExtra("student_data", child)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
@@ -141,14 +143,14 @@ fun SearchBusScreen(
     }
 }
 @Composable
-fun BusItem(bus: BusModel, onClick: () -> Unit) {
+fun AdminStudentCard(child: ChildModel, onClick: () -> Unit) {
     val busMateBlue = Color(0xFF2567E8)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 2.dp)
-            .clickable { onClick() },
+            .clickable { onClick() }, // FIXED: Calls the passed onClick function
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -157,23 +159,32 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Text Content - Takes up the space since circle is removed
+            Box(
+                modifier = Modifier.size(50.dp).clip(CircleShape).background(Color(0xFFF0F0F0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, null, modifier = Modifier.size(28.dp), tint = Color.Gray)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Bus Number: ${bus.busNumber}",
+                    text = "${child.firstName} ${child.lastName}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color.Black
                 )
                 Text(
-                    text = "Route ID: ${bus.routeId}",
+                    text = "ID: ${child.studentId}",
                     fontSize = 13.sp,
                     color = Color.Gray
                 )
             }
-            // Edit icon to indicate action
+
+            // Arrow icon suggesting it's editable
             Icon(
-                imageVector = Icons.Default.Edit,
+                imageVector = Icons.Default.Edit, // Changed to Edit icon for better UX
                 contentDescription = "Edit",
                 tint = busMateBlue.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)
@@ -181,4 +192,5 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
         }
     }
 }
-//testing edit
+//testing search chid by admin
+//testing parent information

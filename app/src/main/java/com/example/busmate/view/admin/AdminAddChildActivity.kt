@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,11 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.ChildRepositoryImpl
-import com.example.busmate.view.ui.theme.BUSMATETheme
+import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.ChildViewModel
 
 class AdminAddChildActivity : ComponentActivity() {
@@ -59,7 +62,7 @@ fun AddStudentIdScreen(viewModel: ChildViewModel) {
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.White
     ) { padding ->
 
@@ -74,7 +77,7 @@ fun AddStudentIdScreen(viewModel: ChildViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.45f)
-                    .background(com.example.busmate.ui.theme.BusMateBlue),
+                    .background(BusMateBlue),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -95,13 +98,13 @@ fun AddStudentIdScreen(viewModel: ChildViewModel) {
             }
 
             // ⚪ CARD SECTION
-            androidx.compose.material3.Card(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
                     .align(Alignment.BottomCenter),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
                     containerColor = Color.White
                 )
             ) {
