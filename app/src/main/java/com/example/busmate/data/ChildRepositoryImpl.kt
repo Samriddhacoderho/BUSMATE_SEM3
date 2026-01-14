@@ -16,57 +16,34 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
     private val studentIndexRef = db.getReference("studentIdIndex")
     private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
-    override fun addChild(
-        model: ChildModel,
-        callback: (String, Boolean) -> Unit
-    ) {
+    override fun addChild(model: ChildModel, callback: (String, Boolean) -> Unit) {
+        val parentUid = auth.currentUser?.uid ?: return callback("User not logged in", false)
 
-        val parentUid = auth.currentUser?.uid
-        if (parentUid == null) {
-            callback("User not logged in", false)
-            return
+        // 1️⃣ MODIFIED: Check if ID was pre-added by Admin AND is available
+        studentIndexRef.child(model.studentId).get().addOnSuccessListener { snapshot ->
+            if (!snapshot.exists()) {
+                callback("Invalid Student ID. Please contact school admin.", false)
+                return@addOnSuccessListener
+            }
+
+            val status = snapshot.child("status").getValue(String::class.java)
+            if (status == "used") {
+                callback("This Student ID is already registered to another parent.", false)
+                return@addOnSuccessListener
+            }
+
+            // 2️⃣ Proceed with Registration
+            val updates = hashMapOf<String, Any>()
+            updates["/users/$parentUid/children/${model.studentId}"] = model.toMap()
+            // Mark the ID as used so it can't be registered again
+            updates["/studentIdIndex/${model.studentId}/status"] = "used"
+            updates["/studentIdIndex/${model.studentId}/parentUid"] = parentUid
+
+            db.reference.updateChildren(updates).addOnCompleteListener { task ->
+                if (task.isSuccessful) callback("Child added successfully", true)
+                else callback("Database error", false)
+            }
         }
-
-        // 1️⃣ Check uniqueness of Student ID
-        studentIndexRef.child(model.studentId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-
-                if (snapshot.exists()) {
-                    callback(
-                        "Registration failed: Student ID ${model.studentId} already exists",
-                        false
-                    )
-                    return@addOnSuccessListener
-                }
-
-                // 2️⃣ Atomic multi-path update
-                val updates = hashMapOf<String, Any>(
-                    "/users/$parentUid/children/${model.studentId}" to model,
-                    "/studentIdIndex/${model.studentId}" to mapOf(
-                        "parentUid" to parentUid,
-                        "timestamp" to System.currentTimeMillis()
-                    )
-                )
-
-                db.reference.updateChildren(updates)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            callback(
-                                "Child ${model.firstName} successfully added",
-                                true
-                            )
-                        } else {
-                            callback(
-                                "Failed to add child: ${task.exception?.message}",
-                                false
-                            )
-                        }
-                    }
-            }
-            .addOnFailureListener {
-                callback("Failed to verify Student ID", false)
-            }
     }
 
     override fun observeChildren(
@@ -185,6 +162,16 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                 callback(emptyList())
             }
         })
+    }
+
+    override fun adminPreAddStudentId(studentId: String, callback: (String, Boolean) -> Unit) {
+        // We store it with a "status" to know if it's available or already used
+        val data = mapOf("status" to "available")
+        studentIndexRef.child(studentId).setValue(data)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) callback("Student ID $studentId added successfully", true)
+                else callback("Failed to add ID", false)
+            }
     }
 }
 
