@@ -125,7 +125,13 @@ fun DriverLocationScreen(
                         FilterChip(
                             selected = previewTripType == "Pickup",
                             onClick = { previewTripType = "Pickup" },
-                            label = { Text("Pickup Mode") }
+                            label = { Text("Pickup Mode") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2567E8), // active text
+                                containerColor = Color(0xFF2567E8),     // inactive background
+                                labelColor = Color.White                // inactive text (WHITE)
+                            )
                         )
 
                         Spacer(Modifier.width(8.dp))
@@ -133,7 +139,13 @@ fun DriverLocationScreen(
                         FilterChip(
                             selected = previewTripType == "Drop-off",
                             onClick = { previewTripType = "Drop-off" },
-                            label = { Text("Drop-off Mode") }
+                            label = { Text("Drop-off Mode") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2567E8),
+                                containerColor = Color(0xFF2567E8),
+                                labelColor = Color.White
+                            )
                         )
                     }
                 }
