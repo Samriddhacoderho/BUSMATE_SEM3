@@ -1,11 +1,11 @@
-package com.example.busmate.view
+package com.example.busmate.view.parent
 
 import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -30,22 +30,24 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.BusViewModel
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.auth.FirebaseAuth
-import coil3.compose.AsyncImage
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import coil3.compose.AsyncImage
+import com.example.busmate.R
 
-class DriverProfileActivity : ComponentActivity() {
+class BusDetailsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val busViewModel = BusViewModel(BusRepositoryImpl())
-        val childViewModel = ChildViewModel(ChildRepositoryImpl())
+        val busRepository = BusRepositoryImpl()
+        val childRepository = ChildRepositoryImpl()
+        val busViewModel = BusViewModel(busRepository)
+        val childViewModel = ChildViewModel(childRepository)
 
         setContent {
             BusMateTheme {
-                DriverProfileScreen(busViewModel, childViewModel)
+                BusDetailsScreen(busViewModel, childViewModel)
             }
         }
     }
@@ -53,26 +55,26 @@ class DriverProfileActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel) {
+fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel) {
     val context = LocalContext.current
     val children by childViewModel.children.collectAsState()
+
     var selectedChild by remember { mutableStateOf(children.firstOrNull()) }
     var busDetails by remember { mutableStateOf<BusModel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Load children on start
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             childViewModel.observeChildren(it)
         }
     }
+
     LaunchedEffect(children) {
         if (selectedChild == null && children.isNotEmpty()) {
             selectedChild = children.first()
         }
     }
 
-    // Load bus/driver when child selection changes
     LaunchedEffect(selectedChild) {
         selectedChild?.let { child ->
             isLoading = true
@@ -86,7 +88,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Driver Profile", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Bus Information", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -106,82 +108,76 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(text = "View driver for child:", fontSize = 14.sp, color = Color.Gray)
+            Text(text = "Select Child", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
 
-            LazyRow(modifier = Modifier.padding(vertical = 8.dp)) {
+            LazyRow(modifier = Modifier.padding(vertical = 12.dp)) {
                 items(children) { child ->
                     FilterChip(
+                        modifier = Modifier.padding(end = 8.dp),
                         selected = selectedChild == child,
                         onClick = { selectedChild = child },
                         label = { Text("${child.firstName} ${child.lastName}") },
-                        modifier = Modifier.padding(end = 8.dp)
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(20.dp))
-
             if (isLoading) {
                 Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
                 }
-            } else if (busDetails?.driver != null) {
-                val driver = busDetails!!.driver!!
-
-                Column(
+            } else if (busDetails != null) {
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    // --- Driver Image ---
-                    Box(
-                        modifier = Modifier.size(110.dp),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (!driver.profileImage.isNullOrEmpty()) {
+                        val busImageUrl = busDetails!!.busImage.trim()
+                        if (busImageUrl.isNotEmpty()) {
                             AsyncImage(
-                                model = driver.profileImage,
-                                contentDescription = "Driver Photo",
+                                model = busImageUrl,
+                                contentDescription = "Bus Image",
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                                    .border(2.dp, Color.LightGray, CircleShape),
-                                contentScale = ContentScale.Crop
+                                    .width(200.dp) // Set a width to avoid full stretching
+                                    .height(180.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop,
                             )
                         } else {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Default Driver Icon",
-                                modifier = Modifier.size(110.dp),
-                                tint = Color.LightGray
+                            Image(
+                                painter = painterResource(R.drawable.schoolbus),
+                                contentDescription = "Default Bus",
+                                modifier = Modifier.size(120.dp)
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // --- Driver Details Card ---
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            DetailText(label = "First Name", value = driver.firstName)
-                            DetailText(label = "Last Name", value = driver.lastName)
-                            DetailText(label = "Email Address", value = driver.email)
-                            DetailText(label = "Phone Number", value = driver.phone)
-                            DetailText(label = "School ID", value = driver.schoolId)
-                            DetailText(label = "Employment Status", value = driver.typeofUser ?: "Active")
-                        }
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        DetailText(label = "Route ID", value = busDetails!!.routeId)
+                        DetailText(label = "Bus Number", value = busDetails!!.busNumber)
+                        DetailText(label = "License Plate", value = busDetails!!.licensePlate)
+                        DetailText(label = "Seating Capacity", value = "${busDetails!!.capacity} Seats")
+                        DetailText(label = "Maintenance Status", value = busDetails!!.maintenanceStatus)
                     }
                 }
             } else {
-                Box(Modifier.fillMaxSize().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                    Text("No driver assigned yet.", color = Color.Gray)
+                Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                    Text("No bus data found.", color = Color.Gray)
                 }
             }
         }
     }
 }
-//testing driverprofileactivity
+@Composable
+fun DetailText(label: String, value: String) {
+    Column(Modifier.padding(vertical = 8.dp)) {
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+        Text(value, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp, color = Color.LightGray)
+    }
+}
+//testing bus image see by parent

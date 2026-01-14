@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.parent
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

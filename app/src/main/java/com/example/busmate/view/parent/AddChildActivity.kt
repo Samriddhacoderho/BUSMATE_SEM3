@@ -1,9 +1,9 @@
-package com.example.busmate.view
+package com.example.busmate.view.parent
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,24 +29,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.ui.text.style.TextOverflow
-import com.example.busmate.view.MapPickerActivity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.busmate.ui.theme.BusMateBlue
 // ASSUMPTION: You must import your concrete repository implementation here
 import com.example.busmate.data.ChildRepositoryImpl
-import androidx.lifecycle.ViewModel // Import needed for ChildViewModel signature
+import coil3.compose.AsyncImage
 import com.example.busmate.viewmodel.ChildViewModel
-import kotlinx.coroutines.launch
 
 
 // --- New Activity Definition ---
@@ -106,9 +103,9 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
     }
 
     // --- NEW IMAGE PICKER STATE ---
-    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
     ) { uri -> selectedImageUri = uri }
     // ------------------------------
 
@@ -197,11 +194,11 @@ fun AddChildScreenUI(viewModel: ChildViewModel) {
                         contentAlignment = Alignment.Center
                     ) {
                         if (selectedImageUri != null) {
-                            coil3.compose.AsyncImage(
+                            AsyncImage(
                                 model = selectedImageUri,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                contentScale = ContentScale.Crop
                             )
                         } else {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

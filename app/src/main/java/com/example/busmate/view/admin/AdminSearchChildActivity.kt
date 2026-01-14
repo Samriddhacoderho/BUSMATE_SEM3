@@ -30,7 +30,6 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.ChildViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Edit
-import com.example.busmate.view.EditStudentActivity
 
 class AdminSearchChildActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.view.EditBusActivity
 import com.example.busmate.viewmodel.BusViewModel
 
 class SearchBusActivity : ComponentActivity() {

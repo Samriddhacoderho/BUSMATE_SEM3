@@ -1,5 +1,8 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
+import android.content.Context
+import android.location.Address
+import android.location.Geocoder
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -34,6 +37,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class EditStudentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -240,10 +246,10 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     }
 }
 // Helper function to fetch coordinates
-private suspend fun getCoords(context: android.content.Context, address: String): android.location.Address? {
-    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+private suspend fun getCoords(context: Context, address: String): Address? {
+    return withContext(Dispatchers.IO) {
         try {
-            val geocoder = android.location.Geocoder(context)
+            val geocoder = Geocoder(context)
             // Adding ", Kathmandu" helps accuracy as used in AddChildActivity
             geocoder.getFromLocationName("$address, Kathmandu", 1)?.firstOrNull()
         } catch (e: Exception) {
@@ -252,7 +258,7 @@ private suspend fun getCoords(context: android.content.Context, address: String)
     }
 }
 @Composable
-fun ReadOnlyField(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun ReadOnlyField(label: String, value: String, icon: ImageVector) {
     OutlinedTextField(
         value = value,
         onValueChange = {},

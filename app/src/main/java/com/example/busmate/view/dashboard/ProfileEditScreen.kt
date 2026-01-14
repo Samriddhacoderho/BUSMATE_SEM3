@@ -1,6 +1,5 @@
 package com.example.busmate.view.dashboard
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
@@ -39,11 +37,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,13 +56,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.busmate.data.UserRepositoryImpl
-import com.example.busmate.view.ChangePasswordScreen
-import com.example.busmate.view.EditProfileActivity
-import com.example.busmate.view.LoginScreen
+import com.example.busmate.view.all.ChangePasswordScreen
+import com.example.busmate.view.all.EditProfileActivity
+import com.example.busmate.view.auth.LoginScreen
 import com.google.firebase.auth.FirebaseAuth
-import com.example.busmate.view.DarkMoodSettingActivity
+import com.example.busmate.view.all.DarkMoodSettingActivity
 import coil3.compose.AsyncImage
-import com.example.busmate.view.HelpAndSupportActivity
+import com.example.busmate.view.all.HelpAndSupportActivity
 
 
 // --- Colors and Theme (Simplified placeholders based on the image's black and white style) ---

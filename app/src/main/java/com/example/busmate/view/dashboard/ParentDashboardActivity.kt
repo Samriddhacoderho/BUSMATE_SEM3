@@ -31,7 +31,6 @@ import com.example.busmate.R
 import com.example.busmate.data.*
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -69,6 +68,11 @@ import com.example.busmate.view.admin.CreateAccountScreenActivity
 import com.example.busmate.view.admin.DriverProfileScreen
 import com.example.busmate.view.admin.GuideLineActivity
 import com.example.busmate.view.admin.SearchBusActivity
+import com.example.busmate.view.driver.AttendanceActivity
+import com.example.busmate.view.parent.BusDetailsActivity
+import com.example.busmate.view.parent.DriverProfileActivity
+import com.example.busmate.view.parent.ParentAttendanceActivity
+import com.example.busmate.view.parent.StudentIdCard
 
 
 class ParentDashboardActivity : ComponentActivity() {
