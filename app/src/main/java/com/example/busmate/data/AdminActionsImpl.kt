@@ -111,12 +111,28 @@ class AdminActionsImpl : AdminActionsInterface {
                         return
                     }
 
-                    snapshot.children.first().ref
-                        .removeValue()
-                        .addOnCompleteListener {
-                            if (it.isSuccessful) {
+                    val userSnapshot = snapshot.children.first()
+                    val userModel = userSnapshot.getValue(UserModel::class.java)
+                    val studentIdIndexRef = db.getReference("studentIdIndex")
+
+                    // 1. Get the list of child IDs (studentIds) associated with this user
+                    val childIds = userModel?.children?.keys ?: emptySet()
+
+                    // 2. Remove each child from the studentIdIndex collection
+                    childIds.forEach { studentId ->
+                        studentIdIndexRef.child(studentId).removeValue()
+                            .addOnFailureListener {
+                                Log.e("AdminActions", "Failed to delete studentIdIndex for $studentId")
+                            }
+                    }
+
+                    // 3. Delete the user from 'users' node
+                    userSnapshot.ref.removeValue()
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // 4. Delete the pre-created ID from 'user' node
                                 adminRef.child(userID).removeValue()
-                                callback(true, "User Deleted")
+                                callback(true, "User and associated student indices deleted")
                             } else {
                                 callback(false, "User Not Deleted")
                             }
