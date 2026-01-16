@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
 import android.annotation.SuppressLint
 import android.os.Bundle

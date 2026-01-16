@@ -38,27 +38,36 @@ fun DriverLocationScreen(
     val students by viewModel.driverStudents.collectAsState()
     val snappedPath by viewModel.polylinePoints.collectAsState()
 
-    // 1. Define Kathmandu Coordinates
+    var previewTripType by remember { mutableStateOf("Pickup") }
+
+    // Kathmandu + School (Deerwalk)
     val kathmandu = remember { LatLng(27.7172, 85.3240) }
     val schoolLatLng = remember { LatLng(27.7174, 85.3435) }
 
-    // 2. Initialize the camera specifically at Kathmandu instead of (0,0)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(kathmandu, 12f)
     }
 
     val apiKey = remember {
         try {
-            context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+            context.packageManager
+                .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
                 .metaData.getString("com.google.android.geo.API_KEY") ?: ""
         } catch (e: Exception) { "" }
     }
 
     var permissionGranted by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
     }
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
         permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
     }
 
@@ -67,102 +76,208 @@ fun DriverLocationScreen(
             viewModel.startTracking(busId = busId, driverUid = driverUid)
             viewModel.fetchStudentsForRoute(busId)
         } else {
-            launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            launcher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
-    // Road Snapping Logic
-    LaunchedEffect(currentGpsLocation, students) {
+    // Route calculation (already correct)
+    LaunchedEffect(currentGpsLocation, students, previewTripType) {
         if (currentGpsLocation != null && students.isNotEmpty() && apiKey.isNotEmpty()) {
             viewModel.fetchDriverRouteWithWaypoints(
                 origin = currentGpsLocation!!,
-                destination = schoolLatLng, // Deerwalk
-                students = students,        // Passes all students to connect them
+                schoolLocation = schoolLatLng,
+                students = students,
+                tripType = previewTripType,
                 apiKey = apiKey
             )
         }
     }
 
     Scaffold { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Header
-            Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFF2567E8), shadowElevation = 4.dp) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Driver Route", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("Total Students: ${students.size}", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+
+            // HEADER + TOGGLE
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF2567E8),
+                shadowElevation = 4.dp
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Route Preview",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row {
+                        FilterChip(
+                            selected = previewTripType == "Pickup",
+                            onClick = { previewTripType = "Pickup" },
+                            label = { Text("Pickup Mode") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2567E8), // active text
+                                containerColor = Color(0xFF2567E8),     // inactive background
+                                labelColor = Color.White                // inactive text (WHITE)
+                            )
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        FilterChip(
+                            selected = previewTripType == "Drop-off",
+                            onClick = { previewTripType = "Drop-off" },
+                            label = { Text("Drop-off Mode") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2567E8),
+                                containerColor = Color(0xFF2567E8),
+                                labelColor = Color.White
+                            )
+                        )
                     }
                 }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
+
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = permissionGranted,
-                        isTrafficEnabled = false
-                    ),
+                    properties = MapProperties(isMyLocationEnabled = true),
                     uiSettings = MapUiSettings(zoomControlsEnabled = false)
                 ) {
-                    // Path
+
+                    // ROUTE POLYLINE
                     if (snappedPath.isNotEmpty()) {
                         Polyline(
                             points = snappedPath,
                             color = Color(0xFF2567E8),
-                            width = 16f,
+                            width = 12f,
                             jointType = JointType.ROUND,
                             startCap = RoundCap(),
                             endCap = RoundCap()
                         )
                     }
 
-                    // Student Markers
-                    students.forEach { student ->
+                    // ===============================
+                    // NUMBERED STUDENT STOP MARKERS
+                    // ===============================
+                    students.forEachIndexed { index, student ->
+
+                        val position = if (previewTripType == "Pickup") {
+                            LatLng(student.pickUpLat, student.pickUpLng)
+                        } else {
+                            LatLng(student.dropOffLat, student.dropOffLng)
+                        }
+
                         Marker(
-                            state = rememberMarkerState(position = LatLng(student.pickUpLat, student.pickUpLng)),
-                            title = student.firstName,
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                            state = MarkerState(position = position),
+                            title = "${index + 1}. ${student.firstName} ${student.lastName}",
+                            snippet = if (previewTripType == "Pickup")
+                                "Pickup Stop"
+                            else
+                                "Drop-off Stop",
+                            icon = BitmapDescriptorFactory.defaultMarker(
+                                if (previewTripType == "Pickup")
+                                    BitmapDescriptorFactory.HUE_AZURE
+                                else
+                                    BitmapDescriptorFactory.HUE_ORANGE
+                            )
                         )
                     }
 
-                    // School Marker
+                    // SCHOOL MARKER (FIXED)
                     Marker(
-                        state = rememberMarkerState(position = schoolLatLng),
+                        state = MarkerState(position = schoolLatLng),
                         title = "Deerwalk Institute",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                        snippet = "School",
+                        icon = BitmapDescriptorFactory.defaultMarker(
+                            BitmapDescriptorFactory.HUE_RED
+                        )
                     )
                 }
 
-                // Zoom Controls
+                // MAP CONTROLS
                 Column(
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FloatingActionButton(
-                        onClick = { scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomIn()) } },
-                        containerColor = Color.White, modifier = Modifier.size(54.dp)
-                    ) { Icon(Icons.Default.Add, "+", tint = Color.Black) }
-
-                    FloatingActionButton(
-                        onClick = { scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomOut()) } },
-                        containerColor = Color.White, modifier = Modifier.size(54.dp)
-                    ) { Icon(Icons.Default.Remove, "-", tint = Color.Black) }
 
                     FloatingActionButton(
                         onClick = {
-                            val builder = LatLngBounds.Builder()
-                            currentGpsLocation?.let { builder.include(it) }
-                            students.forEach { builder.include(LatLng(it.pickUpLat, it.pickUpLng)) }
-                            builder.include(schoolLatLng)
                             scope.launch {
-                                // This ensures the map snaps to your location/route immediately on click
-                                cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(builder.build(), 200))
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.zoomIn()
+                                )
                             }
                         },
-                        containerColor = Color(0xFF2567E8),
-                        modifier = Modifier.size(54.dp)
-                    ) { Icon(Icons.Default.MyLocation, "Center", tint = Color.White) }
+                        containerColor = Color.White
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Zoom In")
+                    }
+
+                    FloatingActionButton(
+                        onClick = {
+                            scope.launch {
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.zoomOut()
+                                )
+                            }
+                        },
+                        containerColor = Color.White
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Zoom Out")
+                    }
+
+                    FloatingActionButton(
+                        onClick = {
+                            val bounds = LatLngBounds.Builder()
+
+                            currentGpsLocation?.let { bounds.include(it) }
+
+                            students.forEach {
+                                val p = if (previewTripType == "Pickup")
+                                    LatLng(it.pickUpLat, it.pickUpLng)
+                                else
+                                    LatLng(it.dropOffLat, it.dropOffLng)
+
+                                bounds.include(p)
+                            }
+
+                            bounds.include(schoolLatLng)
+
+                            scope.launch {
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newLatLngBounds(
+                                        bounds.build(),
+                                        200
+                                    )
+                                )
+                            }
+                        },
+                        containerColor = Color(0xFF2567E8)
+                    ) {
+                        Icon(
+                            Icons.Default.MyLocation,
+                            contentDescription = "Center",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

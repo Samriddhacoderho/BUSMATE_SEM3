@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,8 +18,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
@@ -28,6 +26,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import com.example.busmate.R
 
 class CreateAccountScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +86,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Image(
-                    painter = painterResource(id = com.example.busmate.R.drawable.logo),
+                    painter = painterResource(id = R.drawable.logo),
                     contentDescription = "BusMate Logo",
                     colorFilter = ColorFilter.tint(PlaceholderBusColor),
                     modifier = Modifier.size(200.dp)

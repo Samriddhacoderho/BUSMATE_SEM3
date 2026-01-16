@@ -1,17 +1,14 @@
-package com.example.busmate.view
+package com.example.busmate.view.admin
 
-import android.R.attr.onClick
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +30,7 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.ChildViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Edit
+
 class AdminSearchChildActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

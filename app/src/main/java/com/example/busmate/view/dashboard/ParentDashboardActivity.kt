@@ -31,7 +31,6 @@ import com.example.busmate.R
 import com.example.busmate.data.*
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
-import com.example.busmate.view.*
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -39,7 +38,6 @@ import androidx.compose.material.icons.filled.Search
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ChildEventListener
 import android.os.Build
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -57,11 +55,26 @@ import com.example.busmate.service.TripMonitoringService
 import coil3.compose.AsyncImage
 import com.example.busmate.ui.theme.BusMateOrange
 import com.google.firebase.database.ValueEventListener
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import com.example.busmate.service.ETAMonitoringService
+import com.example.busmate.view.admin.AdminAddChildActivity
+import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
+import com.example.busmate.view.admin.AdminDeactivatesActivity
+import com.example.busmate.view.admin.AdminSearchChildActivity
+import com.example.busmate.view.admin.BusProfileScreen
+import com.example.busmate.view.admin.BusScreen
+import com.example.busmate.view.admin.CreateAccountScreenActivity
+import com.example.busmate.view.admin.DriverProfileScreen
+import com.example.busmate.view.admin.GuideLineActivity
+import com.example.busmate.view.admin.SearchBusActivity
+import com.example.busmate.view.driver.AttendanceActivity
+import com.example.busmate.view.parent.BusDetailsActivity
+import com.example.busmate.view.parent.DriverProfileActivity
+import com.example.busmate.view.parent.ParentAttendanceActivity
+import com.example.busmate.view.parent.StudentIdCard
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -167,6 +180,34 @@ fun ParentDashboardScreen(
 
         // ... rest of your in-app listener code ...
     }
+
+    // Start ETA Service for Parents
+    LaunchedEffect(user?.typeofUser) {
+        if (user?.typeofUser == "Parent") {
+            val etaServiceIntent = Intent(context, ETAMonitoringService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(etaServiceIntent)
+            } else {
+                context.startService(etaServiceIntent)
+            }
+
+            Log.d("ParentDashboard", "ETA Monitoring Service started")
+        }
+    }
+
+// Stop service when parent logs out
+    DisposableEffect(user?.typeofUser) {
+        onDispose {
+            if (user?.typeofUser == "Parent") {
+                val etaServiceIntent = Intent(context, ETAMonitoringService::class.java)
+                context.stopService(etaServiceIntent)
+                Log.d("ParentDashboard", "ETA Monitoring Service stopped")
+            }
+        }
+    }
+
+
     /* ---------- 3. DATA LOADING ---------- */
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
@@ -216,7 +257,7 @@ fun ParentDashboardScreen(
     )
     val drawerItems = when (user?.typeofUser?.lowercase()) {
         "admin" -> listOf(
-            NavItem("Create Account", Icons.Default.PersonAdd),
+            NavItem("Create User Account", Icons.Default.PersonAdd),
             NavItem("Add Bus", Icons.Default.DirectionsBus),
             NavItem("View Bus", Icons.Default.DirectionsBus),
             NavItem("View Driver", Icons.Default.Badge),
@@ -225,6 +266,7 @@ fun ParentDashboardScreen(
             NavItem("View Attendance", Icons.Default.ChildCare),
             NavItem("Guidelines and Rules", Icons.Default.RuleFolder),
             NavItem("Search Bus", Icons.Default.Search),
+            NavItem("Create Child Account",Icons.Default.ManageAccounts)
         )
 
         "driver" -> listOf(
@@ -440,6 +482,9 @@ fun ParentDashboardScreen(
                                             Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
                                         }
                                     }
+                                    "Create Child Account" ->context.startActivity(
+                                        Intent(context, AdminAddChildActivity::class.java)
+                                    )
 
                                 }
                             }

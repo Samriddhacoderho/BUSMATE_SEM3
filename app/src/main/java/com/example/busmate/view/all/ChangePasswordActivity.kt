@@ -1,10 +1,9 @@
-package com.example.busmate.view
+package com.example.busmate.view.all
 
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -131,7 +130,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                 Spacer(modifier = Modifier.height(45.dp))
 
                 Image(
-                    painter = painterResource(com.example.busmate.R.drawable.logo),
+                    painter = painterResource(R.drawable.logo),
                     contentDescription = "Logo",
                     colorFilter = ColorFilter.tint(PlaceholderBusColor),
                     modifier = Modifier.size(160.dp)

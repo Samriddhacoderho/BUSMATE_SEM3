@@ -116,5 +116,16 @@ class ChildViewModel(
             _availableRoutes.value = routes
         }
     }
+
+    fun preRegisterStudentId(studentId: String) {
+        if (studentId.isBlank()) {
+            _message.value = "Enter a valid ID"
+            return
+        }
+        _message.value = "Processing..."
+        repository.adminPreAddStudentId(studentId) { msg, success ->
+            _message.value = msg
+        }
+    }
 }
 //testing fetchAvailableRoutes

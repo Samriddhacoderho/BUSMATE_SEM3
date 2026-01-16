@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">BUSMATE</string>
-    <string name="title_activity_splash_screen">SplashScreen</string>
     <string name="title_activity_parent_dashboard">ParentDashboardActivity</string>
     <string name="title_activity_parent_change_password">ParentChangePasswordActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
@@ -42,5 +41,8 @@
     <string name="title_activity_driver_routes">DriverRoutes</string>
     <string name="title_activity_help_and_support">HelpAndSupportActivity</string>
     <string name="title_activity_map_picker">MapPickerActivity</string>
+    <string name="title_activity_search_bus">SearchBusActivity</string>
+    <string name="title_activity_edit_bus">EditBusActivity</string>
+    <string name="title_activity_admin_add_child">AdminAddChildActivity</string>
 
 </resources>

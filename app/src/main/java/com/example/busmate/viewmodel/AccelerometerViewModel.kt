@@ -35,8 +35,11 @@ class AccelerometerViewModel(application: Application) : AndroidViewModel(applic
 
     /**
      * Called by TripActivity when "START TRIP" is clicked.
+     * @param driverUid The driver's UID
+     * @param busRouteId The bus ID
+     * @param tripType Either "Pickup" or "Drop-off" (default: "Pickup")
      */
-    fun startMeasurement(driverUid: String, busRouteId: String) {
+    fun startMeasurement(driverUid: String, busRouteId: String, tripType: String = "Pickup") {
         currentBusId = busRouteId
         // Update local UI state
         _state.value = _state.value.copy(isRunning = true)
@@ -44,6 +47,8 @@ class AccelerometerViewModel(application: Application) : AndroidViewModel(applic
         // 1. Update Firebase 'isTripRunning: true'
         if (busRouteId.isNotEmpty()) {
             repository.updateTripRunning(busRouteId, true)
+            // ✅ Update the trip type in Firebase
+            repository.updateTripType(busRouteId, tripType)
         }
 
         // 2. Start GPS Listening

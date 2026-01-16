@@ -11,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.busmate.view.auth.SplashScreenUI
+
 //import com.example.busmate.ui.theme.BUSMATETheme
 
 class MainActivity : ComponentActivity() {
@@ -18,7 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            //This is a commit
+            SplashScreenUI()
         }
     }
 }

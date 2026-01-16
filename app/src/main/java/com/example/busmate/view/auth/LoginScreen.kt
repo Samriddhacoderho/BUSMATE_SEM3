@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.auth
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -40,7 +40,8 @@ import com.example.busmate.view.dashboard.ParentDashboardActivity
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 import com.example.busmate.R
-import kotlinx.coroutines.delay
+import com.example.busmate.view.all.ResetPasswordActivity
+import com.google.gson.Gson
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
@@ -116,7 +117,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 if (rememberMe==true){
                     val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
                     val editor = sharedPreferences.edit()
-                    val gson = com.google.gson.Gson()
+                    val gson = Gson()
                     val json = gson.toJson(user)
                     editor.putString("user_model", json)
                     editor.apply()
@@ -184,7 +185,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
 
                 // Bus Logo
                 Image(
-                    painter = painterResource(com.example.busmate.R.drawable.logo),
+                    painter = painterResource(R.drawable.logo),
                     contentDescription = "Bus Mate Logo",
                     colorFilter = ColorFilter.tint(PlaceholderBusColor),
                     modifier = Modifier.size(200.dp)

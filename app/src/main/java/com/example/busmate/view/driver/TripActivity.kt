@@ -1,4 +1,4 @@
-package com.example.busmate.view
+package com.example.busmate.view.driver
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -16,7 +16,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -78,6 +80,7 @@ fun TripScreen(
 ) {
     val state by accelerometerViewModel.state
     val context = LocalContext.current
+    var selectedTripType by remember { mutableStateOf("Pickup") } // Global choice
 
     val locationViewModel = remember {
         LocationViewModel(
@@ -86,14 +89,20 @@ fun TripScreen(
         )
     }
 
-    // --- NEW: Permission Launcher for GPS ---
+    // Permission Launcher for GPS
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            accelerometerViewModel.startMeasurement(driverUid, busId)
+            // ✅ Pass the selected trip type
+            accelerometerViewModel.startMeasurement(
+                driverUid = driverUid,
+                busRouteId = busId,
+                tripType = selectedTripType
+            )
         } else {
-            Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -130,18 +139,52 @@ fun TripScreen(
 
         Spacer(modifier = Modifier.height(60.dp))
 
+        // Trip Type Toggle (Only enabled when trip is not running)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Type: ", fontWeight = FontWeight.Bold)
+            FilterChip(
+                selected = selectedTripType == "Pickup",
+                onClick = {
+                    if (!state.isRunning) {
+                        selectedTripType = "Pickup"
+                    }
+                },
+                label = { Text("Pickup") },
+                enabled = !state.isRunning
+            )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = selectedTripType == "Drop-off",
+                onClick = {
+                    if (!state.isRunning) {
+                        selectedTripType = "Drop-off"
+                    }
+                },
+                label = { Text("Drop-off") },
+                enabled = !state.isRunning
+            )
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
         Button(
             onClick = {
                 if (state.isRunning) {
+                    // Stop Trip
                     accelerometerViewModel.stopMeasurement(busId)
                 } else {
-                    // --- NEW: Check permission before starting GPS ---
+                    // Start Trip - Check permission first
                     val permissionCheck = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.ACCESS_FINE_LOCATION
                     )
                     if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                        accelerometerViewModel.startMeasurement(driverUid, busId)
+                        // ✅ Pass the selected trip type to ViewModel
+                        accelerometerViewModel.startMeasurement(
+                            driverUid = driverUid,
+                            busRouteId = busId,
+                            tripType = selectedTripType
+                        )
                     } else {
                         locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                     }

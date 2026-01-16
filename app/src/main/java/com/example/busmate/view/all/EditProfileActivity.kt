@@ -1,13 +1,10 @@
-package com.example.busmate.view
+package com.example.busmate.view.all
 
 import android.app.Activity
-import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,15 +25,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.view.ImageUtils
 import com.example.busmate.view.dashboard.ButtonGray
-import com.example.busmate.view.dashboard.PrimaryBlack
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
