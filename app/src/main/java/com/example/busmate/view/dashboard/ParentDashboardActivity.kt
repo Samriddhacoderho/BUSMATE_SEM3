@@ -59,6 +59,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import com.example.busmate.service.ETAMonitoringService
 import com.example.busmate.view.admin.AdminAddChildActivity
 import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
 import com.example.busmate.view.admin.AdminDeactivatesActivity
@@ -179,6 +180,34 @@ fun ParentDashboardScreen(
 
         // ... rest of your in-app listener code ...
     }
+
+    // Start ETA Service for Parents
+    LaunchedEffect(user?.typeofUser) {
+        if (user?.typeofUser == "Parent") {
+            val etaServiceIntent = Intent(context, ETAMonitoringService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(etaServiceIntent)
+            } else {
+                context.startService(etaServiceIntent)
+            }
+
+            Log.d("ParentDashboard", "ETA Monitoring Service started")
+        }
+    }
+
+// Stop service when parent logs out
+    DisposableEffect(user?.typeofUser) {
+        onDispose {
+            if (user?.typeofUser == "Parent") {
+                val etaServiceIntent = Intent(context, ETAMonitoringService::class.java)
+                context.stopService(etaServiceIntent)
+                Log.d("ParentDashboard", "ETA Monitoring Service stopped")
+            }
+        }
+    }
+
+
     /* ---------- 3. DATA LOADING ---------- */
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
