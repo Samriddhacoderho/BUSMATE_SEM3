@@ -89,12 +89,17 @@ fun TripScreen(
         )
     }
 
-    // --- NEW: Permission Launcher for GPS ---
+    // Permission Launcher for GPS
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            accelerometerViewModel.startMeasurement(driverUid, busId)
+            // ✅ Pass the selected trip type
+            accelerometerViewModel.startMeasurement(
+                driverUid = driverUid,
+                busRouteId = busId,
+                tripType = selectedTripType
+            )
         } else {
             Toast.makeText(context, "GPS Permission is required to track speed.", Toast.LENGTH_LONG)
                 .show()
@@ -133,19 +138,30 @@ fun TripScreen(
         Text(text = "KM/H", fontSize = 24.sp, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(60.dp))
-        // New Toggle for Global State
+
+        // Trip Type Toggle (Only enabled when trip is not running)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Type: ", fontWeight = FontWeight.Bold)
             FilterChip(
                 selected = selectedTripType == "Pickup",
-                onClick = { if (!state.isRunning) selectedTripType = "Pickup" },
-                label = { Text("Pickup") }
+                onClick = {
+                    if (!state.isRunning) {
+                        selectedTripType = "Pickup"
+                    }
+                },
+                label = { Text("Pickup") },
+                enabled = !state.isRunning
             )
             Spacer(Modifier.width(8.dp))
             FilterChip(
                 selected = selectedTripType == "Drop-off",
-                onClick = { if (!state.isRunning) selectedTripType = "Drop-off" },
-                label = { Text("Drop-off") }
+                onClick = {
+                    if (!state.isRunning) {
+                        selectedTripType = "Drop-off"
+                    }
+                },
+                label = { Text("Drop-off") },
+                enabled = !state.isRunning
             )
         }
 
@@ -154,15 +170,21 @@ fun TripScreen(
         Button(
             onClick = {
                 if (state.isRunning) {
+                    // Stop Trip
                     accelerometerViewModel.stopMeasurement(busId)
                 } else {
-                    // --- NEW: Check permission before starting GPS ---
+                    // Start Trip - Check permission first
                     val permissionCheck = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.ACCESS_FINE_LOCATION
                     )
                     if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                        accelerometerViewModel.startMeasurement(driverUid, busId)
+                        // ✅ Pass the selected trip type to ViewModel
+                        accelerometerViewModel.startMeasurement(
+                            driverUid = driverUid,
+                            busRouteId = busId,
+                            tripType = selectedTripType
+                        )
                     } else {
                         locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                     }
