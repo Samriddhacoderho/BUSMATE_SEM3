@@ -124,7 +124,6 @@ fun ParentDashboardScreen(
     val busIds = remember(userState) {
         userState?.children?.values?.map { it.busRouteId }?.filter { it.isNotEmpty() }?.distinct() ?: emptyList()
     }
-
     /* ---------- DRAWER STATE ---------- */
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -141,6 +140,7 @@ fun ParentDashboardScreen(
             Toast.makeText(context, "Permission denied. Notifications disabled.", Toast.LENGTH_SHORT).show()
         }
     }
+
     // 3. Combined Logic: Load Profile, Register FCM, and Check Permissions
     LaunchedEffect(Unit) {
         userViewModel.loadUserProfile(userId)
@@ -155,7 +155,6 @@ fun ParentDashboardScreen(
             }
         }
     }
-
     // CHANGE: Combined logic into a single block to save battery and memory
     // Update your existing LaunchedEffect(busIds) to look like this:
     LaunchedEffect(busIds) {
@@ -215,7 +214,6 @@ fun ParentDashboardScreen(
             childViewModel.observeChildren(it)
         }
     }
-
     DisposableEffect(user?.typeofUser) {
         val database = FirebaseDatabase.getInstance()
         val currentUserType = user?.typeofUser?.lowercase()
