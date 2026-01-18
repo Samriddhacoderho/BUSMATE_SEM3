@@ -3,6 +3,7 @@ package com.example.busmate.service
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -30,15 +31,18 @@ class ETAMonitoringService : Service() {
     // Store listeners for cleanup
     private val busListeners = mutableMapOf<String, ValueEventListener>()
 
-    // === NEW: Speed buffering like LocationViewModel ===
+    // Speed buffering like LocationViewModel
     private val speedBuffers = mutableMapOf<String, MutableList<Float>>()
     private val BUFFER_SIZE = 10
+
+    // === NEW: Cache route distances per child (like LocationViewModel's currentRouteDistanceMeters) ===
+    private val routeDistanceCache = mutableMapOf<String, Int>()
 
     companion object {
         private const val CHANNEL_ID = "eta_monitoring_channel"
         private const val NOTIFICATION_ID = 102
         private const val ETA_THRESHOLD_MINUTES = 5
-        private const val CHECK_INTERVAL_MS = 30000L // Check every 30 seconds
+        private const val CHECK_INTERVAL_MS = 30000L
     }
 
     override fun onCreate() {
@@ -85,7 +89,6 @@ class ETAMonitoringService : Service() {
 
                     Log.d("ETAService", "Found ${children.size} children")
 
-                    // === NEW: Log each child's details ===
                     children.forEach { child ->
                         Log.d("ETAService", "Child: ${child.firstName} ${child.lastName}")
                         Log.d("ETAService", "  - Student ID: ${child.studentId}")
@@ -104,7 +107,6 @@ class ETAMonitoringService : Service() {
                         Log.d("ETAService", "Children names: ${childList.map { it.firstName }}")
 
                         if (routeId.isNotEmpty()) {
-                            // CRITICAL FIX: Find the actual bus node using routeId
                             findAndMonitorBus(routeId, childList, parentUid)
                         } else {
                             Log.e("ETAService", "Empty routeId for children: ${childList.map { it.firstName }}")
@@ -118,16 +120,11 @@ class ETAMonitoringService : Service() {
             })
     }
 
-    /**
-     * CRITICAL FIX: This method finds the actual bus node by querying with routeId
-     * Children have busRouteId (e.g., "1010"), but buses might be stored by UID
-     */
     private fun findAndMonitorBus(
         routeId: String,
         children: List<ChildModel>,
         parentUid: String
     ) {
-        // Try direct path first (in case routeId IS the bus key)
         database.getReference("buses").child(routeId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(directSnapshot: DataSnapshot) {
@@ -135,7 +132,6 @@ class ETAMonitoringService : Service() {
                         Log.d("ETAService", "✓ Found bus at direct path: buses/$routeId")
                         monitorBusForChildren(routeId, children, parentUid)
                     } else {
-                        // If not found at direct path, query by routeId field
                         Log.d("ETAService", "Bus not at direct path, querying by routeId field...")
                         database.getReference("buses")
                             .orderByChild("routeId")
@@ -196,12 +192,12 @@ class ETAMonitoringService : Service() {
 
                 if (!isTripRunning) {
                     Log.w("ETAService", "Trip not running for bus $busId - skipping ETA calculation")
-                    // Reset notifications when trip ends
                     children.forEach { child ->
                         notifiedChildren.remove(child.studentId)
                         clearNotificationState(child.studentId)
+                        // === NEW: Clear route distance cache ===
+                        routeDistanceCache.remove(child.studentId)
                     }
-                    // === NEW: Clear speed buffer for this bus ===
                     speedBuffers.remove(busId)
                     return
                 }
@@ -225,6 +221,17 @@ class ETAMonitoringService : Service() {
                 Log.d("ETAService", "Speed: $speed m/s (${speed * 3.6} km/h)")
                 Log.d("ETAService", "Trip Type: $tripType")
 
+                // === NEW: Get API Key from manifest ===
+                val apiKey = try {
+                    packageManager.getApplicationInfo(
+                        packageName,
+                        PackageManager.GET_META_DATA
+                    ).metaData.getString("com.google.android.geo.API_KEY") ?: ""
+                } catch (e: Exception) {
+                    Log.e("ETAService", "Failed to get API key: ${e.message}")
+                    ""
+                }
+
                 // Calculate ETA for each child
                 children.forEach { child ->
                     calculateAndNotifyETA(
@@ -233,7 +240,8 @@ class ETAMonitoringService : Service() {
                         speed = speed,
                         tripType = tripType,
                         parentUid = parentUid,
-                        busId = busId  // === NEW: Pass busId for speed buffering ===
+                        busId = busId,
+                        apiKey = apiKey  // === NEW: Pass API key ===
                     )
                 }
             }
@@ -254,48 +262,102 @@ class ETAMonitoringService : Service() {
         speed: Float,
         tripType: String,
         parentUid: String,
-        busId: String  // === NEW: Added parameter ===
+        busId: String,
+        apiKey: String  // === NEW: Added parameter ===
     ) {
-        // Parse bus location
         val busLatLng = parseCoordinates(currentLocation)
 
-        // Get destination based on trip type
         val destinationLatLng = if (tripType == "Pickup") {
             LatLng(child.pickUpLat, child.pickUpLng)
         } else {
             LatLng(child.dropOffLat, child.dropOffLng)
         }
 
-        // === NEW: Use buffered speed like LocationViewModel ===
-        // Get or create buffer for this bus
+        // === NEW: Fetch route distance using Google Maps API (like LocationViewModel) ===
+        if (apiKey.isNotEmpty()) {
+            busRepo.getRoadSnappedRoute(
+                origin = busLatLng,
+                destination = destinationLatLng,
+                apiKey = apiKey,
+                onSuccess = { _, distanceMeters ->
+                    // Cache the route distance
+                    routeDistanceCache[child.studentId] = distanceMeters
+                    Log.d("ETAService", "✓ Route distance fetched: $distanceMeters m for ${child.firstName}")
+
+                    // Now calculate ETA with the route distance
+                    performETACalculation(child, speed, distanceMeters.toFloat(), tripType, parentUid, busId)
+                },
+                onFailure = { error ->
+                    Log.e("ETAService", "Route fetch failed: $error - falling back to cached/aerial distance")
+
+                    // Use cached distance if available, otherwise aerial
+                    val cachedDistance = routeDistanceCache[child.studentId]
+                    val distanceMeters = if (cachedDistance != null && cachedDistance > 0) {
+                        Log.d("ETAService", "Using cached route distance: $cachedDistance m")
+                        cachedDistance.toFloat()
+                    } else {
+                        // Fallback to aerial distance
+                        val results = FloatArray(1)
+                        android.location.Location.distanceBetween(
+                            busLatLng.latitude, busLatLng.longitude,
+                            destinationLatLng.latitude, destinationLatLng.longitude,
+                            results
+                        )
+                        Log.d("ETAService", "Using aerial distance: ${results[0].toInt()} m")
+                        results[0]
+                    }
+
+                    performETACalculation(child, speed, distanceMeters, tripType, parentUid, busId)
+                }
+            )
+        } else {
+            Log.w("ETAService", "API key not available - using aerial distance")
+
+            // Use cached distance or aerial as fallback
+            val cachedDistance = routeDistanceCache[child.studentId]
+            val distanceMeters = if (cachedDistance != null && cachedDistance > 0) {
+                cachedDistance.toFloat()
+            } else {
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    busLatLng.latitude, busLatLng.longitude,
+                    destinationLatLng.latitude, destinationLatLng.longitude,
+                    results
+                )
+                results[0]
+            }
+
+            performETACalculation(child, speed, distanceMeters, tripType, parentUid, busId)
+        }
+    }
+
+    // === NEW: Separate method for actual ETA calculation (matching LocationViewModel exactly) ===
+    private fun performETACalculation(
+        child: ChildModel,
+        speed: Float,
+        distanceMeters: Float,
+        tripType: String,
+        parentUid: String,
+        busId: String
+    ) {
+        // Speed buffering (same as LocationViewModel)
         val buffer = speedBuffers.getOrPut(busId) { mutableListOf() }
 
-        // Add current speed to buffer
         if (buffer.size >= BUFFER_SIZE) {
             buffer.removeAt(0)
         }
         buffer.add(speed)
 
-        // Calculate average speed from buffer
         val avgSpeedMps = if (buffer.isNotEmpty()) {
             buffer.average().toFloat()
         } else {
             0f
         }
 
-        // Calculate distance
-        val results = FloatArray(1)
-        android.location.Location.distanceBetween(
-            busLatLng.latitude, busLatLng.longitude,
-            destinationLatLng.latitude, destinationLatLng.longitude,
-            results
-        )
-        val distanceMeters = results[0]
-
-        // === UPDATED: Use same default speed as LocationViewModel (5.5 m/s) ===
+        // Use same default speed as LocationViewModel (5.5 m/s)
         val effectiveSpeed = if (avgSpeedMps < 0.5f) {
-            Log.w("ETAService", "Low/zero speed detected for ${child.firstName}, using default 5.5 m/s (~20 km/h)")
-            5.5f // CHANGED from 8.33 to match LocationViewModel
+            Log.w("ETAService", "Low/zero speed for ${child.firstName}, using default 5.5 m/s (~20 km/h)")
+            5.5f
         } else {
             avgSpeedMps
         }
@@ -303,15 +365,13 @@ class ETAMonitoringService : Service() {
         val etaMinutes = (distanceMeters / (effectiveSpeed * 60)).toInt()
 
         Log.d("ETAService", "ETA Calculation for ${child.firstName}:")
-        Log.d("ETAService", "  - Distance: ${distanceMeters.toInt()}m")
+        Log.d("ETAService", "  - Distance: ${distanceMeters.toInt()}m (${if (routeDistanceCache.containsKey(child.studentId)) "route" else "aerial"})")
         Log.d("ETAService", "  - Raw Speed: $speed m/s")
         Log.d("ETAService", "  - Buffered Speed: $avgSpeedMps m/s")
         Log.d("ETAService", "  - Effective Speed: $effectiveSpeed m/s")
         Log.d("ETAService", "  - ETA: $etaMinutes minutes")
         Log.d("ETAService", "  - Threshold: $ETA_THRESHOLD_MINUTES minutes")
-        Log.d("ETAService", "  - Already notified: ${notifiedChildren.contains(child.studentId)}")
 
-        // === NEW: Check both in-memory and persistent notification state ===
         if (etaMinutes <= ETA_THRESHOLD_MINUTES &&
             etaMinutes > 0 &&
             !notifiedChildren.contains(child.studentId) &&
@@ -320,22 +380,21 @@ class ETAMonitoringService : Service() {
             Log.d("ETAService", "🔔 SENDING NOTIFICATION for ${child.firstName}")
             sendETANotification(child, etaMinutes, tripType, parentUid)
             notifiedChildren.add(child.studentId)
-            saveNotificationState(child.studentId)  // === NEW: Persist state ===
+            saveNotificationState(child.studentId)
 
-            // Remove from both sets after 10 minutes
             serviceScope.launch {
-                delay(600000L) // 10 minutes
+                delay(600000L)
                 notifiedChildren.remove(child.studentId)
-                clearNotificationState(child.studentId)  // === NEW: Clear persistent state ===
+                clearNotificationState(child.studentId)
                 Log.d("ETAService", "Reset notification flag for ${child.firstName}")
             }
         } else {
             if (etaMinutes > ETA_THRESHOLD_MINUTES) {
-                Log.d("ETAService", "ETA ($etaMinutes min) > threshold ($ETA_THRESHOLD_MINUTES min) - not sending notification")
+                Log.d("ETAService", "ETA ($etaMinutes min) > threshold - not sending")
             } else if (etaMinutes <= 0) {
                 Log.d("ETAService", "ETA is 0 or negative - bus may have passed")
             } else if (notifiedChildren.contains(child.studentId) || wasRecentlyNotified(child.studentId)) {
-                Log.d("ETAService", "Already notified for ${child.firstName} - skipping")
+                Log.d("ETAService", "Already notified for ${child.firstName}")
             }
         }
     }
@@ -360,14 +419,12 @@ class ETAMonitoringService : Service() {
 
         Log.d("ETAService", "Notification content: $title - $message")
 
-        // Show system notification
         NotificationHelper.showNotification(
             context = applicationContext,
             title = title,
             message = message
         )
 
-        // Save to Firebase for in-app notification history
         val notificationData = mapOf(
             "title" to title,
             "message" to message,
@@ -388,7 +445,6 @@ class ETAMonitoringService : Service() {
             }
     }
 
-    // === NEW: SharedPreferences methods to prevent duplicate notifications ===
     private fun saveNotificationState(childId: String) {
         val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
         prefs.edit()
@@ -401,7 +457,7 @@ class ETAMonitoringService : Service() {
         val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
         val lastNotified = prefs.getLong("notified_$childId", 0L)
         val timeSince = System.currentTimeMillis() - lastNotified
-        val wasNotified = timeSince < 600000L // 10 minutes
+        val wasNotified = timeSince < 600000L
 
         if (wasNotified) {
             Log.d("ETAService", "Child $childId was notified ${timeSince / 1000}s ago")
@@ -424,7 +480,7 @@ class ETAMonitoringService : Service() {
             LatLng(lat, lng)
         } catch (e: Exception) {
             Log.e("ETAService", "Failed to parse coordinates: $coords - ${e.message}")
-            LatLng(27.7172, 85.3240) // Default location (Kathmandu)
+            LatLng(27.7172, 85.3240)
         }
     }
 
@@ -447,13 +503,12 @@ class ETAMonitoringService : Service() {
 
     override fun onDestroy() {
         Log.d("ETAService", "Service destroyed - cleaning up ${busListeners.size} listeners")
-        // Clean up listeners
         busListeners.forEach { (busId, listener) ->
             database.getReference("buses").child(busId).removeEventListener(listener)
             Log.d("ETAService", "Removed listener for bus: $busId")
         }
-        // === NEW: Clear speed buffers ===
         speedBuffers.clear()
+        routeDistanceCache.clear()  // === NEW: Clear route cache ===
         serviceScope.cancel()
         super.onDestroy()
     }
