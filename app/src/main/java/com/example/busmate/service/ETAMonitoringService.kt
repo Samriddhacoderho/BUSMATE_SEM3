@@ -1,6 +1,7 @@
 package com.example.busmate.service
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -28,6 +29,10 @@ class ETAMonitoringService : Service() {
 
     // Store listeners for cleanup
     private val busListeners = mutableMapOf<String, ValueEventListener>()
+
+    // === NEW: Speed buffering like LocationViewModel ===
+    private val speedBuffers = mutableMapOf<String, MutableList<Float>>()
+    private val BUFFER_SIZE = 10
 
     companion object {
         private const val CHANNEL_ID = "eta_monitoring_channel"
@@ -79,6 +84,15 @@ class ETAMonitoringService : Service() {
                     }
 
                     Log.d("ETAService", "Found ${children.size} children")
+
+                    // === NEW: Log each child's details ===
+                    children.forEach { child ->
+                        Log.d("ETAService", "Child: ${child.firstName} ${child.lastName}")
+                        Log.d("ETAService", "  - Student ID: ${child.studentId}")
+                        Log.d("ETAService", "  - Bus Route ID: ${child.busRouteId}")
+                        Log.d("ETAService", "  - Pickup: ${child.pickUpLat}, ${child.pickUpLng}")
+                        Log.d("ETAService", "  - Dropoff: ${child.dropOffLat}, ${child.dropOffLng}")
+                    }
 
                     // Group children by bus route
                     val childrenByBus = children.groupBy { it.busRouteId }
@@ -185,7 +199,10 @@ class ETAMonitoringService : Service() {
                     // Reset notifications when trip ends
                     children.forEach { child ->
                         notifiedChildren.remove(child.studentId)
+                        clearNotificationState(child.studentId)
                     }
+                    // === NEW: Clear speed buffer for this bus ===
+                    speedBuffers.remove(busId)
                     return
                 }
 
@@ -215,7 +232,8 @@ class ETAMonitoringService : Service() {
                         currentLocation = currentLocation,
                         speed = speed,
                         tripType = tripType,
-                        parentUid = parentUid
+                        parentUid = parentUid,
+                        busId = busId  // === NEW: Pass busId for speed buffering ===
                     )
                 }
             }
@@ -235,7 +253,8 @@ class ETAMonitoringService : Service() {
         currentLocation: String,
         speed: Float,
         tripType: String,
-        parentUid: String
+        parentUid: String,
+        busId: String  // === NEW: Added parameter ===
     ) {
         // Parse bus location
         val busLatLng = parseCoordinates(currentLocation)
@@ -247,6 +266,23 @@ class ETAMonitoringService : Service() {
             LatLng(child.dropOffLat, child.dropOffLng)
         }
 
+        // === NEW: Use buffered speed like LocationViewModel ===
+        // Get or create buffer for this bus
+        val buffer = speedBuffers.getOrPut(busId) { mutableListOf() }
+
+        // Add current speed to buffer
+        if (buffer.size >= BUFFER_SIZE) {
+            buffer.removeAt(0)
+        }
+        buffer.add(speed)
+
+        // Calculate average speed from buffer
+        val avgSpeedMps = if (buffer.isNotEmpty()) {
+            buffer.average().toFloat()
+        } else {
+            0f
+        }
+
         // Calculate distance
         val results = FloatArray(1)
         android.location.Location.distanceBetween(
@@ -256,35 +292,41 @@ class ETAMonitoringService : Service() {
         )
         val distanceMeters = results[0]
 
-        // Calculate ETA
-        val effectiveSpeed = if (speed < 0.5f) {
-            Log.w("ETAService", "Low/zero speed detected for ${child.firstName}, using default 8.33 m/s (~30 km/h)")
-            8.33f // 30 km/h in m/s
+        // === UPDATED: Use same default speed as LocationViewModel (5.5 m/s) ===
+        val effectiveSpeed = if (avgSpeedMps < 0.5f) {
+            Log.w("ETAService", "Low/zero speed detected for ${child.firstName}, using default 5.5 m/s (~20 km/h)")
+            5.5f // CHANGED from 8.33 to match LocationViewModel
         } else {
-            speed
+            avgSpeedMps
         }
+
         val etaMinutes = (distanceMeters / (effectiveSpeed * 60)).toInt()
 
         Log.d("ETAService", "ETA Calculation for ${child.firstName}:")
         Log.d("ETAService", "  - Distance: ${distanceMeters.toInt()}m")
-        Log.d("ETAService", "  - Speed: $effectiveSpeed m/s")
+        Log.d("ETAService", "  - Raw Speed: $speed m/s")
+        Log.d("ETAService", "  - Buffered Speed: $avgSpeedMps m/s")
+        Log.d("ETAService", "  - Effective Speed: $effectiveSpeed m/s")
         Log.d("ETAService", "  - ETA: $etaMinutes minutes")
         Log.d("ETAService", "  - Threshold: $ETA_THRESHOLD_MINUTES minutes")
         Log.d("ETAService", "  - Already notified: ${notifiedChildren.contains(child.studentId)}")
 
-        // Send notification if within threshold and not already notified
+        // === NEW: Check both in-memory and persistent notification state ===
         if (etaMinutes <= ETA_THRESHOLD_MINUTES &&
             etaMinutes > 0 &&
-            !notifiedChildren.contains(child.studentId)) {
+            !notifiedChildren.contains(child.studentId) &&
+            !wasRecentlyNotified(child.studentId)) {
 
             Log.d("ETAService", "🔔 SENDING NOTIFICATION for ${child.firstName}")
             sendETANotification(child, etaMinutes, tripType, parentUid)
             notifiedChildren.add(child.studentId)
+            saveNotificationState(child.studentId)  // === NEW: Persist state ===
 
-            // Remove from notified set after 10 minutes to allow re-notification if needed
+            // Remove from both sets after 10 minutes
             serviceScope.launch {
                 delay(600000L) // 10 minutes
                 notifiedChildren.remove(child.studentId)
+                clearNotificationState(child.studentId)  // === NEW: Clear persistent state ===
                 Log.d("ETAService", "Reset notification flag for ${child.firstName}")
             }
         } else {
@@ -292,7 +334,7 @@ class ETAMonitoringService : Service() {
                 Log.d("ETAService", "ETA ($etaMinutes min) > threshold ($ETA_THRESHOLD_MINUTES min) - not sending notification")
             } else if (etaMinutes <= 0) {
                 Log.d("ETAService", "ETA is 0 or negative - bus may have passed")
-            } else if (notifiedChildren.contains(child.studentId)) {
+            } else if (notifiedChildren.contains(child.studentId) || wasRecentlyNotified(child.studentId)) {
                 Log.d("ETAService", "Already notified for ${child.firstName} - skipping")
             }
         }
@@ -346,6 +388,34 @@ class ETAMonitoringService : Service() {
             }
     }
 
+    // === NEW: SharedPreferences methods to prevent duplicate notifications ===
+    private fun saveNotificationState(childId: String) {
+        val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putLong("notified_$childId", System.currentTimeMillis())
+            .apply()
+        Log.d("ETAService", "Saved notification state for child: $childId")
+    }
+
+    private fun wasRecentlyNotified(childId: String): Boolean {
+        val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
+        val lastNotified = prefs.getLong("notified_$childId", 0L)
+        val timeSince = System.currentTimeMillis() - lastNotified
+        val wasNotified = timeSince < 600000L // 10 minutes
+
+        if (wasNotified) {
+            Log.d("ETAService", "Child $childId was notified ${timeSince / 1000}s ago")
+        }
+
+        return wasNotified
+    }
+
+    private fun clearNotificationState(childId: String) {
+        val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
+        prefs.edit().remove("notified_$childId").apply()
+        Log.d("ETAService", "Cleared notification state for child: $childId")
+    }
+
     private fun parseCoordinates(coords: String): LatLng {
         return try {
             val parts = coords.split(",")
@@ -382,6 +452,8 @@ class ETAMonitoringService : Service() {
             database.getReference("buses").child(busId).removeEventListener(listener)
             Log.d("ETAService", "Removed listener for bus: $busId")
         }
+        // === NEW: Clear speed buffers ===
+        speedBuffers.clear()
         serviceScope.cancel()
         super.onDestroy()
     }
