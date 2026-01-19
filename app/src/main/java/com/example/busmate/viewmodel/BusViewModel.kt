@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.data.BusRepositoryInterface
 import com.example.busmate.model.BusModel
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -18,6 +19,10 @@ class BusViewModel(
 
     private val _buses = MutableStateFlow<List<BusModel>>(emptyList())
     val buses: StateFlow<List<BusModel>> = _buses
+
+    private val _schoolLocation = MutableStateFlow<Pair<LatLng?, String?>>(Pair(null, null))
+    val schoolLocation: StateFlow<Pair<LatLng?, String?>> = _schoolLocation
+
 
     fun registerBus(
         busNumber: String,
@@ -83,6 +88,21 @@ class BusViewModel(
         callback: (String?) -> Unit
     ) {
         repository.uploadBusImage(context, imageUri, callback)
+    }
+
+    fun saveSchoolLocation(lat: Double, lng: Double, address: String) {
+        repository.saveSchoolLocation(lat, lng, address) { success, msg ->
+            _message.value = msg
+            if (success) {
+                _schoolLocation.value = Pair(LatLng(lat, lng), address)
+            }
+        }
+    }
+
+    fun fetchSchoolLocation() {
+        repository.getSchoolLocation { latLng, address ->
+            _schoolLocation.value = Pair(latLng, address)
+        }
     }
 }
 //testing
