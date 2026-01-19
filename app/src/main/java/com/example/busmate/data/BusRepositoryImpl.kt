@@ -437,5 +437,33 @@ class BusRepositoryImpl : BusRepositoryInterface {
      * Fetch school location from Firebase
      */
     override fun getSchoolLocation(callback: (LatLng?, String?) -> Unit) {
+        db.getReference("schoolSettings")
+            .child("location")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val lat = snapshot.child("lat").getValue(Double::class.java)
+                        val lng = snapshot.child("lng").getValue(Double::class.java)
+                        val address = snapshot.child("address").getValue(String::class.java)
+
+                        if (lat != null && lng != null) {
+                            callback(LatLng(lat, lng), address)
+                            Log.d("BusRepo", "School location fetched: $lat, $lng")
+                        } else {
+                            callback(null, null)
+                            Log.w("BusRepo", "School location data incomplete")
+                        }
+                    } else {
+                        // Default to Deerwalk if not set
+                        callback(LatLng(27.7174, 85.3435), "Deerwalk Institute (Default)")
+                        Log.w("BusRepo", "No school location set, using default")
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("BusRepo", "Failed to fetch school location: ${error.message}")
+                    callback(null, null)
+                }
+            })
     }
 }
