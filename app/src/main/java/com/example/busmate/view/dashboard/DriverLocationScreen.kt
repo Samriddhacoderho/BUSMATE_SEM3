@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.viewmodel.LocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
@@ -42,7 +43,19 @@ fun DriverLocationScreen(
 
     // Kathmandu + School (Deerwalk)
     val kathmandu = remember { LatLng(27.7172, 85.3240) }
-    val schoolLatLng = remember { LatLng(27.7174, 85.3435) }
+//    val schoolLatLng = remember { LatLng(27.7174, 85.3435) }
+    val schoolLatLng = remember { mutableStateOf(LatLng(27.7174, 85.3435)) }
+
+// ADD this LaunchedEffect to fetch school location:
+    LaunchedEffect(Unit) {
+        val busRepo = BusRepositoryImpl()
+        busRepo.getSchoolLocation { location, _ ->
+            location?.let {
+                schoolLatLng.value = it
+            }
+        }
+    }
+
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(kathmandu, 12f)
@@ -90,7 +103,7 @@ fun DriverLocationScreen(
         if (currentGpsLocation != null && students.isNotEmpty() && apiKey.isNotEmpty()) {
             viewModel.fetchDriverRouteWithWaypoints(
                 origin = currentGpsLocation!!,
-                schoolLocation = schoolLatLng,
+                schoolLocation = schoolLatLng.value,
                 students = students,
                 tripType = previewTripType,
                 apiKey = apiKey
@@ -201,7 +214,7 @@ fun DriverLocationScreen(
 
                     // SCHOOL MARKER (FIXED)
                     Marker(
-                        state = MarkerState(position = schoolLatLng),
+                        state = MarkerState(position = schoolLatLng.value),
                         title = "Deerwalk Institute",
                         snippet = "School",
                         icon = BitmapDescriptorFactory.defaultMarker(
@@ -259,7 +272,7 @@ fun DriverLocationScreen(
                                 bounds.include(p)
                             }
 
-                            bounds.include(schoolLatLng)
+                            bounds.include(schoolLatLng.value)
 
                             scope.launch {
                                 cameraPositionState.animate(
