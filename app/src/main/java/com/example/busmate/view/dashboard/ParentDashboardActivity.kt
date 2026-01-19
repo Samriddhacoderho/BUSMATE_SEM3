@@ -58,6 +58,7 @@ import com.google.firebase.database.ValueEventListener
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import android.app.Activity
 import androidx.compose.animation.shrinkVertically
 import com.example.busmate.service.ETAMonitoringService
 import com.example.busmate.view.admin.AdminAddChildActivity
@@ -75,6 +76,7 @@ import com.example.busmate.view.parent.BusDetailsActivity
 import com.example.busmate.view.parent.DriverProfileActivity
 import com.example.busmate.view.parent.ParentAttendanceActivity
 import com.example.busmate.view.parent.StudentIdCard
+import com.example.busmate.view.parent.MapPickerActivity
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -141,6 +143,23 @@ fun ParentDashboardScreen(
             Toast.makeText(context, "Permission denied. Notifications disabled.", Toast.LENGTH_SHORT).show()
         }
     }
+
+    // MapPicker launcher for school location
+    val mapPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val lat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
+            val lng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
+            val address = result.data?.getStringExtra("address") ?: ""
+
+            if (lat != 0.0 && lng != 0.0) {
+                busViewModel.saveSchoolLocation(lat, lng, address)
+                Toast.makeText(context, "School location updated", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // 3. Combined Logic: Load Profile, Register FCM, and Check Permissions
     LaunchedEffect(Unit) {
         userViewModel.loadUserProfile(userId)
@@ -266,7 +285,8 @@ fun ParentDashboardScreen(
             NavItem("View Attendance", Icons.Default.ChildCare),
             NavItem("Guidelines and Rules", Icons.Default.RuleFolder),
             NavItem("Search Bus", Icons.Default.Search),
-            NavItem("Create Child Account",Icons.Default.ManageAccounts)
+            NavItem("Create Child Account",Icons.Default.ManageAccounts),
+            NavItem("Set School Location", Icons.Default.LocationOn)
         )
 
         "driver" -> listOf(
@@ -336,8 +356,7 @@ fun ParentDashboardScreen(
                         // User Role Badge
                         Surface(
                             color = Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.padding(top = 4.dp)
+                            shape = RoundedCornerShape(50)
                         ) {
                             Text(
                                 text = user?.typeofUser?.uppercase() ?: "",
@@ -485,6 +504,10 @@ fun ParentDashboardScreen(
                                     "Create Child Account" ->context.startActivity(
                                         Intent(context, AdminAddChildActivity::class.java)
                                     )
+                                    "Set School Location" -> {
+                                        val intent = Intent(context, MapPickerActivity::class.java)
+                                        mapPickerLauncher.launch(intent)
+                                    }
 
                                 }
                             }
