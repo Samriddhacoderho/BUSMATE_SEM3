@@ -59,4 +59,6 @@ interface BusRepositoryInterface {
 
     fun saveSchoolLocation(lat: Double, lng: Double, address: String, callback: (Boolean, String) -> Unit)
 
+    fun getSchoolLocation(callback: (LatLng?, String?) -> Unit)
+
 }
