@@ -406,4 +406,36 @@ class BusRepositoryImpl : BusRepositoryInterface {
                 )
             }
     }
+
+
+
+    /**
+     * Save school location to Firebase
+     */
+    override fun saveSchoolLocation(lat: Double, lng: Double, address: String, callback: (Boolean, String) -> Unit) {
+        val locationData = mapOf(
+            "lat" to lat,
+            "lng" to lng,
+            "address" to address,
+            "updatedAt" to ServerValue.TIMESTAMP
+        )
+
+        db.getReference("schoolSettings")
+            .child("location")
+            .setValue(locationData)
+            .addOnSuccessListener {
+                Log.d("BusRepo", "School location saved successfully")
+                callback(true, "School location saved successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e("BusRepo", "Failed to save school location: ${e.message}")
+                callback(false, "Failed to save: ${e.message}")
+            }
+    }
+
+    /**
+     * Fetch school location from Firebase
+     */
+    override fun getSchoolLocation(callback: (LatLng?, String?) -> Unit) {
+    }
 }
