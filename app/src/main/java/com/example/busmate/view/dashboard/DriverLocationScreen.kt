@@ -214,8 +214,8 @@ fun DriverLocationScreen(
                     // SCHOOL MARKER (FIXED)
                     Marker(
                         state = MarkerState(position = schoolLatLng.value),
-                        title = "Deerwalk Institute",
-                        snippet = "School",
+                        title = "School Location",
+                        snippet = " ",
                         icon = BitmapDescriptorFactory.defaultMarker(
                             BitmapDescriptorFactory.HUE_RED
                         )
