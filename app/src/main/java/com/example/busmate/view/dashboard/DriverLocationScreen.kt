@@ -41,9 +41,8 @@ fun DriverLocationScreen(
 
     var previewTripType by remember { mutableStateOf("Pickup") }
 
-    // Kathmandu + School (Deerwalk)
+    // Kathmandu + School
     val kathmandu = remember { LatLng(27.7172, 85.3240) }
-//    val schoolLatLng = remember { LatLng(27.7174, 85.3435) }
     val schoolLatLng = remember { mutableStateOf(LatLng(27.7174, 85.3435)) }
 
 // ADD this LaunchedEffect to fetch school location:
