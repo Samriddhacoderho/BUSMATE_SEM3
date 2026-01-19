@@ -21,7 +21,7 @@ interface BusRepositoryInterface {
         latLng: com.google.android.gms.maps.model.LatLng,
         callback: (Boolean) -> Unit
     )
-     fun getLiveBusLocation(busId: String, callback: (String) -> Unit)
+    fun getLiveBusLocation(busId: String, callback: (String) -> Unit)
 
     fun checkBusRouteExists(
         busRouteId: String,
@@ -56,5 +56,7 @@ interface BusRepositoryInterface {
         bus: BusModel,
         callback: (Boolean, String) -> Unit
     )
+
+    fun saveSchoolLocation(lat: Double, lng: Double, address: String, callback: (Boolean, String) -> Unit)
 
 }
