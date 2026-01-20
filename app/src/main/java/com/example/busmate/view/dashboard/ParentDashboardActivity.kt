@@ -369,7 +369,12 @@ fun ParentDashboardScreen(
                                             )
                                         )
                                     }
-
+                                    "Create User Account" -> context.startActivity(
+                                        Intent(
+                                            context,
+                                            CreateAccountScreenActivity::class.java
+                                        )
+                                    )
                                     "About Us" -> { /* Handle About Us */
                                     }
                                     "Search Child" -> {
