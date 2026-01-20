@@ -131,6 +131,21 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
             })
     }
 
+    override fun updateTripType(busId: String, tripType: String) {
+        database.getReference("buses")
+            .child(busId)
+            .child("tripType")
+            .setValue(tripType)
+            .addOnSuccessListener {
+                Log.d("AccelerometerRepo", "Trip type updated to: $tripType for bus: $busId")
+            }
+            .addOnFailureListener { e ->
+                Log.e("AccelerometerRepo", "Failed to update trip type: ${e.message}")
+            }
+    }
+
+
+
     override fun sendNotificationToAssociatedUsers(busId: String, parentData: Map<String, Any>, adminData: Map<String, Any>) {
         database.getReference("notifications").child("admin").push().setValue(adminData)
         database.getReference("buses").child(busId).get().addOnSuccessListener { busSnapshot ->
