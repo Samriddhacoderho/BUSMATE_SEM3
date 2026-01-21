@@ -17,6 +17,11 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 
     private val _user = MutableStateFlow<UserModel?>(null)
     val user: StateFlow<UserModel?> = _user
+    private fun isValidNepaliPhone(phone: String): Boolean {
+        val regex = Regex("^(\\+977)?[9][6-9]\\d{8}$")
+        return regex.matches(phone)
+    }
+
 
     fun clearMessage() {
         _message.value = ""
@@ -29,8 +34,13 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         schoolId: String,
         phone: String,
         password: String,
+    ) {
 
-        ) {
+        if (!isValidNepaliPhone(phone)) {
+            _message.value = "Enter valid Nepali phone number"
+            return
+        }
+
         val user = UserModel(
             firstName = firstName,
             lastName = lastName,
@@ -38,6 +48,7 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
             schoolId = schoolId,
             phone = phone
         )
+
         _message.value = "Loading..."
 
         repository.registerUser(user, password) { success, msg, data ->
@@ -148,7 +159,10 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
 
     fun updateUserProfile(firstName: String, lastName: String, phone: String) {
         val currentUser = _user.value ?: return
-
+        if (!isValidNepaliPhone(phone)) {
+            _message.value = "Enter valid Nepali phone number"
+            return
+        }
         _message.value = "Updating Profile..."
 
         repository.updateUserProfile(currentUser.uid, firstName, lastName, phone) { success, msg ->
@@ -161,8 +175,6 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
                 )
             }
         }
-
-
     }
     fun uploadProfileImage(context: Context, uri: Uri) {
         _message.value = "Uploading image..."
