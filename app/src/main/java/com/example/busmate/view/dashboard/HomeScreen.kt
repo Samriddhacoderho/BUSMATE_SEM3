@@ -43,6 +43,7 @@ import com.example.busmate.data.UserRepositoryImpl
 import coil3.compose.AsyncImage
 import com.example.busmate.util.NotificationHelper
 import com.example.busmate.util.SOSPrefs
+import com.example.busmate.view.admin.AdminNotificationActivity
 
 
 @Composable
@@ -248,7 +249,11 @@ fun HomeScreen(
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
                     NotificationsAlertHeaderScreen()
                 } else {
-                    NotificationsAlertHeaderAdmin(onAddBusClick = navigateToAddBus)
+                    NotificationsAlertHeaderAdmin(
+                        onAddBusClick = navigateToAddBus,
+                        onBroadcastClick = {
+                        context.startActivity(Intent(context, AdminNotificationActivity::class.java))
+                    })
                 }
             }
 
@@ -599,7 +604,7 @@ fun WelcomeCardAdmin(adminName: String?) {
     }
 }
 @Composable
-fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
+fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit,onBroadcastClick: () -> Unit){
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -614,6 +619,11 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit) {
         )
         OutlinedButton(onClick = onAddBusClick) {
             Text("Add Bus")
+        }
+        Button(onClick = onBroadcastClick) {
+            Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Broadcast", fontSize = 12.sp)
         }
     }
     NotificationItemScreen(

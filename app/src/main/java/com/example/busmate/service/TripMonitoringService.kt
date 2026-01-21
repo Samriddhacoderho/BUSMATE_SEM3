@@ -88,7 +88,7 @@ class TripMonitoringService : Service() {
                 for (alert in snapshot.children) {
                     val timestamp = alert.child("timestamp").getValue(Long::class.java) ?: 0L
 
-                        // Only trigger if this notification happened after the service started
+                    // Only trigger if this notification happened after the service started
                     if (timestamp > serviceStartTime) {
                         val title = alert.child("title").getValue(String::class.java) ?: "Alert"
                         val message = alert.child("message").getValue(String::class.java) ?: ""
@@ -230,4 +230,5 @@ class TripMonitoringService : Service() {
         adminNotificationListener?.let { adminNotificationQuery?.removeEventListener(it) }
         super.onDestroy()
     }
+
 }

@@ -1,4 +1,4 @@
-package com.example.busmate.view.parent
+package com.example.busmate.view
 
 import android.app.Activity
 import android.content.Context
@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import java.util.Locale
 class MapPickerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         // 1. Securely get Key from Manifest
         val ai = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         val apiKey = ai.metaData.getString("com.google.android.geo.API_KEY") ?: ""
@@ -183,5 +185,5 @@ private fun reverseGeocode(context: Context, lat: Double, lng: Double): String {
         }
     } catch (e: Exception) {
         "Location Selected"
-    }}
-//ggfdg
+    }
+}

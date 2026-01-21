@@ -159,15 +159,6 @@ fun AdminStudentCard(child: ChildModel, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier.size(50.dp).clip(CircleShape).background(Color(0xFFF0F0F0)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Person, null, modifier = Modifier.size(28.dp), tint = Color.Gray)
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "${child.firstName} ${child.lastName}",

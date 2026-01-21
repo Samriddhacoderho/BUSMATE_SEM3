@@ -2,6 +2,7 @@ package com.example.busmate.view.admin
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -38,7 +39,7 @@ import coil3.compose.AsyncImage
 import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.view.parent.MapPickerActivity
+import com.example.busmate.view.MapPickerActivity
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
@@ -116,6 +117,12 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             dropOff = result.data?.getStringExtra("address") ?: ""
         }
     }
+    var newImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            newImageUri = uri
+        }
 
     LaunchedEffect(child.studentId) {
         val db = FirebaseDatabase.getInstance()
@@ -175,20 +182,40 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                     .size(120.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFE9ECEF))
-                    .border(2.dp, busMateBlue, CircleShape),
+                    .border(2.dp, busMateBlue, CircleShape)
+                    .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
-                if (!child.profileImage.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = child.profileImage,
-                        contentDescription = "Student Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.LightGray)
+                when {
+                    newImageUri != null -> {
+                        AsyncImage(
+                            model = newImageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    !child.profileImage.isNullOrEmpty() -> {
+                        AsyncImage(
+                            model = child.profileImage,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    else -> {
+                        Icon(
+                            Icons.Default.Person,
+                            null,
+                            modifier = Modifier.size(60.dp),
+                            tint = Color.LightGray
+                        )
+                    }
                 }
             }
+
             // ✅ END OF IMAGE SECTION
             Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
@@ -215,20 +242,47 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             Button(
                 onClick = {
                     scope.launch {
-                        // Validate coordinates
                         if (pickUpLat != 0.0 && pickUpLng != 0.0 && dropOffLat != 0.0 && dropOffLng != 0.0) {
-                            val updatedChild = child.copy(
-                                firstName = firstName,
-                                lastName = lastName,
-                                busRouteId = routeId,
-                                pickUpLocation = pickUp,
-                                dropOffLocation = dropOff,
-                                pickUpLat = pickUpLat,
-                                pickUpLng = pickUpLng,
-                                dropOffLat = dropOffLat,
-                                dropOffLng = dropOffLng
-                            )
-                            viewModel.updateChild(updatedChild)
+
+                            if (newImageUri != null) {
+                                // 🔥 upload image first
+                                ChildRepositoryImpl().uploadChildImage(context, newImageUri!!) { imageUrl ->
+
+                                    if (imageUrl != null) {
+                                        val updatedChild = child.copy(
+                                            firstName = firstName,
+                                            lastName = lastName,
+                                            busRouteId = routeId,
+                                            pickUpLocation = pickUp,
+                                            dropOffLocation = dropOff,
+                                            pickUpLat = pickUpLat,
+                                            pickUpLng = pickUpLng,
+                                            dropOffLat = dropOffLat,
+                                            dropOffLng = dropOffLng,
+                                            profileImage = imageUrl
+                                        )
+                                        viewModel.updateChild(updatedChild)
+                                    } else {
+                                        Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+
+                            } else {
+                                // 🔥 no image change
+                                val updatedChild = child.copy(
+                                    firstName = firstName,
+                                    lastName = lastName,
+                                    busRouteId = routeId,
+                                    pickUpLocation = pickUp,
+                                    dropOffLocation = dropOff,
+                                    pickUpLat = pickUpLat,
+                                    pickUpLng = pickUpLng,
+                                    dropOffLat = dropOffLat,
+                                    dropOffLng = dropOffLng
+                                )
+                                viewModel.updateChild(updatedChild)
+                            }
+
                         } else {
                             Toast.makeText(
                                 context,
@@ -245,7 +299,6 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             ) {
                 Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
-
             Spacer(modifier = Modifier.height(32.dp))
             HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
             Spacer(modifier = Modifier.height(20.dp))

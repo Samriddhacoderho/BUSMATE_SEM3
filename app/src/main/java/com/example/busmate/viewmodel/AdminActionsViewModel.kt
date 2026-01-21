@@ -106,4 +106,8 @@ class AdminActionsViewModel(
     fun verifyAdminPassword(password: String, callback: (Boolean, String) -> Unit) {
         userRepo.verifyPassword(password, callback)
     }
+    // In AdminActionsViewModel.kt
+    fun sendBroadcast(title: String, message: String, callback: (Boolean, String) -> Unit) {
+        repo.sendGlobalBroadcast(title, message, callback)
+    }
 }
