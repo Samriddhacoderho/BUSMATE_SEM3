@@ -123,6 +123,8 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             newImageUri = uri
         }
+    var isSaving by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(child.studentId) {
         val db = FirebaseDatabase.getInstance()
@@ -242,12 +244,12 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             Button(
                 onClick = {
                     scope.launch {
+                        isSaving = true   // 🔥 disable button immediately
+
                         if (pickUpLat != 0.0 && pickUpLng != 0.0 && dropOffLat != 0.0 && dropOffLng != 0.0) {
 
                             if (newImageUri != null) {
-                                // 🔥 upload image first
                                 ChildRepositoryImpl().uploadChildImage(context, newImageUri!!) { imageUrl ->
-
                                     if (imageUrl != null) {
                                         val updatedChild = child.copy(
                                             firstName = firstName,
@@ -264,11 +266,10 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                                         viewModel.updateChild(updatedChild)
                                     } else {
                                         Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                        isSaving = false
                                     }
                                 }
-
                             } else {
-                                // 🔥 no image change
                                 val updatedChild = child.copy(
                                     firstName = firstName,
                                     lastName = lastName,
@@ -289,16 +290,31 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                                 "Please select valid pickup and dropoff locations using the map",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            isSaving = false
                         }
                     }
                 },
-                enabled = firstName.isNotBlank() && pickUp.isNotBlank() && dropOff.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                enabled = !isSaving &&
+                        firstName.isNotBlank() &&
+                        pickUp.isNotBlank() &&
+                        dropOff.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
             ) {
-                Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
+
             Spacer(modifier = Modifier.height(32.dp))
             HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
             Spacer(modifier = Modifier.height(20.dp))
