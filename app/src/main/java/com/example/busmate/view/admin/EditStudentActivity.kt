@@ -3,11 +3,14 @@
     import android.content.Context
     import android.location.Address
     import android.location.Geocoder
+    import android.net.Uri
     import android.os.Bundle
     import android.widget.Toast
     import androidx.activity.ComponentActivity
+    import androidx.activity.compose.rememberLauncherForActivityResult
     import androidx.activity.compose.setContent
     import androidx.activity.enableEdgeToEdge
+    import androidx.activity.result.contract.ActivityResultContracts
     import androidx.compose.foundation.background
     import androidx.compose.foundation.layout.*
     import androidx.compose.foundation.rememberScrollState
@@ -37,6 +40,7 @@
     import androidx.compose.ui.draw.clip
     import androidx.compose.foundation.shape.CircleShape
     import androidx.compose.foundation.border
+    import androidx.compose.foundation.clickable
     import androidx.compose.ui.graphics.vector.ImageVector
     import kotlinx.coroutines.Dispatchers
     import kotlinx.coroutines.withContext
@@ -86,6 +90,12 @@
         var dropOff by remember { mutableStateOf(child.dropOffLocation) }
 
         var isGeocoding by remember { mutableStateOf(false) }
+        var newImageUri by remember { mutableStateOf<Uri?>(null) }
+
+        val imagePicker =
+            rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                newImageUri = uri
+            }
 
         val message by viewModel.message.collectAsState()
         val isSuccess by viewModel.isSuccess.collectAsState()
@@ -148,18 +158,32 @@
                         .size(120.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFE9ECEF))
-                        .border(2.dp, busMateBlue, CircleShape),
+                        .border(2.dp, busMateBlue, CircleShape)
+                        .clickable { imagePicker.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!child.profileImage.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = child.profileImage,
-                            contentDescription = "Student Image",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.LightGray)
+                    when {
+                        newImageUri != null -> {
+                            AsyncImage(
+                                model = newImageUri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        !child.profileImage.isNullOrEmpty() -> {
+                            AsyncImage(
+                                model = child.profileImage,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        else -> {
+                            Icon(Icons.Default.Person, null, modifier = Modifier.size(60.dp))
+                        }
                     }
                 }
                 // ✅ END OF IMAGE SECTION
@@ -188,27 +212,64 @@
                             val dAddr = getCoords(context, dropOff)
 
                             if (pAddr != null && dAddr != null) {
-                                val updatedChild = child.copy(
-                                    firstName = firstName,
-                                    lastName = lastName,
-                                    busRouteId = routeId,
-                                    pickUpLocation = pickUp,
-                                    dropOffLocation = dropOff,
-                                    // ADDED: Update the actual coordinates in the model
-                                    pickUpLat = pAddr.latitude,
-                                    pickUpLng = pAddr.longitude,
-                                    dropOffLat = dAddr.latitude,
-                                    dropOffLng = dAddr.longitude
-                                )
-                                viewModel.updateChild(updatedChild)
+
+                                // 🔥 IF IMAGE WAS CHANGED → UPLOAD FIRST
+                                if (newImageUri != null) {
+                                    ChildRepositoryImpl()
+                                        .uploadChildImage(context, newImageUri!!) { imageUrl ->
+
+                                            if (imageUrl != null) {
+                                                val updatedChild = child.copy(
+                                                    firstName = firstName,
+                                                    lastName = lastName,
+                                                    busRouteId = routeId,
+                                                    pickUpLocation = pickUp,
+                                                    dropOffLocation = dropOff,
+                                                    pickUpLat = pAddr.latitude,
+                                                    pickUpLng = pAddr.longitude,
+                                                    dropOffLat = dAddr.latitude,
+                                                    dropOffLng = dAddr.longitude,
+                                                    profileImage = imageUrl // ✅ NOW VALID
+                                                )
+                                                viewModel.updateChild(updatedChild)
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Image upload failed",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
+                                            isGeocoding = false
+                                        }
+
+                                } else {
+                                    // 🔥 NO IMAGE CHANGE → KEEP OLD IMAGE
+                                    val updatedChild = child.copy(
+                                        firstName = firstName,
+                                        lastName = lastName,
+                                        busRouteId = routeId,
+                                        pickUpLocation = pickUp,
+                                        dropOffLocation = dropOff,
+                                        pickUpLat = pAddr.latitude,
+                                        pickUpLng = pAddr.longitude,
+                                        dropOffLat = dAddr.latitude,
+                                        dropOffLng = dAddr.longitude
+                                        // profileImage unchanged
+                                    )
+                                    viewModel.updateChild(updatedChild)
+                                    isGeocoding = false
+                                }
+
                             } else {
                                 Toast.makeText(
                                     context,
                                     "Invalid address. Please try again.",
                                     Toast.LENGTH_SHORT
                                 ).show()
+                                isGeocoding = false
                             }
-                            isGeocoding = false
+
                         }
                     },
                     // Disable button while geocoding to prevent double-clicks
