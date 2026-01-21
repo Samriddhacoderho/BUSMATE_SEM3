@@ -39,7 +39,7 @@ import coil3.compose.AsyncImage
 import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.view.MapPickerActivity
+import com.example.busmate.view.parent.MapPickerActivity
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch

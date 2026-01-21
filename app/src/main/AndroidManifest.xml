@@ -29,6 +29,11 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.parent.MapPickerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_map_picker"
+            android:theme="@style/Theme.BUSMATE" />
+        <activity
             android:name=".view.admin.AdminNotificationActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_notification"
@@ -43,11 +48,6 @@
             android:name=".view.admin.AdminAddChildActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_add_child"
-            android:theme="@style/Theme.BUSMATE" />
-        <activity
-            android:name=".view.parent.MapPickerActivity"
-            android:exported="false"
-            android:label="@string/title_activity_map_picker"
             android:theme="@style/Theme.BUSMATE" />
         <activity
             android:name=".view.admin.SearchBusActivity"
@@ -219,5 +219,5 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Calculating and notifying parents of estimated bus arrival times." />
         </service>
-           </application>
+    </application>
 </manifest>
