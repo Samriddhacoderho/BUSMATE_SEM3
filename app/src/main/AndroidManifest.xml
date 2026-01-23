@@ -219,5 +219,14 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Calculating and notifying parents of estimated bus arrival times." />
         </service>
+        <service
+            android:name=".service.BroadcastNotificationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Receiving and delivering global announcements from school administrators to parents and drivers." />
+        </service>
     </application>
 </manifest>
