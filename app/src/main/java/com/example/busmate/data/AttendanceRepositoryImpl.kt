@@ -137,7 +137,8 @@ class AttendanceRepositoryImpl: AttendanceRepository{
         })
     }
 
-    // Inside AttendanceRepositoryImpl.kt
+    // Replace the getAttendanceForParent method in AttendanceRepositoryImpl.kt
+
     override fun getAttendanceForParent(parentUid: String, date: String, callback: (List<Map<String, Any?>>) -> Unit) {
         val result = mutableListOf<Map<String, Any?>>()
         val parentRef = FirebaseDatabase.getInstance().getReference("users").child(parentUid).child("children")
@@ -171,9 +172,16 @@ class AttendanceRepositoryImpl: AttendanceRepository{
                         .addListenerForSingleValueEvent(object : ValueEventListener {
                             override fun onDataChange(attSnap: DataSnapshot) {
                                 childList.forEach { child ->
-                                    // FIX: Check if the child exists in the attendance record
+                                    // Check if the child exists in the attendance record
                                     val record = attSnap.child(child.studentId)
-                                    val status = record.child("status").getValue(String::class.java) ?: "Absent"
+
+                                    // If record doesn't exist, show "No Record"
+                                    // If record exists, use the status value
+                                    val status = if (record.exists()) {
+                                        record.child("status").getValue(String::class.java) ?: "No Record"
+                                    } else {
+                                        "No Record"  // Changed from "Absent"
+                                    }
 
                                     result.add(mapOf(
                                         "studentId" to child.studentId,
