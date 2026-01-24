@@ -59,6 +59,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import com.example.busmate.service.BroadcastNotificationService
 import com.example.busmate.service.ETAMonitoringService
 import com.example.busmate.view.admin.AdminAddChildActivity
 import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
@@ -153,6 +154,33 @@ fun ParentDashboardScreen(
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+    LaunchedEffect(user?.typeofUser) {
+        val userType = user?.typeofUser ?: ""
+
+        // Debug log to see what user type we have
+        Log.d("Dashboard", "🔍 Checking user type: '$userType' (user loaded: ${user != null})")
+
+        // ✅ CRITICAL: Ensure "Driver" is included in this check
+        if (userType.equals("Parent", ignoreCase = true) || userType.equals("Driver", ignoreCase = true)) {
+            val broadcastServiceIntent = Intent(context, BroadcastNotificationService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(broadcastServiceIntent)
+            } else {
+                context.startService(broadcastServiceIntent)
+            }
+            Log.d("Dashboard", "✅ Broadcast Service started for: $userType")
+        } else {
+            // Log why service is not starting
+            if (userType.isEmpty()) {
+                Log.d("Dashboard", "⚠️ Service NOT started - User type is empty")
+            } else {
+                Log.d("Dashboard", "🛑 Stopping service - User type is: '$userType' (likely Admin)")
+            }
+            // If Admin or unknown, stop the service
+            context.stopService(Intent(context, BroadcastNotificationService::class.java))
         }
     }
     // CHANGE: Combined logic into a single block to save battery and memory
