@@ -1,4 +1,5 @@
 package com.example.busmate.view.dashboard
+
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
@@ -85,7 +86,6 @@ fun HomeScreen(
         }
     }
 
-
     LaunchedEffect(userId) {
         if (userId != null) {
             showSOSDialog.value = SOSPrefs.isSOSActive(context, userId)
@@ -114,7 +114,7 @@ fun HomeScreen(
     }
 
     /* =======================================================
-       🔹 USER MODEL STATE (UNCHANGED)
+       🔹 USER MODEL STATE & AUTOMATIC CHILD SYNC
        ======================================================= */
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -130,6 +130,14 @@ fun HomeScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    // 🔥 UPDATED LOGIC: Consolidate children list here.
+    // This ensures if 'children' (from ViewModel) is empty, we fall back to 'model.children'.
+    // 'model.children' is populated by UserRepositoryImpl during registration/login.
+    val childrenList = remember(children, model) {
+        if (children.isNotEmpty()) children
+        else model?.children?.values?.toList() ?: emptyList()
     }
 
     /* =======================================================
@@ -170,7 +178,7 @@ fun HomeScreen(
     }
 
     /* =======================================================
-       🔹 YOUR ORIGINAL UI BELOW (UNCHANGED)
+       🔹 UI COMPOSITION
        ======================================================= */
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
@@ -197,11 +205,8 @@ fun HomeScreen(
                 )
             }
 
-            // CHILD LIST
+            // CHILD LIST (Uses the 'childrenList' we defined above)
             if (model?.typeofUser == "Parent") {
-                val childrenList =
-                    if (children.isNotEmpty()) children
-                    else model?.children?.values?.toList().orEmpty()
 
                 if (childrenList.isEmpty()) {
                     item {
@@ -252,14 +257,14 @@ fun HomeScreen(
                     NotificationsAlertHeaderAdmin(
                         onAddBusClick = navigateToAddBus,
                         onBroadcastClick = {
-                        context.startActivity(Intent(context, AdminNotificationActivity::class.java))
-                    })
+                            context.startActivity(Intent(context, AdminNotificationActivity::class.java))
+                        })
                 }
             }
 
             val latestNotifications = notifications.takeLast(5).reversed()
 
-            // 🔔 DYNAMIC NOTIFICATIONS (UNCHANGED)
+            // 🔔 DYNAMIC NOTIFICATIONS
             items(latestNotifications) { notification ->
                 NotificationItemScreen(
                     initial = notification["title"]?.take(1) ?: "!",
@@ -281,7 +286,7 @@ fun HomeScreen(
                 }
             }
 
-            // DRIVER BUTTONS (UNCHANGED)
+            // DRIVER BUTTONS
             if (model?.typeofUser == "Driver") {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -312,7 +317,6 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(30.dp))
 
-                    // ✅ GO TO TRIP BUTTON (RESTORED)
                     Button(
                         onClick = navigateToTrip,
                         modifier = Modifier
@@ -430,21 +434,21 @@ fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        if (model?.typeofUser == "Parent") {
-            OutlinedButton(
-                onClick = onAddChildClick,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.height(35.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Add Child",
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Add Child", fontSize = 14.sp)
-            }
-        }
+//        if (model?.typeofUser == "Parent") {
+//            OutlinedButton(
+//                onClick = onAddChildClick,
+//                shape = RoundedCornerShape(20.dp),
+//                modifier = Modifier.height(35.dp)
+//            ) {
+//                Icon(
+//                    Icons.Filled.Add,
+//                    contentDescription = "Add Child",
+//                    modifier = Modifier.size(16.dp)
+//                )
+//                Spacer(modifier = Modifier.width(4.dp))
+//                Text("Add Child", fontSize = 14.sp)
+//            }
+//        }
     }
 }
 
@@ -454,7 +458,7 @@ fun ChildTrackingCardScreen(
     statusText: String,
     subText: String,
     statusColor: Color,
-    imageUrl: String?,      // Added
+    imageUrl: String?,
     imageResource: Int,
     mapImageResource: Int,
     onClick: () -> Unit
@@ -477,7 +481,6 @@ fun ChildTrackingCardScreen(
                 modifier = Modifier.weight(0.8f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // --- PHOTO SECTION UPDATED ---
                 Box(
                     modifier = Modifier
                         .size(70.dp)
@@ -551,13 +554,13 @@ fun NotificationItemScreen(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp), // Reduced padding so they stack nicely
+            .padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp), // Padding inside the card
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -573,11 +576,10 @@ fun NotificationItemScreen(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Removed fixed height from the Row and Card to allow text wrapping
             Text(
                 text = message,
                 fontSize = 14.sp,
-                lineHeight = 18.sp, // Better readability for multi-line text
+                lineHeight = 18.sp,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -634,7 +636,7 @@ fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit,onBroadcastClick: ()
 }
 @Composable
 fun SOSObserver(
-    userId: String,                     // 🔥 ADD THIS
+    userId: String,
     userRole: String?,
     children: Map<String, ChildModel>?,
     onSOSReceived: (String, String) -> Unit
@@ -651,10 +653,8 @@ fun SOSObserver(
             .getInstance()
             .getReference("notifications")
 
-        // 🔥 PER-USER last seen time
         val lastSeenTime = SOSPrefs.getLastSeen(context, userId)
 
-        // 🔥 Listen ONLY to unseen SOS for THIS USER
         val query = db.orderByChild("timestamp")
             .startAt(lastSeenTime.toDouble() + 1)
 
@@ -709,7 +709,6 @@ fun SOSObserver(
                         }
                     }
                 }
-                // ✅ Mark this SOS as seen FOR THIS USER ONLY
                 if (shown) {
                     SOSPrefs.setLastSeen(context, userId, timestamp)
                     SOSPrefs.setSOSActive(context, userId, true)
@@ -747,7 +746,7 @@ fun SOSAlertDialog(
     onClose: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = {}, // ❌ prevent outside dismiss
+        onDismissRequest = {},
         confirmButton = {
             Button(
                 onClick = onClose,
@@ -771,25 +770,3 @@ fun SOSAlertDialog(
         }
     )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

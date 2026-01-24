@@ -23,6 +23,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
+import com.example.busmate.model.ChildModel
 import java.io.InputStream
 import java.util.concurrent.Executors
 class UserRepositoryImpl : UserRepositoryInterface {
@@ -96,17 +97,28 @@ class UserRepositoryImpl : UserRepositoryInterface {
             .addListenerForSingleValueEvent(object : ValueEventListener {
 
                 override fun onDataChange(snapshot: DataSnapshot) {
-
                     if (!snapshot.exists()) {
-                        callback(false, "Invalid User ID. Contact school admin.", null)
+                        callback(false, "Invalid User ID.", null)
                         return
                     }
 
                     val role = snapshot.child("role").getValue(String::class.java) ?: ""
 
+                    // 1. CHECK FOR PENDING CHILDREN
+                    val pendingChildrenSnapshot = snapshot.child("pendingChildren")
+                    val pendingChildrenMap = mutableMapOf<String, ChildModel>()
+
+                    if (pendingChildrenSnapshot.exists()) {
+                        for (childSnap in pendingChildrenSnapshot.children) {
+                            val c = childSnap.getValue(com.example.busmate.model.ChildModel::class.java)
+                            if (c != null) {
+                                pendingChildrenMap[c.studentId] = c
+                            }
+                        }
+                    }
+
                     auth.createUserWithEmailAndPassword(user.email, password)
                         .addOnCompleteListener { task ->
-
                             if (!task.isSuccessful) {
                                 callback(false, task.exception?.message ?: "Registration failed", null)
                                 return@addOnCompleteListener
@@ -114,15 +126,30 @@ class UserRepositoryImpl : UserRepositoryInterface {
 
                             val firebaseUser = task.result.user!!
 
+                            // 2. ADD PENDING CHILDREN TO THE NEW USER OBJECT
                             val updatedUser = user.copy(
                                 uid = firebaseUser.uid,
-                                typeofUser = role
+                                typeofUser = role,
+                                children = pendingChildrenMap // Automatically Attach Children
                             )
 
                             usersRef.child(firebaseUser.uid)
                                 .setValue(updatedUser)
                                 .addOnCompleteListener {
                                     if (it.isSuccessful) {
+
+                                        // 3. CLEAN UP: Update Student Index to point to this new UID
+                                        if (pendingChildrenMap.isNotEmpty()) {
+                                            val indexUpdates = hashMapOf<String, Any>()
+                                            pendingChildrenMap.keys.forEach { studentId ->
+                                                indexUpdates["$studentId/status"] = "used"
+                                                indexUpdates["$studentId/parentUid"] = firebaseUser.uid
+                                                // Remove from pending list to save space (Optional)
+                                                adminRef.child(user.schoolId).child("pendingChildren").child(studentId).removeValue()
+                                            }
+                                            FirebaseDatabase.getInstance().getReference("studentIdIndex").updateChildren(indexUpdates)
+                                        }
+
                                         callback(true, "Registration Successful", updatedUser)
                                     } else {
                                         callback(false, "Failed to save user", null)
