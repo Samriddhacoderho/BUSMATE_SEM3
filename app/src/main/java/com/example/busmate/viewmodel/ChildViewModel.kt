@@ -156,16 +156,21 @@ class ChildViewModel(
     }
 
     // In ChildViewModel.kt
+    // In ChildViewModel.kt
     fun validateAndPreRegister(parentSchoolId: String, studentId: String) {
+        if (parentSchoolId.isBlank() || studentId.isBlank()) {
+            _message.value = "Please enter both Parent and Student IDs"
+            return
+        }
+
         _message.value = "Processing..."
 
-        // Step 1: Check if Parent exists
-        repository.verifyParentExists(parentSchoolId) { exists ->
-            if (!exists) {
-                _message.value = "Error: Parent ID $parentSchoolId not found."
-            } else {
-                // Step 2: If Parent exists, proceed to register Student ID
+        repository.verifyParentExists(parentSchoolId) { isParent ->
+            if (isParent) {
+                // Only proceeds if the ID belongs to a Parent
                 preRegisterStudentId(studentId)
+            } else {
+                _message.value = "Error: ID $parentSchoolId is not a valid Parent account."
             }
         }
     }

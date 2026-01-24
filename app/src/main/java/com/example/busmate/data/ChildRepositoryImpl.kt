@@ -255,17 +255,32 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
     }
 
     // Add this to ChildRepositoryImpl.kt
+    // In ChildRepositoryImpl.kt
     override fun verifyParentExists(parentSchoolId: String, callback: (Boolean) -> Unit) {
+        // 1. Check registered users node first
         usersRef.orderByChild("schoolId").equalTo(parentSchoolId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    // If snapshot has children, the parent exists
-                    callback(snapshot.exists())
+                    if (snapshot.exists()) {
+                        // Check if the registered user is a parent
+                        val userSnap = snapshot.children.firstOrNull()
+                        val type = userSnap?.child("typeofUser")?.getValue(String::class.java)
+                        callback(type == "Parent")
+                    } else {
+                        // 2. Check the pre-registered 'user' node
+                        val adminRef = FirebaseDatabase.getInstance().getReference("user")
+                        adminRef.child(parentSchoolId).get().addOnSuccessListener { adminSnap ->
+                            if (adminSnap.exists()) {
+                                val role = adminSnap.child("role").getValue(String::class.java)
+                                // STRICT CHECK: Only allow if role is exactly "Parent"
+                                callback(role == "Parent")
+                            } else {
+                                callback(false)
+                            }
+                        }.addOnFailureListener { callback(false) }
+                    }
                 }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false)
-                }
+                override fun onCancelled(error: DatabaseError) { callback(false) }
             })
     }
 }
