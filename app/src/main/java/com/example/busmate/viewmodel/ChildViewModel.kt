@@ -127,5 +127,52 @@ class ChildViewModel(
             _message.value = msg
         }
     }
+
+    // Inside ChildViewModel.kt
+
+    fun adminAddChild(
+        parentSchoolId: String,
+        context: Context,
+        imageUri: Uri?,
+        child: ChildModel // Pass the model constructed in UI
+    ) {
+        _message.value = "Processing..."
+
+        // Use your existing image upload logic here if an image is provided
+        if (imageUri != null) {
+            repository.uploadChildImage(context, imageUri) { imageUrl ->
+                val finalChild = child.copy(profileImage = imageUrl ?: "")
+                repository.adminAddChildToParent(parentSchoolId, finalChild) { msg, success ->
+                    _message.value = msg
+                    _isSuccess.value = success
+                }
+            }
+        } else {
+            repository.adminAddChildToParent(parentSchoolId, child) { msg, success ->
+                _message.value = msg
+                _isSuccess.value = success
+            }
+        }
+    }
+
+    // In ChildViewModel.kt
+    // In ChildViewModel.kt
+    fun validateAndPreRegister(parentSchoolId: String, studentId: String) {
+        if (parentSchoolId.isBlank() || studentId.isBlank()) {
+            _message.value = "Please enter both Parent and Student IDs"
+            return
+        }
+
+        _message.value = "Processing..."
+
+        repository.verifyParentExists(parentSchoolId) { isParent ->
+            if (isParent) {
+                // Only proceeds if the ID belongs to a Parent
+                preRegisterStudentId(studentId)
+            } else {
+                _message.value = "Error: ID $parentSchoolId is not a valid Parent account."
+            }
+        }
+    }
 }
 //testing fetchAvailableRoutes

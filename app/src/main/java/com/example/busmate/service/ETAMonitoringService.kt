@@ -192,13 +192,8 @@ class ETAMonitoringService : Service() {
 
                 if (!isTripRunning) {
                     Log.w("ETAService", "Trip not running for bus $busId - skipping ETA calculation")
-                    children.forEach { child ->
-                        notifiedChildren.remove(child.studentId)
-                        clearNotificationState(child.studentId)
-                        // === NEW: Clear route distance cache ===
-                        routeDistanceCache.remove(child.studentId)
-                    }
-                    speedBuffers.remove(busId)
+                    // CRITICAL FIX: Return IMMEDIATELY to prevent any ETA calculations
+                    // Clean up will happen, but no notifications will be sent
                     return
                 }
 
@@ -508,7 +503,8 @@ class ETAMonitoringService : Service() {
             Log.d("ETAService", "Removed listener for bus: $busId")
         }
         speedBuffers.clear()
-        routeDistanceCache.clear()  // === NEW: Clear route cache ===
+        routeDistanceCache.clear()
+        notifiedChildren.clear() // Clear notification tracking
         serviceScope.cancel()
         super.onDestroy()
     }
