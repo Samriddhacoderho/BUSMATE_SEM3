@@ -44,5 +44,6 @@
     <string name="title_activity_search_bus">SearchBusActivity</string>
     <string name="title_activity_edit_bus">EditBusActivity</string>
     <string name="title_activity_admin_add_child">AdminAddChildActivity</string>
+    <string name="title_activity_admin_notification">AdminNotificationActivity</string>
 
 </resources>

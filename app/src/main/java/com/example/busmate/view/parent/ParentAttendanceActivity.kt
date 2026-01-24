@@ -164,8 +164,14 @@ fun ParentAttendanceCard(childName: String, records: List<Map<String, Any?>>) {
 
             records.forEach { record ->
                 val route = record["busRouteId"] as? String ?: "N/A"
-                val status = record["status"] as? String ?: "Absent"
-                val statusColor = if (status == "Present") Color(0xFF2E7D32) else Color(0xFFC62828)
+                val status = record["status"] as? String ?: "No Record"
+
+                // ✅ Updated: Different colors for Present, Absent, and No Record
+                val statusColor = when (status) {
+                    "Present" -> Color(0xFF2E7D32)  // Green
+                    "Absent" -> Color(0xFFC62828)   // Red
+                    else -> Color(0xFFFF9800)       // Orange for "No Record"
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -49,6 +49,11 @@ import kotlinx.coroutines.launch
 fun isValidEmail(email: String): Boolean {
     return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
+fun isValidNepaliPhone(phone: String): Boolean {
+    val regex = Regex("^(\\+977)?[9][6-9]\\d{8}$")
+    return regex.matches(phone)
+}
+
 
 class SignUpScreen : ComponentActivity() {
     @SuppressLint("ViewModelConstructorInComposable")
@@ -89,7 +94,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                 email.isNotBlank() &&
                 isValidEmail(email) &&
                 schoolId.isNotBlank() &&
-                phone.length >= 10 &&
+                isValidNepaliPhone(phone)
                 password.matches(Regex("(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#\$%^&*()]).*")) &&
                 confirmPassword.isNotBlank() &&
                 password == confirmPassword &&
@@ -455,11 +460,10 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                             phone = it
                             phoneError = when {
                                 it.isBlank() -> "Phone number required"
-                                // Check for any non-digit character
-                                it.any { char -> !char.isDigit() } -> "Phone number must contain digits only"
-                                it.length < 10 -> "Phone number must be at least 10 digits"
+                                !isValidNepaliPhone(it) -> "Enter valid Nepali phone number"
                                 else -> null
                             }
+
                         },
                         label = { Text("Phone Number") },
                         placeholder = { Text("(454) 726-0592") },

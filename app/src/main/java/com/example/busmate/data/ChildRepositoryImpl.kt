@@ -144,7 +144,7 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
     // Inside ChildRepositoryImpl.kt
 
 
-    fun uploadChildImage(
+    override fun uploadChildImage(
         context: android.content.Context,
         imageUri: android.net.Uri,
         callback: (String?) -> Unit
@@ -200,6 +200,88 @@ class ChildRepositoryImpl : ChildRepositoryInterface {
                 callback(emptyList())
             }
         })
+    }
+    // Inside ChildRepositoryImpl.kt
+
+    override fun adminAddChildToParent(
+        parentSchoolId: String,
+        child: ChildModel,
+        callback: (String, Boolean) -> Unit
+    ) {
+        // 1. Try to find an existing registered user
+        usersRef.orderByChild("schoolId").equalTo(parentSchoolId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // SCENARIO A: Parent is already registered. Add directly.
+                        val parentUid = snapshot.children.first().key!!
+                        usersRef.child(parentUid).child("children")
+                            .child(child.studentId).setValue(child)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    studentIndexRef.child(child.studentId).setValue(
+                                        mapOf("status" to "used", "parentUid" to parentUid)
+                                    )
+                                    callback("Child added to Parent!", true)
+                                } else {
+                                    callback("Failed to save data", false)
+                                }
+                            }
+                    } else {
+                        // SCENARIO B: Parent has NOT registered yet.
+                        // Store in "user/{schoolId}/pendingChildren"
+                        val adminRef = FirebaseDatabase.getInstance().getReference("user")
+
+                        adminRef.child(parentSchoolId).child("pendingChildren")
+                            .child(child.studentId).setValue(child)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    // Mark as used, but no parentUid yet
+                                    studentIndexRef.child(child.studentId).setValue(
+                                        mapOf("status" to "pending", "reservedFor" to parentSchoolId)
+                                    )
+                                    callback("Child saved! Will appear when Parent registers.", true)
+                                } else {
+                                    callback("Failed to save pending child.", false)
+                                }
+                            }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(error.message, false)
+                }
+            })
+    }
+
+    // Add this to ChildRepositoryImpl.kt
+    // In ChildRepositoryImpl.kt
+    override fun verifyParentExists(parentSchoolId: String, callback: (Boolean) -> Unit) {
+        // 1. Check registered users node first
+        usersRef.orderByChild("schoolId").equalTo(parentSchoolId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Check if the registered user is a parent
+                        val userSnap = snapshot.children.firstOrNull()
+                        val type = userSnap?.child("typeofUser")?.getValue(String::class.java)
+                        callback(type == "Parent")
+                    } else {
+                        // 2. Check the pre-registered 'user' node
+                        val adminRef = FirebaseDatabase.getInstance().getReference("user")
+                        adminRef.child(parentSchoolId).get().addOnSuccessListener { adminSnap ->
+                            if (adminSnap.exists()) {
+                                val role = adminSnap.child("role").getValue(String::class.java)
+                                // STRICT CHECK: Only allow if role is exactly "Parent"
+                                callback(role == "Parent")
+                            } else {
+                                callback(false)
+                            }
+                        }.addOnFailureListener { callback(false) }
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) { callback(false) }
+            })
     }
 }
 

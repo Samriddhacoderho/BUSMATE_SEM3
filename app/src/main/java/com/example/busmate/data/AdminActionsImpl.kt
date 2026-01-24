@@ -230,6 +230,26 @@ class AdminActionsImpl : AdminActionsInterface {
                 }
             })
     }
+    // Add to AdminActionsImpl.kt
+    // In AdminActionsImpl.kt
+    override fun sendGlobalBroadcast(title: String, message: String, callback: (Boolean, String) -> Unit) {
+        val broadcastRef = db.getReference("notifications/global")
+        val id = broadcastRef.push().key ?: return
 
+        val data = mapOf(
+            "id" to id,
+            "title" to title.trim(),
+            "message" to message.trim(),
+            "timestamp" to System.currentTimeMillis()
+        )
+
+        broadcastRef.child(id).setValue(data).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                callback(true, "Broadcast Sent Successfully")
+            } else {
+                callback(false, "Failed: ${task.exception?.message}")
+            }
+        }
+    }
 }
 //testing
