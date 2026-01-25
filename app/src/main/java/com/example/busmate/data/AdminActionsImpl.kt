@@ -240,7 +240,7 @@ class AdminActionsImpl : AdminActionsInterface {
             "id" to id,
             "title" to title.trim(),
             "message" to message.trim(),
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to System.currentTimeMillis(),
         )
 
         broadcastRef.child(id).setValue(data).addOnCompleteListener { task ->

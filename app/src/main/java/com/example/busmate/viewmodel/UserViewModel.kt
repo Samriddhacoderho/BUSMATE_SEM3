@@ -10,7 +10,6 @@ import com.example.busmate.model.UserModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
 class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel() {
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
@@ -21,7 +20,6 @@ class UserViewModel(private val repository: UserRepositoryInterface) : ViewModel
         val regex = Regex("^(\\+977)?[9][6-9]\\d{8}$")
         return regex.matches(phone)
     }
-
 
     fun clearMessage() {
         _message.value = ""
