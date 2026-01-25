@@ -81,6 +81,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.filled.ChatBubble
 import com.example.busmate.viewmodel.ChatViewModel
 import androidx.compose.ui.window.DialogProperties
+import com.example.busmate.view.parent.ChildListActivity
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -396,6 +397,7 @@ fun ParentDashboardScreen(
                                 drawerState.close()
                                 when (item.label) {
                                     "Search Bus" -> { context.startActivity(Intent(context, SearchBusActivity::class.java)) }
+                                    "Edit Child" -> { context.startActivity(Intent(context, ChildListActivity::class.java)) }
 
                                     "Bus Details" -> {
                                         // ✅ Launch as Activity now
