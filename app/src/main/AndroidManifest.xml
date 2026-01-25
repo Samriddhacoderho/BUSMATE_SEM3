@@ -29,6 +29,17 @@
         android:theme="@style/Theme.BUSMATE"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.parent.EditChildActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_child"
+            android:theme="@style/Theme.BUSMATE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.parent.ChildListActivity"
             android:exported="true"
             android:label="@string/title_activity_child_list"

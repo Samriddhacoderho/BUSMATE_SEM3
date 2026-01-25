@@ -46,5 +46,6 @@
     <string name="title_activity_admin_add_child">AdminAddChildActivity</string>
     <string name="title_activity_admin_notification">AdminNotificationActivity</string>
     <string name="title_activity_child_list">ChildListActivity</string>
+    <string name="title_activity_edit_child">EditChildActivity</string>
 
 </resources>
