@@ -76,6 +76,11 @@ import com.example.busmate.view.parent.BusDetailsActivity
 import com.example.busmate.view.parent.DriverProfileActivity
 import com.example.busmate.view.parent.ParentAttendanceActivity
 import com.example.busmate.view.parent.StudentIdCard
+import com.example.busmate.view.parent.ChatScreen
+import androidx.compose.ui.window.Dialog
+import androidx.compose.material.icons.filled.ChatBubble
+import com.example.busmate.viewmodel.ChatViewModel
+import androidx.compose.ui.window.DialogProperties
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -95,6 +100,7 @@ class ParentDashboardActivity : ComponentActivity() {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -117,6 +123,10 @@ fun ParentDashboardScreen(
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
+    val chatViewModel = remember { ChatViewModel() }
+
+    // Add chat dialog state
+    var showChatDialog by remember { mutableStateOf(false) }
 
     val userState by userViewModel.user.collectAsState()
     var dynamicNotifications by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
@@ -587,6 +597,18 @@ fun ParentDashboardScreen(
                     }
                 }
             },
+            // Add Floating Action Button for Chat (Only for Parents)
+            floatingActionButton = {
+                if (user?.typeofUser == "Parent") {
+                    FloatingActionButton(
+                        onClick = { showChatDialog = true },
+                        containerColor = BusMateOrange,
+                        contentColor = Color.White
+                    ) {
+                        Icon(Icons.Default.ChatBubble, contentDescription = "Chat AI")
+                    }
+                }
+            },
             bottomBar = {
                 NavigationBar {
                     navList.forEachIndexed { index, item ->
@@ -637,9 +659,22 @@ fun ParentDashboardScreen(
                 }
             }
         }
-        // Add this at the end of ParentDashboardScreen, after the Scaffold
 
-        // Remove the 'if (showNotificationOverlay)' wrapper
+        // Chat Dialog Overlay
+        if (showChatDialog) {
+            Dialog(
+                onDismissRequest = { showChatDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false) // Full screen dialog
+            ) {
+                ChatScreen(
+                    viewModel = chatViewModel,
+                    user = user,
+                    onClose = { showChatDialog = false }
+                )
+            }
+        }
+
+        // Notification Overlay (existing)
         AnimatedVisibility(
             visible = showNotificationOverlay,
             enter = expandVertically(
