@@ -81,6 +81,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.filled.ChatBubble
 import com.example.busmate.viewmodel.ChatViewModel
 import androidx.compose.ui.window.DialogProperties
+import com.example.busmate.view.parent.ChildListActivity
 
 
 class ParentDashboardActivity : ComponentActivity() {
@@ -316,7 +317,8 @@ fun ParentDashboardScreen(
             NavItem("Bus Details", Icons.Default.DirectionsBus),
             NavItem("Attendance of Children", Icons.Default.ChildCare),
             NavItem("Digital Student ID", Icons.Default.QrCode),
-            NavItem("Driver Profile", Icons.Default.Badge)
+            NavItem("Driver Profile", Icons.Default.Badge),
+            NavItem("Edit Child", Icons.Default.Search),
         )
     }
     ModalNavigationDrawer(
@@ -395,6 +397,7 @@ fun ParentDashboardScreen(
                                 drawerState.close()
                                 when (item.label) {
                                     "Search Bus" -> { context.startActivity(Intent(context, SearchBusActivity::class.java)) }
+                                    "Edit Child" -> { context.startActivity(Intent(context, ChildListActivity::class.java)) }
 
                                     "Bus Details" -> {
                                         // ✅ Launch as Activity now
