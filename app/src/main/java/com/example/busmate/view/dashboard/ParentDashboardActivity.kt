@@ -306,7 +306,8 @@ fun ParentDashboardScreen(
             NavItem("Bus Details", Icons.Default.DirectionsBus),
             NavItem("Attendance of Children", Icons.Default.ChildCare),
             NavItem("Digital Student ID", Icons.Default.QrCode),
-            NavItem("Driver Profile", Icons.Default.Badge)
+            NavItem("Driver Profile", Icons.Default.Badge),
+            NavItem("Edit Child", Icons.Default.Search),
         )
     }
     ModalNavigationDrawer(
