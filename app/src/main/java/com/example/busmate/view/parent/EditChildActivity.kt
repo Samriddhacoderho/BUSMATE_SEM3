@@ -222,7 +222,6 @@ fun EditField(label: String, value: String, onValueChange: (String) -> Unit) {
         shape = RoundedCornerShape(12.dp)
     )
 }
-// Renamed from MapLocationField to ChildMapLocationField to prevent override errors
 @Composable
 fun ChildMapLocationField(label: String, value: String, onClick: () -> Unit) {
     OutlinedTextField(
@@ -248,3 +247,4 @@ fun ChildMapLocationField(label: String, value: String, onClick: () -> Unit) {
         shape = RoundedCornerShape(12.dp)
     )
 }
+//testing edit child activity
