@@ -2,6 +2,7 @@ package com.example.busmate.view.dashboard
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -11,13 +12,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,55 +39,35 @@ import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.filled.Search
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import android.os.Build
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.core.content.ContextCompat
 import com.example.busmate.service.TripMonitoringService
 import coil3.compose.AsyncImage
 import com.example.busmate.ui.theme.BusMateOrange
 import com.google.firebase.database.ValueEventListener
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import com.example.busmate.service.BroadcastNotificationService
 import com.example.busmate.service.ETAMonitoringService
-import com.example.busmate.view.admin.AdminAddChildActivity
-import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
-import com.example.busmate.view.admin.AdminDeactivatesActivity
-import com.example.busmate.view.admin.AdminSearchChildActivity
-import com.example.busmate.view.admin.BusProfileScreen
-import com.example.busmate.view.admin.BusScreen
-import com.example.busmate.view.admin.CreateAccountScreenActivity
-import com.example.busmate.view.admin.DriverProfileScreen
-import com.example.busmate.view.admin.GuideLineActivity
-import com.example.busmate.view.admin.SearchBusActivity
-import com.example.busmate.view.driver.AttendanceActivity
-import com.example.busmate.view.parent.BusDetailsActivity
-import com.example.busmate.view.parent.DriverProfileActivity
-import com.example.busmate.view.parent.ParentAttendanceActivity
-import com.example.busmate.view.parent.StudentIdCard
+import com.example.busmate.view.admin.AdminNotificationActivity
+import com.example.busmate.view.parent.MapPickerActivity
 import com.example.busmate.view.parent.ChatScreen
 import androidx.compose.ui.window.Dialog
-import androidx.compose.material.icons.filled.ChatBubble
-import com.example.busmate.viewmodel.ChatViewModel
 import androidx.compose.ui.window.DialogProperties
-import com.example.busmate.view.parent.ChildListActivity
 
+
+data class NavItem(val label: String, val icon: ImageVector)
 
 class ParentDashboardActivity : ComponentActivity() {
 
@@ -126,23 +111,21 @@ fun ParentDashboardScreen(
     val children by childViewModel.children.collectAsState()
     val chatViewModel = remember { ChatViewModel() }
 
-    // Add chat dialog state
     var showChatDialog by remember { mutableStateOf(false) }
 
     val userState by userViewModel.user.collectAsState()
     var dynamicNotifications by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
 
-//    val busId = "-OgeXRJhRkVNMonROQYL" // TODO: replace with real bus id
     val busIds = remember(userState) {
         userState?.children?.values?.map { it.busRouteId }?.filter { it.isNotEmpty() }?.distinct() ?: emptyList()
     }
+
     /* ---------- DRAWER STATE ---------- */
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf(0) }
     var isViewingBusDetails by remember { mutableStateOf(false) }
     var showNotificationOverlay by remember { mutableStateOf(false) }
-    // Track the count of notifications the user has already acknowledged
     var lastSeenNotificationCount by remember { mutableIntStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -153,7 +136,22 @@ fun ParentDashboardScreen(
         }
     }
 
-    // 3. Combined Logic: Load Profile, Register FCM, and Check Permissions
+    // MapPicker launcher for school location
+    val mapPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val lat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
+            val lng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
+            val address = result.data?.getStringExtra("address") ?: ""
+
+            if (lat != 0.0 && lng != 0.0) {
+                busViewModel.saveSchoolLocation(lat, lng, address)
+                Toast.makeText(context, "School location updated", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         userViewModel.loadUserProfile(userId)
 
@@ -167,38 +165,8 @@ fun ParentDashboardScreen(
             }
         }
     }
-    LaunchedEffect(user?.typeofUser) {
-        val userType = user?.typeofUser ?: ""
 
-        // Debug log to see what user type we have
-        Log.d("Dashboard", "🔍 Checking user type: '$userType' (user loaded: ${user != null})")
-
-        // ✅ CRITICAL: Ensure "Driver" is included in this check
-        if (userType.equals("Parent", ignoreCase = true) || userType.equals("Driver", ignoreCase = true)) {
-            val broadcastServiceIntent = Intent(context, BroadcastNotificationService::class.java)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(broadcastServiceIntent)
-            } else {
-                context.startService(broadcastServiceIntent)
-            }
-            Log.d("Dashboard", "✅ Broadcast Service started for: $userType")
-        } else {
-            // Log why service is not starting
-            if (userType.isEmpty()) {
-                Log.d("Dashboard", "⚠️ Service NOT started - User type is empty")
-            } else {
-                Log.d("Dashboard", "🛑 Stopping service - User type is: '$userType' (likely Admin)")
-            }
-            // If Admin or unknown, stop the service
-            context.stopService(Intent(context, BroadcastNotificationService::class.java))
-        }
-    }
-    // CHANGE: Combined logic into a single block to save battery and memory
-    // Update your existing LaunchedEffect(busIds) to look like this:
     LaunchedEffect(busIds) {
-        // This log is critical. If you see "Bus IDs are empty" in Logcat,
-        // it means your Firebase User data hasn't loaded properly.
         if (busIds.isEmpty()) {
             Log.d("TripMonitor", "Bus IDs are empty, waiting for data...")
             return@LaunchedEffect
@@ -215,11 +183,8 @@ fun ParentDashboardScreen(
         } else {
             context.startService(serviceIntent)
         }
-
-        // ... rest of your in-app listener code ...
     }
 
-    // Start ETA Service for Parents
     LaunchedEffect(user?.typeofUser) {
         if (user?.typeofUser == "Parent") {
             val etaServiceIntent = Intent(context, ETAMonitoringService::class.java)
@@ -234,7 +199,6 @@ fun ParentDashboardScreen(
         }
     }
 
-// Stop service when parent logs out
     DisposableEffect(user?.typeofUser) {
         onDispose {
             if (user?.typeofUser == "Parent") {
@@ -245,14 +209,13 @@ fun ParentDashboardScreen(
         }
     }
 
-
-    /* ---------- 3. DATA LOADING ---------- */
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             userViewModel.loadUserProfile(it)
             childViewModel.observeChildren(it)
         }
     }
+
     DisposableEffect(user?.typeofUser) {
         val database = FirebaseDatabase.getInstance()
         val currentUserType = user?.typeofUser?.lowercase()
@@ -263,7 +226,6 @@ fun ParentDashboardScreen(
             database.getReference("notifications").child(userId)
         }
 
-        // We use a query to get the last 10, but we must handle them correctly
         val query = notifRef.limitToLast(10)
 
         val listener = object : ValueEventListener {
@@ -274,8 +236,6 @@ fun ParentDashboardScreen(
                     val message = notifSnapshot.child("message").getValue(String::class.java) ?: ""
                     list.add(mapOf("title" to title, "message" to message))
                 }
-                // newest notification is now the last one in the Firebase list
-                // so we reverse it for the UI LazyColumn
                 dynamicNotifications = list
             }
             override fun onCancelled(error: DatabaseError) {}
@@ -284,368 +244,135 @@ fun ParentDashboardScreen(
         onDispose { query.removeEventListener(listener) }
     }
 
-    /* ---------- NAV ITEM MODEL ---------- */
-    data class NavItem(val label: String, val icon: ImageVector)
-
     val navList = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Location", Icons.Filled.LocationOn),
         NavItem("Profile", Icons.Filled.Person)
     )
+
+    // Minimal drawer items
     val drawerItems = when (user?.typeofUser?.lowercase()) {
-        "admin" -> listOf(
-            NavItem("Create User Account", Icons.Default.PersonAdd),
-            NavItem("Add Bus", Icons.Default.DirectionsBus),
-            NavItem("View Bus", Icons.Default.DirectionsBus),
-            NavItem("View Driver", Icons.Default.Badge),
-            NavItem("Manage Account", Icons.Default.PersonOff),
-            NavItem("Search Child", Icons.Default.Search),
-            NavItem("View Attendance", Icons.Default.ChildCare),
-            NavItem("Guidelines and Rules", Icons.Default.RuleFolder),
-            NavItem("Search Bus", Icons.Default.Search),
-            NavItem("Create Child Account",Icons.Default.ManageAccounts)
-        )
-
+        "admin" -> emptyList() // Admin has everything in grid
         "driver" -> listOf(
-            NavItem("My Trips", Icons.Default.Route),
-            NavItem("Attendance",Icons.Default.ChildCare),
-            NavItem("Guidelines and Rules", Icons.Default.RuleFolder)
+            NavItem("My Trips", Icons.Default.Route)
         )
-
         else -> listOf(
-            NavItem("About Us", Icons.Default.Info),
-            NavItem("Bus Details", Icons.Default.DirectionsBus),
-            NavItem("Attendance of Children", Icons.Default.ChildCare),
-            NavItem("Digital Student ID", Icons.Default.QrCode),
-            NavItem("Driver Profile", Icons.Default.Badge),
-            NavItem("Edit Child", Icons.Default.Search),
+            NavItem("About Us", Icons.Default.Info)
         )
     }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen, //swipe to close only
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            ModalDrawerSheet(Modifier.width(300.dp)) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(top = 40.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
-                ) {
-                    Column {
-                        // Profile Image with Fallback Logic
-                        Box(
-                            modifier = Modifier
-                                .size(75.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .border(2.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (!user?.profileImage.isNullOrEmpty()) {
-                                // Show uploaded image from Cloudinary
-                                AsyncImage(
-                                    model = user?.profileImage,
-                                    contentDescription = "User Profile Picture",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                // Fallback: Show first letter of First Name if no image
-                                Text(
-                                    text = user?.firstName?.take(1)?.uppercase() ?: "U",
-                                    color = Color.White,
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+            ModernDrawerContent(
+                user = user,
+                drawerItems = drawerItems,
+                onItemClick = { label ->
+                    scope.launch {
+                        drawerState.close()
+                        when (label) {
+                            "About Us" -> {
+                                Toast.makeText(context, "About Us - Coming Soon", Toast.LENGTH_SHORT).show()
                             }
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // User Name
-                        Text(
-                            text = "${user?.firstName ?: "Loading..."} ${user?.lastName ?: ""}",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        // User Role Badge
-                        Surface(
-                            color = Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            Text(
-                                text = user?.typeofUser?.uppercase() ?: "",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                            "My Trips" -> {
+                                Toast.makeText(context, "My Trips - Coming Soon", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
-                drawerItems.forEach { item ->
-                    NavigationDrawerItem(
-                        icon = { Icon(item.icon, null) },
-                        label = { Text(item.label) },
-                        selected = false,
-                        onClick = {
-                            scope.launch {
-                                drawerState.close()
-                                when (item.label) {
-                                    "Search Bus" -> { context.startActivity(Intent(context, SearchBusActivity::class.java)) }
-                                    "Edit Child" -> { context.startActivity(Intent(context, ChildListActivity::class.java)) }
-
-                                    "Bus Details" -> {
-                                        // ✅ Launch as Activity now
-                                        context.startActivity(
-                                            Intent(
-                                                context,
-                                                BusDetailsActivity::class.java
-                                            )
-                                        )
-                                    }
-
-                                    "About Us" -> { /* Handle About Us */
-                                    }
-                                    "Search Child" -> {
-                                        context.startActivity(Intent(context, AdminSearchChildActivity::class.java))
-                                    }
-                                    "Digital Student ID" -> {
-                                        context.startActivity(
-                                            Intent(
-                                                context,
-                                                StudentIdCard::class.java
-                                            )
-                                        )
-                                    }
-                                    // ... inside your drawer onClick logic ...
-                                    "Driver Profile" -> {
-                                        context.startActivity(
-                                            Intent(
-                                                context,
-                                                DriverProfileActivity::class.java
-                                            )
-                                        )
-                                    }
-
-                                    "Create User Account" -> context.startActivity(
-                                        Intent(
-                                            context,
-                                            CreateAccountScreenActivity::class.java
-                                        )
-                                    )
-
-                                    "Add Bus" -> context.startActivity(
-                                        Intent(
-                                            context,
-                                            BusScreen::class.java
-                                        )
-                                    )
-
-                                    "View Bus" -> context.startActivity(
-                                        Intent(
-                                            context,
-                                            BusProfileScreen::class.java
-                                        )
-                                    )
-
-                                    "View Driver" -> context.startActivity(
-                                        Intent(
-                                            context,
-                                            DriverProfileScreen::class.java
-                                        )
-                                    )
-
-                                    "Manage Account" -> context.startActivity(
-                                        Intent(
-                                            context,
-                                            AdminDeactivatesActivity::class.java
-                                        )
-                                    )
-
-                                    // Inside ParentDashboardActivity.kt -> navigation drawer onClick logic
-                                    "Attendance" -> {
-                                        val currentDriverUid = user?.uid ?: ""
-
-                                        if (currentDriverUid.isNotEmpty()) {
-                                            // Use the ViewModel to check if a bus is linked to this driver UID
-                                            busViewModel.getBusByDriverUid(currentDriverUid) { bus ->
-                                                if (bus != null) {
-                                                    // SUCCESS: Bus is assigned, proceed to Attendance
-                                                    val intent = Intent(context, AttendanceActivity::class.java).apply {
-                                                        putExtra("EXTRA_DRIVER_UID", currentDriverUid)
-                                                    }
-                                                    context.startActivity(intent)
-                                                } else {
-                                                    // FAILURE: No bus assigned
-                                                    Toast.makeText(
-                                                        context,
-                                                        "You are not assigned to any bus yet.",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    "View Attendance" ->context.startActivity(
-                                        Intent(context, AdminAttendanceHistoryActivity::class.java)
-                                    )
-                                    // Inside ParentDashboardActivity
-                                    "Guidelines and Rules" -> {
-                                        val userRole = user?.typeofUser
-
-                                        // LOGGING: Check if user or role is null
-                                        android.util.Log.d("BUSMATE_DEBUG", "Navigating from Dashboard")
-                                        android.util.Log.d("BUSMATE_DEBUG", "User Object exists: ${user != null}")
-                                        android.util.Log.d("BUSMATE_DEBUG", "User Role value: '$userRole'")
-
-                                        val intent = Intent(context, GuideLineActivity::class.java).apply {
-                                            putExtra("typeOfUser", userRole) // If this is null, the other activity needs to handle it
-                                        }
-                                        context.startActivity(intent)
-                                    }
-                                    "Attendance of Children" -> {
-                                        // userId is already defined at the top of your ParentDashboardScreen
-                                        if (userId.isNotEmpty()) {
-                                            val intent = Intent(context, ParentAttendanceActivity::class.java).apply {
-                                                // ParentAttendanceActivity expects "PARENT_UID" to function
-                                                putExtra("PARENT_UID", userId)
-                                            }
-                                            context.startActivity(intent)
-                                        } else {
-                                            Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                    "Create Child Account" ->context.startActivity(
-                                        Intent(context, AdminAddChildActivity::class.java)
-                                    )
-
-                                }
-                            }
-                        }
-                    )
-                }
-            }
+            )
         }
     ) {
         Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color(0xFFF8F9FA),
             topBar = {
-                Surface(shadowElevation = 4.dp) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = null)
-                        }
-
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            Image(
-                                painter = painterResource(R.drawable.logo),
-                                contentDescription = null,
-                                contentScale = ContentScale.Fit,
-                                colorFilter = if (isDarkModeEnabled)
-                                    ColorFilter.tint(PlaceholderBusColor)
-                                else null,
-                                modifier = Modifier.height(70.dp).clickable(onClick = {
-                                    selectedItem = 0
-                                    isViewingBusDetails = false
-                                    selectedBusRouteId = null
-                                    selectedChildId = null
-                                })
-                            )
-                        }
-                        IconButton(onClick = {
-                            showNotificationOverlay = !showNotificationOverlay
-                            // Once clicked, we set the 'seen' count to match the current list size to hide the badge
-                            lastSeenNotificationCount = dynamicNotifications.size
-                        }) {
-                            val unreadCount = dynamicNotifications.size - lastSeenNotificationCount
-                            val displayCount = if (unreadCount > 5) 5 else unreadCount
-
-                            if (displayCount > 0) {
-                                BadgedBox(
-                                    badge = {
-                                        Badge(
-                                            containerColor = MaterialTheme.colorScheme.error,
-                                            contentColor = Color.White
-                                        ) {
-                                            Text(displayCount.toString())
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Notifications,
-                                        contentDescription = "Notifications",
-                                        tint = if (showNotificationOverlay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            } else {
-                                Icon(
-                                    Icons.Default.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = if (showNotificationOverlay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
+                ModernTopBar(
+                    isDarkModeEnabled = isDarkModeEnabled,
+                    notificationCount = dynamicNotifications.size - lastSeenNotificationCount,
+                    showNotificationOverlay = showNotificationOverlay,
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onLogoClick = {
+                        selectedItem = 0
+                        isViewingBusDetails = false
+                        selectedBusRouteId = null
+                        selectedChildId = null
+                    },
+                    onNotificationClick = {
+                        showNotificationOverlay = !showNotificationOverlay
+                        lastSeenNotificationCount = dynamicNotifications.size
                     }
-                }
-            },
-            // Add Floating Action Button for Chat (Only for Parents)
-            floatingActionButton = {
-                if (user?.typeofUser == "Parent") {
-                    FloatingActionButton(
-                        onClick = { showChatDialog = true },
-                        containerColor = BusMateOrange,
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.ChatBubble, contentDescription = "Chat AI")
-                    }
-                }
+                )
             },
             bottomBar = {
-                NavigationBar {
-                    navList.forEachIndexed { index, item ->
-                        NavigationBarItem(
-                            selected = (selectedItem == index && !isViewingBusDetails),
+                ModernBottomNavBar(
+                    navList = navList,
+                    selectedItem = selectedItem,
+                    onItemClick = { index ->
+                        selectedItem = index
+                        isViewingBusDetails = false
+                    }
+                )
+            },
+            floatingActionButton = {
+                when (user?.typeofUser) {
+                    "Admin" -> {
+                        FloatingActionButton(
                             onClick = {
-                                selectedItem = index
-                                isViewingBusDetails = false
+                                context.startActivity(Intent(context, AdminNotificationActivity::class.java))
                             },
-                            icon = { Icon(item.icon, null) },
-                            label = { Text(item.label) }
-                        )
+                            containerColor = Color(0xFF2567E8),
+                            contentColor = Color.White,
+                            elevation = FloatingActionButtonDefaults.elevation(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Campaign,
+                                contentDescription = "Broadcast",
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                    "Parent" -> {
+                        FloatingActionButton(
+                            onClick = { showChatDialog = true },
+                            containerColor = BusMateOrange,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.ChatBubble, contentDescription = "Chat AI")
+                        }
                     }
                 }
             }
         ) { padding ->
 
-            Box(Modifier.fillMaxSize().padding(padding)) {
-                Log.d("CHECK_NOTIFICATIONS_COUNT", dynamicNotifications.toString())
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
                 when (selectedItem) {
-                    0 -> HomeScreen(children = children,notifications=dynamicNotifications, onOpenLiveLocation = { busId, studentId ->
-                        selectedBusRouteId = busId
-                        selectedChildId = studentId
-                        selectedItem = 1
-                    })
-                    1 ->{
-                        // Logic to switch between Driver and Parent/Admin views
+                    0 -> HomeScreen(
+                        children = children,
+                        notifications = dynamicNotifications,
+                        onOpenLiveLocation = { busId, studentId ->
+                            selectedBusRouteId = busId
+                            selectedChildId = studentId
+                            selectedItem = 1
+                        },
+                        onSetLocationClick = {
+                            val intent = Intent(context, MapPickerActivity::class.java)
+                            mapPickerLauncher.launch(intent)
+                        }
+                    )
+                    1 -> {
                         val userRole = user?.typeofUser?.lowercase()
 
                         if (userRole == "driver") {
-                            // NEW SCREEN FOR DRIVER
                             DriverLocationScreen(
                                 viewModel = locationViewModel,
                                 driverUid = userId,
-                                busId = user?.schoolId ?: "" // Ensure you pass the correct Bus/Route ID field for the driver
+                                busId = user?.schoolId ?: ""
                             )
                         } else {
                             LiveLocationScreen(
@@ -653,7 +380,7 @@ fun ParentDashboardScreen(
                                 childViewModel = childViewModel,
                                 accelViewModel = accelViewModel,
                                 busId = selectedBusRouteId ?: "",
-                                selectedChildId = selectedChildId // Correctly passed now
+                                selectedChildId = selectedChildId
                             )
                         }
                     }
@@ -662,11 +389,23 @@ fun ParentDashboardScreen(
             }
         }
 
-        // Chat Dialog Overlay
+        // Notification Overlay
+        AnimatedVisibility(
+            visible = showNotificationOverlay,
+            enter = expandVertically(animationSpec = tween(400), expandFrom = Alignment.Top) + fadeIn(),
+            exit = shrinkVertically(animationSpec = tween(300), shrinkTowards = Alignment.Top) + fadeOut()
+        ) {
+            ModernNotificationOverlay(
+                notifications = dynamicNotifications,
+                onClose = { showNotificationOverlay = false }
+            )
+        }
+
+        // Chat Dialog
         if (showChatDialog) {
             Dialog(
                 onDismissRequest = { showChatDialog = false },
-                properties = DialogProperties(usePlatformDefaultWidth = false) // Full screen dialog
+                properties = DialogProperties(usePlatformDefaultWidth = false)
             ) {
                 ChatScreen(
                     viewModel = chatViewModel,
@@ -675,64 +414,359 @@ fun ParentDashboardScreen(
                 )
             }
         }
+    }
+}
 
-        // Notification Overlay (existing)
-        AnimatedVisibility(
-            visible = showNotificationOverlay,
-            enter = expandVertically(
-                animationSpec = tween(durationMillis = 400),
-                expandFrom = Alignment.Top
-            ) + fadeIn(),
-            exit = shrinkVertically(
-                animationSpec = tween(durationMillis = 300),
-                shrinkTowards = Alignment.Top
-            ) + fadeOut()
+// ============================================
+// MODERN UI COMPONENTS
+// ============================================
+
+@Composable
+fun ModernTopBar(
+    isDarkModeEnabled: Boolean,
+    notificationCount: Int,
+    showNotificationOverlay: Boolean,
+    onMenuClick: () -> Unit,
+    onLogoClick: () -> Unit,
+    onNotificationClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shadowElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Color(0xFF2567E8)
+                )
+            }
+
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable { showNotificationOverlay = false }
-                    .padding(top = 80.dp, end = 16.dp, start = 16.dp),
-                contentAlignment = Alignment.TopEnd
+                Modifier.weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                Card(
+                Image(
+                    painter = painterResource(R.drawable.logo),
+                    contentDescription = "BusMate Logo",
+                    contentScale = ContentScale.Fit,
+                    colorFilter = if (isDarkModeEnabled)
+                        ColorFilter.tint(PlaceholderBusColor)
+                    else null,
                     modifier = Modifier
-                        .width(320.dp)
-                        .clickable(enabled = false) { }
-                        .animateContentSize(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Recent Alerts",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                        .height(50.dp)
+                        .clickable(onClick = onLogoClick)
+                )
+            }
 
-                        val displayList = dynamicNotifications.takeLast(5).reversed()
+            IconButton(onClick = onNotificationClick) {
+                val displayCount = if (notificationCount > 5) 5 else notificationCount
 
-                        if (displayList.isEmpty()) {
-                            Text("No notifications", color = Color.Gray, fontSize = 14.sp)
-                        } else {
-                            displayList.forEach { notification ->
-                                NotificationItemScreen(
-                                    initial = notification["title"]?.take(1) ?: "!",
-                                    message = notification["message"] ?: "",
-                                    indicatorColor = BusMateOrange
+                if (displayCount > 0) {
+                    BadgedBox(
+                        badge = {
+                            Badge(
+                                containerColor = Color(0xFFE53935),
+                                contentColor = Color.White
+                            ) {
+                                Text(
+                                    displayCount.toString(),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
+                    ) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = if (showNotificationOverlay)
+                                Color(0xFF2567E8)
+                            else
+                                Color(0xFF6B7280)
+                        )
+                    }
+                } else {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = if (showNotificationOverlay)
+                            Color(0xFF2567E8)
+                        else
+                            Color(0xFF6B7280)
+                    )
+                }
+            }
+        }
+    }
+}
 
-                        TextButton(
-                            onClick = { showNotificationOverlay = false },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("Close")
-                        }
+@Composable
+fun ModernBottomNavBar(
+    navList: List<NavItem>,
+    selectedItem: Int,
+    onItemClick: (Int) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(32.dp),
+            color = Color.White,
+            shadowElevation = 12.dp,
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                navList.forEachIndexed { index, item ->
+                    BottomNavItem(
+                        icon = item.icon,
+                        selected = selectedItem == index,
+                        onClick = { onItemClick(index) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BottomNavItem(
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            )
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) Color(0xFF2567E8) else Color(0xFFB0B0B0),
+                modifier = Modifier.size(26.dp)
+            )
+
+            if (selected) {
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF2567E8))
+                )
+            } else {
+                Spacer(Modifier.height(7.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernDrawerContent(
+    user: com.example.busmate.model.UserModel?,
+    drawerItems: List<NavItem>,
+    onItemClick: (String) -> Unit
+) {
+    ModalDrawerSheet(
+        modifier = Modifier.width(300.dp),
+        drawerContainerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF2567E8),
+                            Color(0xFF1D4ED8)
+                        )
+                    )
+                )
+                .padding(top = 48.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
+        ) {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .border(3.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!user?.profileImage.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = user?.profileImage,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = user?.firstName?.take(1)?.uppercase() ?: "U",
+                            color = Color.White,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "${user?.firstName ?: "User"} ${user?.lastName ?: ""}",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.25f)
+                ) {
+                    Text(
+                        text = user?.typeofUser?.uppercase() ?: "ROLE",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        drawerItems.forEach { item ->
+            NavigationDrawerItem(
+                icon = {
+                    Icon(
+                        item.icon,
+                        contentDescription = null,
+                        tint = Color(0xFF2567E8)
+                    )
+                },
+                label = {
+                    Text(
+                        item.label,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                selected = false,
+                onClick = { onItemClick(item.label) },
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernNotificationOverlay(
+    notifications: List<Map<String, String>>,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f))
+            .clickable { onClose() }
+            .padding(top = 70.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = false) { }
+                .animateContentSize(),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Recent Alerts",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                val displayList = notifications.takeLast(5).reversed()
+
+                if (displayList.isEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 20.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "No notifications",
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    displayList.forEach { notification ->
+                        NotificationItemScreen(
+                            initial = notification["title"]?.take(1) ?: "!",
+                            message = notification["message"] ?: "",
+                            indicatorColor = BusMateOrange
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
