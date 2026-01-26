@@ -66,6 +66,7 @@ import com.example.busmate.view.parent.BusDetailsActivity
 import com.example.busmate.view.parent.DriverProfileActivity
 import com.example.busmate.view.parent.ParentAttendanceActivity
 import com.example.busmate.view.parent.StudentIdCard
+import com.example.busmate.view.parent.ChildListActivity
 import com.example.busmate.view.parent.MapPickerActivity
 
 
@@ -308,16 +309,28 @@ fun HomeScreen(
                             onClick = {
                                 busViewModel.getBusByRouteId(child.busRouteId) { bus ->
                                     if (bus == null) {
-                                        Toast.makeText(context, "No bus linked to this route", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            "No bus linked to this route",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         return@getBusByRouteId
                                     }
 
                                     when {
                                         bus.driver == null ->
-                                            Toast.makeText(context, "Driver not assigned yet", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Driver not assigned yet",
+                                                Toast.LENGTH_LONG
+                                            ).show()
 
                                         !bus.isTripRunning ->
-                                            Toast.makeText(context, "The trip has not started yet", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(
+                                                context,
+                                                "The trip has not started yet",
+                                                Toast.LENGTH_LONG
+                                            ).show()
 
                                         else -> onOpenLiveLocation(bus.uid, child.studentId)
                                     }
@@ -345,20 +358,30 @@ fun HomeScreen(
                             context.startActivity(Intent(context, BusDetailsActivity::class.java))
                         },
                         onDriverProfileClick = {
-                            context.startActivity(Intent(context, DriverProfileActivity::class.java))
+                            context.startActivity(
+                                Intent(
+                                    context,
+                                    DriverProfileActivity::class.java
+                                )
+                            )
                         },
                         onAttendanceClick = {
                             if (!userId.isNullOrEmpty()) {
-                                val intent = Intent(context, ParentAttendanceActivity::class.java).apply {
-                                    putExtra("PARENT_UID", userId)
-                                }
+                                val intent =
+                                    Intent(context, ParentAttendanceActivity::class.java).apply {
+                                        putExtra("PARENT_UID", userId)
+                                    }
                                 context.startActivity(intent)
                             } else {
-                                Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         },
                         onStudentIdClick = {
                             context.startActivity(Intent(context, StudentIdCard::class.java))
+                        },
+                        onManageChildrenClick = {  // NEW
+                            context.startActivity(Intent(context, ChildListActivity::class.java))
                         }
                     )
                 }
@@ -543,13 +566,15 @@ fun ParentFeatureGrid(
     onBusDetailsClick: () -> Unit,
     onDriverProfileClick: () -> Unit,
     onAttendanceClick: () -> Unit,
-    onStudentIdClick: () -> Unit
+    onStudentIdClick: () -> Unit,
+    onManageChildrenClick: () -> Unit  // NEW
 ) {
     val features = listOf(
         FeatureItem("Bus Details", Icons.Default.DirectionsBus, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onBusDetailsClick),
         FeatureItem("Driver Profile", Icons.Default.Badge, listOf(Color(0xFF10B981), Color(0xFF059669)), onDriverProfileClick),
         FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFFF59E0B), Color(0xFFD97706)), onAttendanceClick),
-        FeatureItem("Student ID", Icons.Default.QrCode, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onStudentIdClick)
+        FeatureItem("Student ID", Icons.Default.QrCode, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onStudentIdClick),
+        FeatureItem("Manage Children", Icons.Default.FamilyRestroom, listOf(Color(0xFFEC4899), Color(0xFFDB2777)), onManageChildrenClick)  // NEW
     )
 
     LazyVerticalGrid(
@@ -557,7 +582,7 @@ fun ParentFeatureGrid(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .height(100.dp),
+            .height(200.dp),  // Increased height for 2 rows
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         userScrollEnabled = false
