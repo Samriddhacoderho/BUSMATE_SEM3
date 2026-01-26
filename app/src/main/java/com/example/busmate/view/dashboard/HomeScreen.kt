@@ -7,9 +7,13 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,11 +24,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
@@ -45,13 +52,29 @@ import coil3.compose.AsyncImage
 import com.example.busmate.util.NotificationHelper
 import com.example.busmate.util.SOSPrefs
 import com.example.busmate.view.admin.AdminNotificationActivity
+import com.example.busmate.view.admin.AdminAddChildActivity
+import com.example.busmate.view.admin.AdminAttendanceHistoryActivity
+import com.example.busmate.view.admin.AdminDeactivatesActivity
+import com.example.busmate.view.admin.AdminSearchChildActivity
+import com.example.busmate.view.admin.BusProfileScreen
+import com.example.busmate.view.admin.CreateAccountScreenActivity
+import com.example.busmate.view.admin.DriverProfileScreen
+import com.example.busmate.view.admin.GuideLineActivity
+import com.example.busmate.view.admin.SearchBusActivity
+import com.example.busmate.view.driver.AttendanceActivity
+import com.example.busmate.view.parent.BusDetailsActivity
+import com.example.busmate.view.parent.DriverProfileActivity
+import com.example.busmate.view.parent.ParentAttendanceActivity
+import com.example.busmate.view.parent.StudentIdCard
+import com.example.busmate.view.parent.MapPickerActivity
 
 
 @Composable
 fun HomeScreen(
     children: List<ChildModel> = emptyList(),
     notifications: List<Map<String, String>> = emptyList(),
-    onOpenLiveLocation: (busRouteId: String, studentId: String) -> Unit
+    onOpenLiveLocation: (busRouteId: String, studentId: String) -> Unit,
+    onSetLocationClick: (() -> Unit)? = null
 ) {
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val userRepository = remember { UserRepositoryImpl() }
@@ -64,7 +87,6 @@ fun HomeScreen(
        🔔 SYSTEM NOTIFICATION LOGIC (SAFE + NON-DUPLICATE)
        ======================================================= */
 
-    // Remember last processed notification count
     var lastNotificationCount by rememberSaveable {
         mutableIntStateOf(notifications.size)
     }
@@ -73,11 +95,10 @@ fun HomeScreen(
     }
     val userId = model?.uid
 
-    val showSOSDialog = remember {
-        mutableStateOf(false)
-    }
+    val showSOSDialog = remember { mutableStateOf(false) }
     val sosTitle = remember { mutableStateOf("") }
     val sosMessage = remember { mutableStateOf("") }
+
     LaunchedEffect(userId) {
         if (userId != null && SOSPrefs.isSOSActive(context, userId)) {
             showSOSDialog.value = true
@@ -91,25 +112,21 @@ fun HomeScreen(
             showSOSDialog.value = SOSPrefs.isSOSActive(context, userId)
         }
     }
-    LaunchedEffect(notifications.size) {
-        // Only trigger if a NEW notification arrives
-        if (notifications.size > lastNotificationCount && notifications.isNotEmpty()) {
 
+    LaunchedEffect(notifications.size) {
+        if (notifications.size > lastNotificationCount && notifications.isNotEmpty()) {
             val latestNotification = notifications.last()
             val title = latestNotification["title"] ?: "BusMate Alert"
             val message = latestNotification["message"] ?: ""
 
             Log.d("NOTIF_DEBUG", "New notification received: $title")
 
-            // 🔔 Show system notification
             NotificationHelper.showNotification(
                 context = context,
                 title = title,
                 message = message
             )
         }
-
-        // Update count to prevent duplicates
         lastNotificationCount = notifications.size
     }
 
@@ -132,16 +149,13 @@ fun HomeScreen(
         }
     }
 
-    // 🔥 UPDATED LOGIC: Consolidate children list here.
-    // This ensures if 'children' (from ViewModel) is empty, we fall back to 'model.children'.
-    // 'model.children' is populated by UserRepositoryImpl during registration/login.
     val childrenList = remember(children, model) {
         if (children.isNotEmpty()) children
         else model?.children?.values?.toList() ?: emptyList()
     }
 
     /* =======================================================
-       🔹 NAVIGATION CALLBACKS (UNCHANGED)
+       🔹 NAVIGATION CALLBACKS
        ======================================================= */
 
     val navigateToAddChild = {
@@ -151,6 +165,7 @@ fun HomeScreen(
     val navigateToAddBus = {
         context.startActivity(Intent(context, BusScreen::class.java))
     }
+
     val navigateToTrip = {
         busViewModel.getBusByDriverUid(model?.uid ?: "") { bus ->
             if (bus != null) {
@@ -164,6 +179,7 @@ fun HomeScreen(
             }
         }
     }
+
     if (model?.typeofUser?.lowercase() != "driver") {
         SOSObserver(
             userId = model?.uid ?: return,
@@ -178,54 +194,117 @@ fun HomeScreen(
     }
 
     /* =======================================================
-       🔹 UI COMPOSITION
+       🔹 UI COMPOSITION - MODERN REDESIGN
        ======================================================= */
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
+    Scaffold(
+        containerColor = Color(0xFFF8F9FA)
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+//                .padding(paddingValues)
+            ,
+            contentPadding = PaddingValues(top = 20.dp, bottom = 16.dp)
         ) {
 
-            // HEADER
+            // MODERN GRADIENT HEADER
             item {
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
-                    WelcomeCardScreen(
+                    ModernWelcomeCard(
                         parentName = "${model?.firstName} ${model?.lastName}",
                         model = model
                     )
                 } else {
-                    WelcomeCardAdmin("${model?.firstName} ${model?.lastName}")
+                    ModernAdminWelcomeCard("${model?.firstName} ${model?.lastName}")
                 }
-
-                MyChildrenHeaderScreen(
-                    model = model,
-                    onAddChildClick = navigateToAddChild
-                )
             }
 
-            // CHILD LIST (Uses the 'childrenList' we defined above)
-            if (model?.typeofUser == "Parent") {
+            // ADMIN: FEATURE GRID BELOW WELCOME CARD
+            if (model?.typeofUser == "Admin") {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Quick Actions",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
 
+                item {
+                    AdminFeatureGrid(
+                        onCreateUserClick = {
+                            context.startActivity(Intent(context, CreateAccountScreenActivity::class.java))
+                        },
+                        onAddBusClick = {
+                            context.startActivity(Intent(context, BusScreen::class.java))
+                        },
+                        onViewBusClick = {
+                            context.startActivity(Intent(context, BusProfileScreen::class.java))
+                        },
+                        onViewDriverClick = {
+                            context.startActivity(Intent(context, DriverProfileScreen::class.java))
+                        },
+                        onManageAccountClick = {
+                            context.startActivity(Intent(context, AdminDeactivatesActivity::class.java))
+                        },
+                        onSearchChildClick = {
+                            context.startActivity(Intent(context, AdminSearchChildActivity::class.java))
+                        },
+                        onViewAttendanceClick = {
+                            context.startActivity(Intent(context, AdminAttendanceHistoryActivity::class.java))
+                        },
+                        onGuidelinesClick = {
+                            val intent = Intent(context, GuideLineActivity::class.java).apply {
+                                putExtra("typeOfUser", "Admin")
+                            }
+                            context.startActivity(intent)
+                        },
+                        onSearchBusClick = {
+                            context.startActivity(Intent(context, SearchBusActivity::class.java))
+                        },
+                        onCreateChildClick = {
+                            context.startActivity(Intent(context, AdminAddChildActivity::class.java))
+                        },
+                        onSetLocationClick = {
+                            onSetLocationClick?.invoke()
+                        }
+                    )
+                }
+            }
+
+            // PARENT: SECTION HEADER
+            if (model?.typeofUser == "Parent") {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "My Children",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
+
+                // CHILD CARDS
                 if (childrenList.isEmpty()) {
                     item {
-                        Text(
-                            text = "No children added yet",
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        EmptyStateCard(
+                            message = "No children added yet",
+                            icon = Icons.Default.ChildCare
                         )
                     }
                 } else {
                     items(childrenList) { child ->
-                        ChildTrackingCardScreen(
+                        ModernChildCard(
                             childName = "${child.firstName} ${child.lastName}",
                             statusText = "On Route",
-                            subText = "Student ID: ${child.studentId}\nRoute: ${child.busRouteId}",
+                            studentId = child.studentId,
+                            routeId = child.busRouteId,
                             statusColor = BusMateGreen,
                             imageUrl = child.profileImage,
-                            imageResource = R.drawable.boy,
-                            mapImageResource = R.drawable.map,
                             onClick = {
                                 busViewModel.getBusByRouteId(child.busRouteId) { bus ->
                                     if (bus == null) {
@@ -247,26 +326,111 @@ fun HomeScreen(
                         )
                     }
                 }
+
+                // PARENT: FEATURE GRID BELOW CHILD CARDS
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Services",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
+
+                item {
+                    ParentFeatureGrid(
+                        onBusDetailsClick = {
+                            context.startActivity(Intent(context, BusDetailsActivity::class.java))
+                        },
+                        onDriverProfileClick = {
+                            context.startActivity(Intent(context, DriverProfileActivity::class.java))
+                        },
+                        onAttendanceClick = {
+                            if (!userId.isNullOrEmpty()) {
+                                val intent = Intent(context, ParentAttendanceActivity::class.java).apply {
+                                    putExtra("PARENT_UID", userId)
+                                }
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onStudentIdClick = {
+                            context.startActivity(Intent(context, StudentIdCard::class.java))
+                        }
+                    )
+                }
             }
 
-            // FOOTER
+            // DRIVER: FEATURE GRID ABOVE "MY DUTIES"
+            if (model?.typeofUser == "Driver") {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Quick Actions",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
+
+                item {
+                    DriverFeatureGrid(
+                        onAttendanceClick = {
+                            val currentDriverUid = model?.uid ?: ""
+                            if (currentDriverUid.isNotEmpty()) {
+                                busViewModel.getBusByDriverUid(currentDriverUid) { bus ->
+                                    if (bus != null) {
+                                        val intent = Intent(context, AttendanceActivity::class.java).apply {
+                                            putExtra("EXTRA_DRIVER_UID", currentDriverUid)
+                                        }
+                                        context.startActivity(intent)
+                                    } else {
+                                        Toast.makeText(context, "You are not assigned to any bus yet.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        },
+                        onGuidelinesClick = {
+                            val intent = Intent(context, GuideLineActivity::class.java).apply {
+                                putExtra("typeOfUser", "Driver")
+                            }
+                            context.startActivity(intent)
+                        }
+                    )
+                }
+
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "My Duties",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
+            }
+
+            // NOTIFICATIONS SECTION
             item {
+                Spacer(Modifier.height(8.dp))
                 if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
-                    NotificationsAlertHeaderScreen()
+                    ModernNotificationsHeader()
                 } else {
-                    NotificationsAlertHeaderAdmin(
-                        onAddBusClick = navigateToAddBus,
-                        onBroadcastClick = {
-                            context.startActivity(Intent(context, AdminNotificationActivity::class.java))
-                        })
+                    ModernAdminNotificationsHeader(
+                        onAddBusClick = navigateToAddBus
+                    )
                 }
             }
 
             val latestNotifications = notifications.takeLast(5).reversed()
 
-            // 🔔 DYNAMIC NOTIFICATIONS
             items(latestNotifications) { notification ->
-                NotificationItemScreen(
+                ModernNotificationCard(
                     initial = notification["title"]?.take(1) ?: "!",
                     message = notification["message"] ?: "",
                     indicatorColor = BusMateOrange
@@ -277,12 +441,7 @@ fun HomeScreen(
                 (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")
             ) {
                 item {
-                    Text(
-                        text = "No new alerts",
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
+                    EmptyNotificationsCard()
                 }
             }
 
@@ -290,54 +449,22 @@ fun HomeScreen(
             if (model?.typeofUser == "Driver") {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
+                    ModernSOSButton(
                         onClick = {
                             busViewModel.triggerSOS(model?.uid ?: "")
                             Toast.makeText(context, "Emergency Alert Sent!", Toast.LENGTH_LONG).show()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(65.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE53935),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = null)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("EMERGENCY SOS", fontWeight = FontWeight.ExtraBold)
-                    }
+                        }
+                    )
                 }
-            }
-            // DRIVER BUTTONS (SOS + GO TO TRIP)
-            if (model?.typeofUser == "Driver") {
 
                 item {
-                    Spacer(modifier = Modifier.height(30.dp))
-
-                    Button(
-                        onClick = navigateToTrip,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Go to Trip",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ModernTripButton(onClick = navigateToTrip)
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
+
         if (showSOSDialog.value && userId != null) {
             SOSAlertDialog(
                 title = sosTitle.value,
@@ -348,214 +475,359 @@ fun HomeScreen(
                 }
             )
         }
-
-    }
-}
-@Composable
-fun WelcomeCardScreen(parentName: String?, model: UserModel?) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Welcome, $parentName!",
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
-
-        Row(
-            modifier = Modifier
-                .padding(top = 20.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .height(40.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.5f)
-                    .background(BusMateOrange),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(Icons.Filled.Home, contentDescription = null)
-                Spacer(Modifier.width(5.dp))
-                Text(
-                    "School",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 19.sp
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.5f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(Icons.Filled.LocationOn, contentDescription = null)
-                Spacer(Modifier.width(5.dp))
-                Text(
-                    "Tracking Live",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            }
-        }
     }
 }
 
-@Composable
-fun MyChildrenHeaderScreen(model: UserModel?, onAddChildClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = when (model?.typeofUser) {
-                "Parent" -> "My Children"
-                "Driver" -> "My Duties"
-                else -> "View Buses"
-            },
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+// ============================================
+// MODERN FEATURE GRIDS WITH COLORFUL ICONS
+// ============================================
 
-//        if (model?.typeofUser == "Parent") {
-//            OutlinedButton(
-//                onClick = onAddChildClick,
-//                shape = RoundedCornerShape(20.dp),
-//                modifier = Modifier.height(35.dp)
-//            ) {
-//                Icon(
-//                    Icons.Filled.Add,
-//                    contentDescription = "Add Child",
-//                    modifier = Modifier.size(16.dp)
-//                )
-//                Spacer(modifier = Modifier.width(4.dp))
-//                Text("Add Child", fontSize = 14.sp)
-//            }
-//        }
-    }
-}
+data class FeatureItem(
+    val label: String,
+    val icon: ImageVector,
+    val gradientColors: List<Color>,
+    val onClick: () -> Unit
+)
 
 @Composable
-fun ChildTrackingCardScreen(
-    childName: String,
-    statusText: String,
-    subText: String,
-    statusColor: Color,
-    imageUrl: String?,
-    imageResource: Int,
-    mapImageResource: Int,
-    onClick: () -> Unit
+fun AdminFeatureGrid(
+    onCreateUserClick: () -> Unit,
+    onAddBusClick: () -> Unit,
+    onViewBusClick: () -> Unit,
+    onViewDriverClick: () -> Unit,
+    onManageAccountClick: () -> Unit,
+    onSearchChildClick: () -> Unit,
+    onViewAttendanceClick: () -> Unit,
+    onGuidelinesClick: () -> Unit,
+    onSearchBusClick: () -> Unit,
+    onCreateChildClick: () -> Unit,
+    onSetLocationClick: () -> Unit
 ) {
-    Card(
+    val features = listOf(
+        FeatureItem("Create User", Icons.Default.PersonAdd, listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)), onCreateUserClick),
+        FeatureItem("Add Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onAddBusClick),
+        FeatureItem("View Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF0EA5E9), Color(0xFF0284C7)), onViewBusClick),
+        FeatureItem("View Driver", Icons.Default.Badge, listOf(Color(0xFF10B981), Color(0xFF059669)), onViewDriverClick),
+        FeatureItem("Manage Users", Icons.Default.PersonOff, listOf(Color(0xFFEF4444), Color(0xFFDC2626)), onManageAccountClick),
+        FeatureItem("Search Child", Icons.Default.Search, listOf(Color(0xFFF59E0B), Color(0xFFD97706)), onSearchChildClick),
+        FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFFEC4899), Color(0xFFDB2777)), onViewAttendanceClick),
+        FeatureItem("Guidelines", Icons.Default.RuleFolder, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onGuidelinesClick),
+        FeatureItem("Search Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF06B6D4), Color(0xFF0891B2)), onSearchBusClick),
+        FeatureItem("Create Child", Icons.Default.ManageAccounts, listOf(Color(0xFF14B8A6), Color(0xFF0D9488)), onCreateChildClick),
+        FeatureItem("Set Location", Icons.Default.LocationOn, listOf(Color(0xFFF97316), Color(0xFFEA580C)), onSetLocationClick)
+    )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(4),
         modifier = Modifier
             .fillMaxWidth()
-            .height(150.dp)
-            .padding(horizontal = 16.dp, vertical = 5.dp),
-        shape = RoundedCornerShape(12.dp),
-        onClick = onClick
+            .padding(horizontal = 16.dp)
+            .heightIn(max = 600.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        userScrollEnabled = false
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(0.8f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!imageUrl.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = imageUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Text(
-                            text = childName.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Gray
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column {
-                    Text(text = childName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.8f))) {
-                        Text(text = statusText, color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = subText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-
-            Image(
-                painter = painterResource(id = mapImageResource),
-                contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
+        items(features) { feature ->
+            FeatureGridItem(
+                label = feature.label,
+                icon = feature.icon,
+                gradientColors = feature.gradientColors,
+                onClick = feature.onClick
             )
         }
     }
 }
 
 @Composable
-fun NotificationsAlertHeaderScreen() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Notifications & Alerts",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-
-    NotificationItemScreen(
-        initial = "S",
-        message = "School closed on Friday",
-        indicatorColor = BusMateOrange
+fun ParentFeatureGrid(
+    onBusDetailsClick: () -> Unit,
+    onDriverProfileClick: () -> Unit,
+    onAttendanceClick: () -> Unit,
+    onStudentIdClick: () -> Unit
+) {
+    val features = listOf(
+        FeatureItem("Bus Details", Icons.Default.DirectionsBus, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onBusDetailsClick),
+        FeatureItem("Driver Profile", Icons.Default.Badge, listOf(Color(0xFF10B981), Color(0xFF059669)), onDriverProfileClick),
+        FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFFF59E0B), Color(0xFFD97706)), onAttendanceClick),
+        FeatureItem("Student ID", Icons.Default.QrCode, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onStudentIdClick)
     )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(4),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(100.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        userScrollEnabled = false
+    ) {
+        items(features) { feature ->
+            FeatureGridItem(
+                label = feature.label,
+                icon = feature.icon,
+                gradientColors = feature.gradientColors,
+                onClick = feature.onClick
+            )
+        }
+    }
 }
 
+@Composable
+fun DriverFeatureGrid(
+    onAttendanceClick: () -> Unit,
+    onGuidelinesClick: () -> Unit
+) {
+    val features = listOf(
+        FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onAttendanceClick),
+        FeatureItem("Guidelines", Icons.Default.RuleFolder, listOf(Color(0xFF10B981), Color(0xFF059669)), onGuidelinesClick)
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        features.forEach { feature ->
+            FeatureGridItem(
+                label = feature.label,
+                icon = feature.icon,
+                gradientColors = feature.gradientColors,
+                onClick = feature.onClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        // Empty spacers for alignment
+        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.weight(1f))
+    }
+}
 
 @Composable
-fun NotificationItemScreen(
-    initial: String,
-    message: String,
-    indicatorColor: Color
+fun FeatureGridItem(
+    label: String,
+    icon: ImageVector,
+    gradientColors: List<Color>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Colorful gradient icon background
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Brush.linearGradient(gradientColors)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF4B5563),
+            textAlign = TextAlign.Center,
+            lineHeight = 13.sp,
+            maxLines = 2
+        )
+    }
+}
+
+// ============================================
+// MODERN UI COMPONENTS
+// ============================================
+
+@Composable
+fun ModernWelcomeCard(parentName: String?, model: UserModel?) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF2567E8),
+                            Color(0xFF1D4ED8)
+                        )
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.WavingHand,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB74D),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Welcome back!",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = parentName ?: "User",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatusChip(
+                        icon = Icons.Default.School,
+                        label = "School",
+                        isActive = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatusChip(
+                        icon = Icons.Default.MyLocation,
+                        label = "Live Tracking",
+                        isActive = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusChip(
+    icon: ImageVector,
+    label: String,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isActive) Color(0xFFFFB74D) else Color.White.copy(alpha = 0.2f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isActive) Color.White else Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                color = if (isActive) Color.White else Color.White.copy(alpha = 0.9f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernAdminWelcomeCard(adminName: String?) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF2567E8),
+                            Color(0xFF1D4ED8)
+                        )
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB74D),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Admin Dashboard",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = adminName ?: "Administrator",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernChildCard(
+    childName: String,
+    statusText: String,
+    studentId: String,
+    routeId: String,
+    statusColor: Color,
+    imageUrl: String?,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -565,13 +837,181 @@ fun NotificationItemScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(70.dp)
                     .clip(CircleShape)
-                    .background(indicatorColor.copy(alpha = 0.1f))
-                    .border(1.dp, indicatorColor, CircleShape),
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF42A5F5),
+                                Color(0xFF2567E8)
+                            )
+                        )
+                    )
+                    .border(3.dp, Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(initial, fontWeight = FontWeight.Bold)
+                if (!imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = childName.take(1).uppercase(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = childName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF1A1A1A)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = statusColor.copy(alpha = 0.15f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(statusColor)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = statusText,
+                            color = statusColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "ID: $studentId • Route: $routeId",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernNotificationsHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Notifications,
+                contentDescription = null,
+                tint = Color(0xFF2567E8),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Recent Alerts",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A)
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernAdminNotificationsHeader(
+    onAddBusClick: () -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = null,
+                    tint = Color(0xFF2567E8),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Notifications",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A)
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+fun ModernNotificationCard(
+    initial: String,
+    message: String,
+    indicatorColor: Color
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(indicatorColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = initial,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = indicatorColor
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -579,76 +1019,155 @@ fun NotificationItemScreen(
             Text(
                 text = message,
                 fontSize = 14.sp,
-                lineHeight = 18.sp,
-                modifier = Modifier.weight(1f)
+                lineHeight = 20.sp,
+                modifier = Modifier.weight(1f),
+                color = Color(0xFF333333)
             )
         }
     }
 }
 
+@Composable
+fun EmptyStateCard(message: String, icon: ImageVector) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7FA))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.Gray.copy(alpha = 0.5f),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = message,
+                color = Color.Gray,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
 
 @Composable
-fun WelcomeCardAdmin(adminName: String?) {
-    Column(
+fun EmptyNotificationsCard() {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7FA))
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = BusMateGreen,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "All caught up! No new alerts.",
+                fontSize = 15.sp,
+                color = Color.Gray,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernSOSButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(60.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFE53935)
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+    ) {
+        Icon(
+            Icons.Default.Warning,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "Welcome, $adminName!",
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
+            "EMERGENCY SOS",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 16.sp,
+            letterSpacing = 1.sp
         )
     }
 }
+
 @Composable
-fun NotificationsAlertHeaderAdmin(onAddBusClick: () -> Unit,onBroadcastClick: () -> Unit){
-    Row(
+fun ModernTripButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp)
+            .height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF2567E8)
+        )
     ) {
+        Icon(Icons.Default.PlayArrow, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Notifications & Alerts",
-            fontSize = 18.sp,
+            text = "Go to Trip",
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-        OutlinedButton(onClick = onAddBusClick) {
-            Text("Add Bus")
-        }
-        Button(onClick = onBroadcastClick) {
-            Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("Broadcast", fontSize = 12.sp)
-        }
     }
-    NotificationItemScreen(
-        initial = "S",
-        message = "School closed on Friday",
-        indicatorColor = BusMateOrange
-    )
 }
+
+// ============================================
+// BACKWARD COMPATIBILITY
+// ============================================
+
+@Composable
+fun NotificationItemScreen(
+    initial: String,
+    message: String,
+    indicatorColor: Color
+) {
+    ModernNotificationCard(initial, message, indicatorColor)
+}
+
 @Composable
 fun SOSObserver(
     userId: String,
     userRole: String?,
     children: Map<String, ChildModel>?,
     onSOSReceived: (String, String) -> Unit
-
-)
-{
+) {
     val context = LocalContext.current
 
     if (userRole == null || userRole.lowercase() == "driver") return
 
     DisposableEffect(userId, userRole) {
-
         val db = com.google.firebase.database.FirebaseDatabase
             .getInstance()
             .getReference("notifications")
@@ -659,19 +1178,13 @@ fun SOSObserver(
             .startAt(lastSeenTime.toDouble() + 1)
 
         val listener = object : com.google.firebase.database.ChildEventListener {
-
             override fun onChildAdded(
                 snapshot: com.google.firebase.database.DataSnapshot,
                 previousChildName: String?
             ) {
-                val timestamp =
-                    snapshot.child("timestamp").getValue(Long::class.java) ?: return
-
-                val alertRouteId =
-                    snapshot.child("routeId").getValue(String::class.java)
-
-                val busNo =
-                    snapshot.child("busNumber").getValue(String::class.java) ?: "N/A"
+                val timestamp = snapshot.child("timestamp").getValue(Long::class.java) ?: return
+                val alertRouteId = snapshot.child("routeId").getValue(String::class.java)
+                val busNo = snapshot.child("busNumber").getValue(String::class.java) ?: "N/A"
 
                 val audience = snapshot.child("audience")
                     .getValue(
@@ -685,11 +1198,9 @@ fun SOSObserver(
                 var message = ""
 
                 when (userRole.lowercase()) {
-
                     "admin" -> {
                         title = "Admin: SOS ALERT"
                         message = "SOS: BUS $busNo (Route: $alertRouteId) reported an emergency"
-
                         NotificationHelper.showNotification(context, title, message)
                         shown = true
                     }
@@ -703,7 +1214,6 @@ fun SOSObserver(
                         if (hasMatchingChild) {
                             title = "Parent: SOS ALERT"
                             message = "SOS: BUS $busNo has reported an emergency"
-
                             NotificationHelper.showNotification(context, title, message)
                             shown = true
                         }
@@ -714,7 +1224,6 @@ fun SOSObserver(
                     SOSPrefs.setSOSActive(context, userId, true)
                     SOSPrefs.saveSOSContent(context, userId, title, message)
                     onSOSReceived(title, message)
-
                 }
             }
 
@@ -739,6 +1248,7 @@ fun SOSObserver(
         }
     }
 }
+
 @Composable
 fun SOSAlertDialog(
     title: String,
