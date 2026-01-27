@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -74,7 +75,6 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
             selectedChild = children.first()
         }
     }
-
     LaunchedEffect(selectedChild) {
         selectedChild?.let { child ->
             isLoading = true
@@ -84,89 +84,123 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
             }
         }
     }
-
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Bus Information", fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        },
+        modifier = Modifier.fillMaxSize(),
         containerColor = Color(0xFFF7F7F7)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
 
-            Text(text = "Select Child", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .background(Color(0xFF2854D8)),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(40.dp))
 
-            LazyRow(modifier = Modifier.padding(vertical = 12.dp)) {
-                items(children) { child ->
-                    FilterChip(
-                        modifier = Modifier.padding(end = 8.dp),
-                        selected = selectedChild == child,
-                        onClick = { selectedChild = child },
-                        label = { Text("${child.firstName} ${child.lastName}") },
-                        shape = RoundedCornerShape(12.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Text(
+                        text = "Bus Information",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-            if (isLoading) {
-                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.Black)
-                }
-            } else if (busDetails != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        val busImageUrl = busDetails!!.busImage.trim()
-                        if (busImageUrl.isNotEmpty()) {
-                            AsyncImage(
-                                model = busImageUrl,
-                                contentDescription = "Bus Image",
-                                modifier = Modifier
-                                    .width(200.dp) // Set a width to avoid full stretching
-                                    .height(180.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop,
+
+                Spacer(Modifier.height(16.dp))
+
+
+                Text(text = "Select Child", fontSize = 14.sp, color = Color.White.copy(0.8f))
+                LazyRow(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)) {
+                    items(children) { child ->
+                        FilterChip(
+                            modifier = Modifier.padding(end = 8.dp),
+                            selected = selectedChild == child,
+                            onClick = { selectedChild = child },
+                            label = { Text("${child.firstName} ${child.lastName}",fontWeight = FontWeight.SemiBold)},
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2854D8),
+                                labelColor = Color.White
                             )
-                        } else {
-                            Image(
-                                painter = painterResource(R.drawable.schoolbus),
-                                contentDescription = "Default Bus",
-                                modifier = Modifier.size(120.dp)
-                            )
-                        }
+                        )
                     }
-                    Column(modifier = Modifier.padding(20.dp)) {
+                }
+            }
+
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-40).dp), // Creates the overlapping effect
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (isLoading) {
+                        Box(Modifier.height(180.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF2854D8))
+                        }
+                    } else if (busDetails != null) {
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF1F3F5)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val busImageUrl = busDetails!!.busImage.trim()
+                            if (busImageUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = busImageUrl,
+                                    contentDescription = "Bus Image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(R.drawable.schoolbus),
+                                    contentDescription = "Default Bus",
+                                    modifier = Modifier.size(80.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(24.dp))
+
+
                         DetailText(label = "Route ID", value = busDetails!!.routeId)
                         DetailText(label = "Bus Number", value = busDetails!!.busNumber)
                         DetailText(label = "License Plate", value = busDetails!!.licensePlate)
                         DetailText(label = "Seating Capacity", value = "${busDetails!!.capacity} Seats")
                         DetailText(label = "Maintenance Status", value = busDetails!!.maintenanceStatus)
+                    } else {
+                        Text("No bus data found.", color = Color.Gray, modifier = Modifier.padding(20.dp))
                     }
-                }
-            } else {
-                Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                    Text("No bus data found.", color = Color.Gray)
                 }
             }
         }
@@ -180,4 +214,4 @@ fun DetailText(label: String, value: String) {
         HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp, color = Color.LightGray)
     }
 }
-//testing bus image see by parent
+
