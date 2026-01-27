@@ -298,7 +298,7 @@ fun SupportScreen(
                             Button(
                                 onClick = {
                                     if (adminReply.isNotEmpty()) {
-                                        viewModel.replyToSupport(support.uid ?: "", adminReply)
+                                        viewModel.replyToSupport(support.supportId, adminReply)
                                         adminReply = ""
                                     }
                                 },
