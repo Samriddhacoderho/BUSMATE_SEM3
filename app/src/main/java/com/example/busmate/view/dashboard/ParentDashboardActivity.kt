@@ -276,7 +276,7 @@ fun ParentDashboardScreen(
                                 Toast.makeText(context, "About Us - Coming Soon", Toast.LENGTH_SHORT).show()
                             }
                             "My Trips" -> {
-                                Toast.makeText(context, "My Trips - Coming Soon", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, git "My Trips - Coming Soon", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
