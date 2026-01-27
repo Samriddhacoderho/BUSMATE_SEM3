@@ -45,6 +45,9 @@ class LocationViewModel(
     private val _polylinePoints = MutableStateFlow<List<LatLng>>(emptyList())
     val polylinePoints: StateFlow<List<LatLng>> = _polylinePoints
 
+    private val _currentTripType = MutableStateFlow("")
+    val currentTripType: StateFlow<String> = _currentTripType
+
     private var currentRouteDistanceMeters: Int = 0
     private var trackedBusId: String? = null
     private val speedBuffer = mutableListOf<Float>()
@@ -93,6 +96,43 @@ class LocationViewModel(
         busRepo.getLiveBusLocation(busId) { coords ->
             _currentBusCoordinates.value = coords
         }
+    }
+
+    fun fetchBusTripType(busId: String) {
+        val busRef = FirebaseDatabase.getInstance().getReference("buses")
+
+        Log.d("TRIP_TYPE_FETCH", "Fetching trip type for busId: $busId")
+
+        busRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (busSnap in snapshot.children) {
+                    val bus = busSnap.getValue(BusModel::class.java)
+                    Log.d("TRIP_TYPE_FETCH", "Checking bus: routeId=${bus?.routeId}, uid=${bus?.uid}, tripType=${bus?.tripType}")
+
+                    if (bus?.routeId == busId || bus?.uid == busId) {
+                        _currentTripType.value = bus.tripType
+                        Log.d("TRIP_TYPE_FETCH", "✅ MATCH FOUND! Trip type set to: ${bus.tripType}")
+                        break
+                    }
+                }
+                Log.d("TRIP_TYPE_FETCH", "Final trip type value: ${_currentTripType.value}")
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("TRIP_TYPE_FETCH", "Error fetching trip type: ${error.message}")
+            }
+        })
+    }
+
+    /**
+     * NEW: Reset trip type and route when navigating away from location screen
+     * This prevents stale markers from previous trips
+     */
+    fun resetTripType() {
+        _currentTripType.value = ""
+        _polylinePoints.value = emptyList()
+        currentRouteDistanceMeters = 0
+        Log.d("TRIP_TYPE_RESET", "Trip type and route cleared")
     }
 
     fun updateChildEtas(children: List<ChildModel>, currentCoords: String, rawSpeedMps: Float) {
