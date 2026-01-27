@@ -126,7 +126,7 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
                 Spacer(Modifier.height(16.dp))
 
 
-                Text(text = "Select Child", fontSize = 14.sp, color = Color.White.copy(0.8f))
+                Text(text = "Select Child", fontSize = 14.sp, color = Color.White.copy(0.8f),fontWeight = FontWeight.SemiBold)
                 LazyRow(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)) {
                     items(children) { child ->
                         FilterChip(
