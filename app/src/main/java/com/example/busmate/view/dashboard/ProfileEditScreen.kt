@@ -126,13 +126,7 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
                         context.startActivity(intent)
                     }
                 )
-
                 Spacer(modifier = Modifier.height(30.dp))
-                ProfileMenuItem(
-                    icon = Icons.Default.LocationOn,
-                    label = "Address",
-                    onClick = { /* Handle click */ }
-                )
                 ProfileMenuItem(
                     icon = Icons.Default.Lock,
                     label = "Change Password",
