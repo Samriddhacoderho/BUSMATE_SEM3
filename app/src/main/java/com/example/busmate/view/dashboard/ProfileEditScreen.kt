@@ -1,5 +1,6 @@
 package com.example.busmate.view.dashboard
 
+import android.R
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -340,14 +342,14 @@ fun ProfileInfoCard(
             onClick = onEditClick,
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryBlack,
+                containerColor = Color(0xFF2854D8),
                 contentColor = Color.White
             ),
             modifier = Modifier
                 .fillMaxWidth(0.6f)
                 .height(40.dp)
         ) {
-            Text("Edit Profile", fontSize = 14.sp)
+            Text("Edit Profile", fontSize = 14.sp,fontWeight = FontWeight.SemiBold)
         }
     }
 }

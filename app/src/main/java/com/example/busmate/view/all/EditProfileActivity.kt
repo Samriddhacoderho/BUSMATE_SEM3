@@ -108,12 +108,13 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
+                // This check determines if the background is Green or Red
                 val isSuccess = message.contains("successfully", ignoreCase = true) ||
-                        message.contains("Updated", ignoreCase = true)
-
+                        message.contains("Updated", ignoreCase = true) ||
+                        message.contains("Loaded", ignoreCase = true)
                 Snackbar(
                     snackbarData = data,
-                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFF4CAF50),
                     contentColor = Color.White,
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -236,7 +237,7 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                 onClick = { viewModel.updateUserProfile(firstName, lastName, phone) },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2854D8))
             ) {
                 Text("Save", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
