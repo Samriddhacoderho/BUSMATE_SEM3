@@ -356,6 +356,8 @@ fun ParentDashboardScreen(
                         children = children,
                         notifications = dynamicNotifications,
                         onOpenLiveLocation = { busId, studentId ->
+                            // FIXED: Reset trip type when navigating to location screen
+                            locationViewModel.resetTripType()
                             selectedBusRouteId = busId
                             selectedChildId = studentId
                             selectedItem = 1
