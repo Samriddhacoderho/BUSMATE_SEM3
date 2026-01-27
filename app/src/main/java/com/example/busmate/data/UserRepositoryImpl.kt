@@ -356,10 +356,6 @@ class UserRepositoryImpl : UserRepositoryInterface {
                 }
             })
     }
-
-
-
-
     override fun updateUserProfile(
         uid: String,
         firstName: String,
