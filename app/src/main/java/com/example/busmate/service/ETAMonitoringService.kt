@@ -206,7 +206,9 @@ class ETAMonitoringService : Service() {
                     Log.w("ETAService", "Trip not running for bus $busId - skipping calculations")
                     // Clear drop-off states when trip ends
                     dropOffStates.clear()
-                    Log.d("ETAService", "🔄 Reset drop-off states - trip ended")
+                    // FIXED: Clear trip-specific notification states when trip ends
+                    clearAllTripNotificationStates()
+                    Log.d("ETAService", "🔄 Reset drop-off states and notification flags - trip ended")
                     return
                 }
 
@@ -479,31 +481,46 @@ class ETAMonitoringService : Service() {
         Log.d("ETAService", "  - ETA: $etaMinutes minutes")
         Log.d("ETAService", "  - Threshold: $ETA_THRESHOLD_MINUTES minutes")
 
-        if (etaMinutes <= ETA_THRESHOLD_MINUTES &&
-            etaMinutes > 0 &&
-            !notifiedChildren.contains(child.studentId) &&
-            !wasRecentlyNotified(child.studentId)) {
+        // FIXED: Check if trip is still running before sending notification
+        database.getReference("buses").child(busId).child("isTripRunning")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val isTripRunning = snapshot.getValue(Boolean::class.java) ?: false
 
-            Log.d("ETAService", "🔔 SENDING NOTIFICATION for ${child.firstName}")
-            sendETANotification(child, etaMinutes, tripType, parentUid)
-            notifiedChildren.add(child.studentId)
-            saveNotificationState(child.studentId)
+                if (!isTripRunning) {
+                    Log.d("ETAService", "⚠️ Trip ended - cancelling notification for ${child.firstName}")
+                    return@addOnSuccessListener
+                }
 
-            serviceScope.launch {
-                delay(600000L)
-                notifiedChildren.remove(child.studentId)
-                clearNotificationState(child.studentId)
-                Log.d("ETAService", "Reset notification flag for ${child.firstName}")
+                // Check notification state per trip type
+                if (etaMinutes <= ETA_THRESHOLD_MINUTES &&
+                    etaMinutes > 0 &&
+                    !wasRecentlyNotified(child.studentId, tripType)) {
+
+                    Log.d("ETAService", "🔔 SENDING NOTIFICATION for ${child.firstName} ($tripType)")
+                    sendETANotification(child, etaMinutes, tripType, parentUid)
+                    notifiedChildren.add(child.studentId)
+                    saveNotificationState(child.studentId, tripType)
+
+                    serviceScope.launch {
+                        delay(600000L) // 10 minutes
+                        notifiedChildren.remove(child.studentId)
+                        clearNotificationState(child.studentId, tripType)
+                        Log.d("ETAService", "Reset notification flag for ${child.firstName} ($tripType)")
+                    }
+                } else {
+                    if (etaMinutes > ETA_THRESHOLD_MINUTES) {
+                        Log.d("ETAService", "ETA ($etaMinutes min) > threshold - not sending")
+                    } else if (etaMinutes <= 0) {
+                        Log.d("ETAService", "ETA is 0 or negative - bus may have passed")
+                    } else if (wasRecentlyNotified(child.studentId, tripType)) {
+                        Log.d("ETAService", "Already notified for ${child.firstName} ($tripType)")
+                    }
+                }
             }
-        } else {
-            if (etaMinutes > ETA_THRESHOLD_MINUTES) {
-                Log.d("ETAService", "ETA ($etaMinutes min) > threshold - not sending")
-            } else if (etaMinutes <= 0) {
-                Log.d("ETAService", "ETA is 0 or negative - bus may have passed")
-            } else if (notifiedChildren.contains(child.studentId) || wasRecentlyNotified(child.studentId)) {
-                Log.d("ETAService", "Already notified for ${child.firstName}")
+            .addOnFailureListener { e ->
+                Log.e("ETAService", "Failed to check trip status: ${e.message}")
             }
-        }
     }
 
     private fun sendETANotification(
@@ -537,7 +554,8 @@ class ETAMonitoringService : Service() {
             "message" to message,
             "timestamp" to ServerValue.TIMESTAMP,
             "type" to "eta_alert",
-            "childId" to child.studentId
+            "childId" to child.studentId,
+            "tripType" to tripType // FIXED: Store trip type with notification
         )
 
         database.getReference("notifications")
@@ -552,31 +570,54 @@ class ETAMonitoringService : Service() {
             }
     }
 
-    private fun saveNotificationState(childId: String) {
+    // FIXED: Save notification state per trip type
+    private fun saveNotificationState(childId: String, tripType: String) {
         val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
+        val key = "notified_${childId}_${tripType}" // Separate keys for Pickup vs Drop-off
         prefs.edit()
-            .putLong("notified_$childId", System.currentTimeMillis())
+            .putLong(key, System.currentTimeMillis())
             .apply()
-        Log.d("ETAService", "Saved notification state for child: $childId")
+        Log.d("ETAService", "Saved notification state for child: $childId ($tripType)")
     }
 
-    private fun wasRecentlyNotified(childId: String): Boolean {
+    // FIXED: Check notification state per trip type
+    private fun wasRecentlyNotified(childId: String, tripType: String): Boolean {
         val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
-        val lastNotified = prefs.getLong("notified_$childId", 0L)
+        val key = "notified_${childId}_${tripType}" // Separate keys for Pickup vs Drop-off
+        val lastNotified = prefs.getLong(key, 0L)
         val timeSince = System.currentTimeMillis() - lastNotified
-        val wasNotified = timeSince < 600000L
+        val wasNotified = timeSince < 600000L // 10 minutes
 
         if (wasNotified) {
-            Log.d("ETAService", "Child $childId was notified ${timeSince / 1000}s ago")
+            Log.d("ETAService", "Child $childId was notified ${timeSince / 1000}s ago ($tripType)")
         }
 
         return wasNotified
     }
 
-    private fun clearNotificationState(childId: String) {
+    // FIXED: Clear notification state per trip type
+    private fun clearNotificationState(childId: String, tripType: String) {
         val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
-        prefs.edit().remove("notified_$childId").apply()
-        Log.d("ETAService", "Cleared notification state for child: $childId")
+        val key = "notified_${childId}_${tripType}"
+        prefs.edit().remove(key).apply()
+        Log.d("ETAService", "Cleared notification state for child: $childId ($tripType)")
+    }
+
+    // FIXED: NEW - Clear all trip notification states when trip ends
+    private fun clearAllTripNotificationStates() {
+        val prefs = getSharedPreferences("eta_notifications", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+
+        // Clear all notification timestamps
+        prefs.all.keys.forEach { key ->
+            if (key.startsWith("notified_")) {
+                editor.remove(key)
+            }
+        }
+
+        editor.apply()
+        notifiedChildren.clear()
+        Log.d("ETAService", "🧹 Cleared all notification states for new trip")
     }
 
     private fun parseCoordinates(coords: String): LatLng {
@@ -618,6 +659,7 @@ class ETAMonitoringService : Service() {
         routeDistanceCache.clear()
         notifiedChildren.clear()
         dropOffStates.clear() // === NEW: Clear drop-off states ===
+        clearAllTripNotificationStates() // FIXED: Clear all notification states
         serviceScope.cancel()
         super.onDestroy()
     }

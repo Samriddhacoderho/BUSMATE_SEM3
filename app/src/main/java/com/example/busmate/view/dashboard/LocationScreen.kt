@@ -58,6 +58,7 @@ fun LiveLocationScreen(
     val children by childViewModel.children.collectAsState()
     val liveReading by accelViewModel.firebaseReading.observeAsState()
     val isTripRunning by viewModel.isTripRunning.collectAsState()
+    val currentTripType by viewModel.currentTripType.collectAsState()
 
     // FIXED: Collect polylinePoints (matching ViewModel name)
     val polylinePoints by viewModel.polylinePoints.collectAsState()
@@ -80,6 +81,7 @@ fun LiveLocationScreen(
             viewModel.trackAllBuses()
         } else {
             viewModel.startTracking(busId = busId)
+            viewModel.fetchBusTripType(busId)
             accelViewModel.startTrackingBus(busId)
             model?.uid?.let { parentUid ->
                 childViewModel.observeChildren(parentUid)
@@ -88,17 +90,33 @@ fun LiveLocationScreen(
     }
 
     /// 1. THIS BLOCK REQUESTS THE ROUTE
-    LaunchedEffect(coordinates, children, selectedChildId) {
-        if (model?.typeofUser == "Parent") {
+    /// FIXED: Only run when currentTripType is NOT empty (prevents stale value usage)
+    LaunchedEffect(coordinates, children, selectedChildId, currentTripType) {
+        if (model?.typeofUser == "Parent" &&
+            coordinates != "Fetching..." &&
+            currentTripType.isNotEmpty()) {  // ← FIXED: Wait for trip type to be fetched
+
             val busParts = coordinates.split(",")
             val busLat = busParts.getOrNull(0)?.toDoubleOrNull()
             val busLng = busParts.getOrNull(1)?.toDoubleOrNull()
             val child = children.find { it.studentId == selectedChildId }
 
+            Log.d("ROUTE_DEBUG", "Trip Type: $currentTripType")
+            Log.d("ROUTE_DEBUG", "Child: ${child?.firstName}")
+            Log.d("ROUTE_DEBUG", "Coordinates: $coordinates")
+
             if (busLat != null && busLng != null && child != null && apiKey.isNotEmpty()) {
+                val destination = if (currentTripType == "Pickup") {
+                    LatLng(child.pickUpLat, child.pickUpLng)
+                } else {
+                    LatLng(child.dropOffLat, child.dropOffLng)
+                }
+
+                Log.d("ROUTE_DEBUG", "Calculating route to: $destination")
+
                 viewModel.fetchRoadSnappedRoute(
                     origin = LatLng(busLat, busLng),
-                    destination = LatLng(child.pickUpLat, child.pickUpLng),
+                    destination = destination,
                     apiKey = apiKey
                 )
             }
@@ -117,21 +135,6 @@ fun LiveLocationScreen(
             Log.d("DEBUG_CODE",coordinates)
         }
     }
-
-            // Calculate coordinates for Directions API
-            val busParts = coordinates.split(",")
-            val busLat = busParts.getOrNull(0)?.toDoubleOrNull()
-            val busLng = busParts.getOrNull(1)?.toDoubleOrNull()
-            val child = children.find { it.studentId == selectedChildId }
-
-            if (busLat != null && busLng != null && child != null && apiKey.isNotEmpty()) {
-                viewModel.fetchRoadSnappedRoute(
-                    origin = LatLng(busLat, busLng),
-                    destination = LatLng(child.pickUpLat, child.pickUpLng),
-                    apiKey = apiKey
-                )
-            }
-
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -169,9 +172,10 @@ fun LiveLocationScreen(
                 locationViewModel = viewModel,
                 busId = busId,
                 allBuses = (if (model?.typeofUser == "Admin") allBuses else emptyList()) as List<BusModel>,
-                polylinePoints = polylinePoints, // Passed correctly now
+                polylinePoints = polylinePoints,
                 selectedChildId = selectedChildId,
-                children = children
+                children = children,
+                currentTripType = currentTripType
             )
 
             if (model?.typeofUser == "Parent") {
@@ -202,7 +206,8 @@ fun MapPrototype(
     allBuses: List<com.example.busmate.model.BusModel>,
     polylinePoints: List<LatLng>,
     selectedChildId: String?,
-    children: List<com.example.busmate.model.ChildModel>
+    children: List<com.example.busmate.model.ChildModel>,
+    currentTripType: String
 ) {
     var permissionGranted by remember {
         mutableStateOf(ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
@@ -219,7 +224,7 @@ fun MapPrototype(
     }
 
     if (permissionGranted) {
-        CardMap(modifier, model, context, coordinates, locationViewModel, busId, allBuses, polylinePoints, selectedChildId, children)
+        CardMap(modifier, model, context, coordinates, locationViewModel, busId, allBuses, polylinePoints, selectedChildId, children, currentTripType)
     } else {
         Box(modifier = modifier.fillMaxWidth().height(260.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
             Text("Location permission required")
@@ -238,7 +243,8 @@ fun CardMap(
     allBuses: List<com.example.busmate.model.BusModel>,
     polylinePoints: List<LatLng>,
     selectedChildId: String?,
-    children: List<com.example.busmate.model.ChildModel>
+    children: List<com.example.busmate.model.ChildModel>,
+    currentTripType: String
 ) {
     val defaultLatLng = LatLng(27.7172, 85.3240)
     val cameraPositionState = rememberCameraPositionState {
@@ -305,13 +311,30 @@ fun CardMap(
                     )
                 }
 
-                // 3. Child Pickup Marker
+                // 3. Child Pickup/Dropoff Marker (based on trip type)
                 val child = children.find { it.studentId == selectedChildId }
-                child?.let {
+                if (child != null && currentTripType.isNotEmpty()) {
+                    Log.d("MARKER_DEBUG", "Trip Type in Map: $currentTripType")
+                    Log.d("MARKER_DEBUG", "Pickup: ${child.pickUpLat}, ${child.pickUpLng}")
+                    Log.d("MARKER_DEBUG", "Dropoff: ${child.dropOffLat}, ${child.dropOffLng}")
+
+                    val childLocation = if (currentTripType == "Pickup") {
+                        LatLng(child.pickUpLat, child.pickUpLng)
+                    } else {
+                        LatLng(child.dropOffLat, child.dropOffLng)
+                    }
+
+                    Log.d("MARKER_DEBUG", "Marker Location: $childLocation")
+
                     Marker(
-                        state = rememberMarkerState(position = LatLng(it.pickUpLat, it.pickUpLng)),
-                        title = "Pickup Point",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                        state = rememberMarkerState(position = childLocation),
+                        title = if (currentTripType == "Pickup") "Pickup Point" else "Drop-off Point",
+                        icon = BitmapDescriptorFactory.defaultMarker(
+                            if (currentTripType == "Pickup")
+                                BitmapDescriptorFactory.HUE_AZURE
+                            else
+                                BitmapDescriptorFactory.HUE_ORANGE
+                        )
                     )
                 }
             }
