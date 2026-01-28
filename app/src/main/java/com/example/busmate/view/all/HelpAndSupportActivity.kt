@@ -27,42 +27,37 @@ import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateTheme
-import com.example.busmate.ui.theme.LightGrayBackground
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.viewmodel.SupportViewModel
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch
 
 class HelpAndSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Observe SharedPreferences changes for dark mode
-            val context = androidx.compose.ui.platform.LocalContext.current
+            val context = LocalContext.current
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
             }
-            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
 
-            androidx.compose.runtime.DisposableEffect(Unit) {
+            DisposableEffect(Unit) {
                 val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                     if (key == "dark_mode_pref") {
-                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        themeUpdateTrigger++
                     }
                 }
                 sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
-
-                onDispose {
-                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
-                }
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            key(themeChanged) {
+            key(themeUpdateTrigger) {
                 val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
                 val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
 
-                BusMateTheme {
+                BusMateTheme(darkTheme = isDarkMode()) {
                     SupportScreen(
                         viewModel = supportViewModel,
                         userViewModel = userViewModel
@@ -86,10 +81,8 @@ fun SupportScreen(
     val userState by userViewModel.user.collectAsState()
     val model = intentModel ?: userState
 
-    val message by viewModel.message.collectAsState()
     val supportMessages by viewModel.supportMessages.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
     var titleText by remember { mutableStateOf("") }
     var explainText by remember { mutableStateOf("") }
@@ -125,22 +118,24 @@ fun SupportScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(16.dp)
         ) {
             if (model?.typeofUser == "Parent" || model?.typeofUser == "Driver") {
                 val userSupportMessages = supportMessages.filter { it.uid == model.uid }
 
-                // 1. MESSAGES AND REPLIES NOW AT THE TOP
                 items(userSupportMessages) { UserSupportItem(it) }
 
-                // 2. SUBMIT CARD NOW AT THE BOTTOM
                 item {
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Submit a Support Request", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = BusMateBlue)
@@ -181,7 +176,6 @@ fun SupportScreen(
                 }
 
             } else if (model?.typeofUser == "Admin") {
-                // Admin grouping logic remains exactly as provided
                 val groupedMessages = supportMessages.groupBy { it.uid }
 
                 items(groupedMessages.keys.toList()) { userUid ->
@@ -217,15 +211,14 @@ fun AdminUserGroupCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("User: $userName ($userType)", fontWeight = FontWeight.Bold, color = BusMateBlue, fontSize = 18.sp)
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Loop through all messages from THIS specific user
             messages.forEach { support ->
                 var adminReply by remember { mutableStateOf("") }
 
                 Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                     Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Message: ${support.message}", modifier = Modifier.padding(bottom = 4.dp))
+                    Text("Message: ${support.message}", modifier = Modifier.padding(bottom = 4.dp), color = MaterialTheme.colorScheme.onSurface)
 
                     if (support.reply.isNotEmpty()) {
                         Text("Current Reply: ${support.reply}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Medium, fontSize = 13.sp)
@@ -253,11 +246,10 @@ fun AdminUserGroupCard(
                         colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 24.dp)
-
                     ) {
                         Text("REPLY", color = Color.White, fontSize = 12.sp)
                     }
-                    Divider(modifier = Modifier.padding(top = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
+                    HorizontalDivider(modifier = Modifier.padding(top = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
                 }
             }
         }
@@ -267,17 +259,47 @@ fun AdminUserGroupCard(
 @Composable
 fun UserSupportItem(support: com.example.busmate.model.SupportModel) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)), modifier = Modifier.fillMaxWidth()) {
+        // User Message Card (Adaptive Colors)
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("Title: ${support.title}", fontWeight = FontWeight.Bold)
-                Text(support.message)
+                Text(
+                    text = "Title: ${support.title}",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = support.message,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
             }
         }
+
+        // Admin Reply Card (Adaptive Colors)
         if (support.reply.isNotEmpty()) {
-            Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4)), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                ),
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp, start = 20.dp)
+            ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
-                    Text(support.reply)
+                    Text(
+                        "Admin Reply:",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary, // Distinct color for "Admin Reply" label
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = support.reply,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
                 }
             }
         }
