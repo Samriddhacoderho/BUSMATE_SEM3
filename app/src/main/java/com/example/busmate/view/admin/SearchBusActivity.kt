@@ -40,10 +40,31 @@ class SearchBusActivity : ComponentActivity() {
         enableEdgeToEdge()
         val viewModel = BusViewModel(BusRepositoryImpl())
         setContent {
-            BusMateTheme {
-                SearchBusScreen(viewModel) { finish() }
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
             }
 
+            key(themeChanged) {
+                BusMateTheme {
+                    SearchBusScreen(viewModel) { finish() }
+                }
+            }
         }
     }
 }
@@ -53,7 +74,7 @@ fun SearchBusScreen(
     viewModel: BusViewModel,
     onBack: () -> Unit
 ) {
-    val busMateBlue = Color(0xFF2567E8)
+    val busMateBlue = MaterialTheme.colorScheme.primary
     val context = LocalContext.current
     val buses by viewModel.buses.collectAsState()
     var searchText by remember { mutableStateOf("") }
@@ -75,7 +96,7 @@ fun SearchBusScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
             )
         }
     ) { padding ->
@@ -83,7 +104,7 @@ fun SearchBusScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Blue header box matching Admin Search Student
             Box(
@@ -102,14 +123,16 @@ fun SearchBusScreen(
                         .padding(top = 10.dp),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = busMateBlue)
+                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     },
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = busMateBlue
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                     ),
                     singleLine = true
                 )
@@ -117,7 +140,7 @@ fun SearchBusScreen(
 
             if (filteredBuses.isEmpty() && searchText.isNotEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No buses found matching '$searchText'", color = Color.Gray)
+                    Text("No buses found matching '$searchText'", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -142,7 +165,7 @@ fun SearchBusScreen(
 }
 @Composable
 fun BusItem(bus: BusModel, onClick: () -> Unit) {
-    val busMateBlue = Color(0xFF2567E8)
+    val busMateBlue = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier
@@ -150,7 +173,7 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
             .padding(horizontal = 2.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
@@ -163,19 +186,19 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
                     text = "Bus Number: ${bus.busNumber}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "Route ID: ${bus.routeId}",
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             // Edit icon to indicate action
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Edit",
-                tint = busMateBlue.copy(alpha = 0.6f),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)
             )
         }

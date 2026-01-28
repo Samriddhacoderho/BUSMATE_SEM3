@@ -67,14 +67,6 @@ import coil3.compose.AsyncImage
 import com.example.busmate.view.all.HelpAndSupportActivity
 
 
-// --- Colors and Theme (Simplified placeholders based on the image's black and white style) ---
-// Using MaterialTheme.colorScheme for better practices, but keeping a simple palette.
-val PrimaryBlack = Color(0xFF1E1E1E)
-val BackgroundWhite = Color(0xFFFFFFFF)
-val ButtonGray = Color(0xFFEEEEEE)
-val TextGray = Color(0xFF6A6A6A)
-val IconGray = Color(0xFF4A4A4A)
-
 @Composable
 fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl()) {
     // This state would typically be managed by a ViewModel
@@ -105,14 +97,14 @@ fun ProfileEditScreen(userRepository: UserRepositoryImpl = UserRepositoryImpl())
     }
 
     Scaffold(
-        containerColor = BackgroundWhite,
+        containerColor = MaterialTheme.colorScheme.background,
 //        bottomBar = { AppBottomNavigationBar() } // Assuming a bottom navigation bar is present
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(BackgroundWhite)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 20.dp)
         ) {
             item {
@@ -273,7 +265,7 @@ fun ProfileInfoCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .border(1.dp, Color.LightGray, CircleShape),
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
             } else {
@@ -284,8 +276,8 @@ fun ProfileInfoCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .background(ButtonGray),
-                    tint = Color.LightGray
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -294,8 +286,8 @@ fun ProfileInfoCard(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .background(Color.Black)
-                    .border(2.dp, Color.White, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
                     .clickable(onClick = onEditClick),
                 contentAlignment = Alignment.Center
             ) {
@@ -319,14 +311,14 @@ fun ProfileInfoCard(
                 text = fullName,
                 fontSize = 18.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = PrimaryBlack
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = lastName,
                 fontSize = 18.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = PrimaryBlack
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -363,21 +355,21 @@ fun ProfileMenuItem(icon: ImageVector, label: String, showArrow: Boolean = true,
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = IconGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = label,
                 fontSize = 16.sp,
-                color = PrimaryBlack
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         if (showArrow) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Go to $label",
-                tint = IconGray.copy(alpha = 0.5f),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(20.dp)
             )
         }

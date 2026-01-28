@@ -52,7 +52,7 @@ fun ChatScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             LazyColumn(
                 state = listState,
@@ -71,7 +71,7 @@ fun ChatScreen(
                             "Thinking...",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(start = 16.dp, top = 4.dp),
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -82,7 +82,7 @@ fun ChatScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp)
-                    .background(Color.White, RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
                     .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -117,14 +117,14 @@ fun ChatBubble(message: com.example.busmate.model.ChatMessageModel) {
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (message.isUser) BusMateOrange else Color.White,
+            color = if (message.isUser) BusMateOrange else MaterialTheme.colorScheme.surface,
             shadowElevation = 2.dp,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Text(
                 text = message.text,
                 modifier = Modifier.padding(12.dp),
-                color = if (message.isUser) Color.White else Color.Black
+                color = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
     }

@@ -49,12 +49,34 @@ class EditBusActivity : ComponentActivity() {
         val bus = intent.getParcelableExtra<BusModel>("bus_data")
         val viewModel = BusViewModel(BusRepositoryImpl())
         setContent {
-            BusMateTheme {
-                if (bus != null) {
-                    EditBusScreen(bus, viewModel) { finish() }
-                } else {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Bus data not found")
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    if (bus != null) {
+                        EditBusScreen(bus, viewModel) { finish() }
+                    } else {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Bus data not found")
+                        }
                     }
                 }
             }
@@ -68,7 +90,7 @@ fun EditBusScreen(
     viewModel: BusViewModel,
     onBack: () -> Unit
 ) {
-    val busMateBlue = Color(0xFF2567E8) // Exact blue from EditStudentActivity
+    val busMateBlue = MaterialTheme.colorScheme.primary // Exact blue from EditStudentActivity
     val context = LocalContext.current
 
     var busNumber by remember { mutableStateOf(bus.busNumber) }
@@ -98,7 +120,7 @@ fun EditBusScreen(
                         Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
             )
         }
     ) { padding ->
@@ -107,21 +129,21 @@ fun EditBusScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA)) // Matching EditStudentActivity background
+                .background(MaterialTheme.colorScheme.background) // Matching EditStudentActivity background
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             // 🖼️ CLICKABLE BUS IMAGE (Updated UI to match Student Profile style)
-            Text("Bus Profile Photo", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Text("Bus Profile Photo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .size(width = 160.dp, height = 120.dp) // Rectangular aspect ratio
                     .clip(RoundedCornerShape(16.dp))        // Changed from CircleShape to Rounded
-                    .background(Color(0xFFE9ECEF))
-                    .border(2.dp, busMateBlue, RoundedCornerShape(16.dp))// Matching the student border
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))// Matching the student border
                     .clickable {
                         imagePicker.launch("image/*")
                     },
@@ -137,14 +159,14 @@ fun EditBusScreen(
                 if (isUploading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(32.dp),
-                        color = busMateBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
             Text(
                 "Tap image to change",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -186,7 +208,7 @@ fun EditBusScreen(
                     .fillMaxWidth()
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = busMateBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 enabled = !isUploading
             )
             {
@@ -199,12 +221,12 @@ fun EditBusScreen(
 
             // DRIVER SECTION (Added to match the "Parent Contact" section in EditStudentActivity)
             Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
+            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 "Driver Information",
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -219,7 +241,7 @@ fun EditBusScreen(
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 20.dp),
                 thickness = 1.dp,
-                color = Color.LightGray
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
             )
         }
     }

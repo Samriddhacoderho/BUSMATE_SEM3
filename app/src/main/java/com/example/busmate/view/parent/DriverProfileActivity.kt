@@ -45,8 +45,30 @@ class DriverProfileActivity : ComponentActivity() {
         val childViewModel = ChildViewModel(ChildRepositoryImpl())
 
         setContent {
-            BusMateTheme {
-                DriverProfileScreen(busViewModel, childViewModel)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    DriverProfileScreen(busViewModel, childViewModel)
+                }
             }
         }
     }
@@ -84,7 +106,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = Color(0xFFF7F7F7)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -151,7 +173,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
                     .offset(y = (-40).dp), // The Overlap
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(10.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -184,7 +206,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
                                     imageVector = Icons.Default.AccountCircle,
                                     contentDescription = "Default Driver Icon",
                                     modifier = Modifier.size(80.dp),
-                                    tint = Color.LightGray
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -201,7 +223,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
 
                     } else {
                         Box(Modifier.padding(40.dp), contentAlignment = Alignment.Center) {
-                            Text("No driver assigned yet.", color = Color.Gray)
+                            Text("No driver assigned yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

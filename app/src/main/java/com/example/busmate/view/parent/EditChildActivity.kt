@@ -49,8 +49,30 @@ class EditChildActivity : ComponentActivity() {
         val child = intent.getParcelableExtra<ChildModel>("CHILD_DATA") ?: return finish()
 
         setContent {
-            BusMateTheme {
-                EditChildScreen(initialChild = child, onBackClick = { finish() })
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    EditChildScreen(initialChild = child, onBackClick = { finish() })
+                }
             }
         }
     }
@@ -130,7 +152,7 @@ fun EditChildScreen(initialChild: ChildModel, onBackClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -140,7 +162,7 @@ fun EditChildScreen(initialChild: ChildModel, onBackClick: () -> Unit) {
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE9ECEF))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(2.dp, busMateBlue, CircleShape)
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
@@ -240,9 +262,9 @@ fun ChildMapLocationField(label: String, value: String, onClick: () -> Unit) {
             .clickable { onClick() },
         enabled = false,
         colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color.Black,
-            disabledBorderColor = Color.Gray,
-            disabledLabelColor = Color.DarkGray
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         shape = RoundedCornerShape(12.dp)
     )
