@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -34,9 +36,8 @@ import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.AdminActionsViewModel
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 
 class DriverProfileScreen : ComponentActivity() {
 
@@ -47,7 +48,33 @@ class DriverProfileScreen : ComponentActivity() {
         val selectMode = intent.getBooleanExtra("select_mode", false)
 
         setContent {
-            DriverProfileMainScreen(selectMode)
+            // 🌙 Dark mode observer (LOGIC ONLY)
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember {
+                mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0))
+            }
+
+            DisposableEffect(Unit) {
+                val listener =
+                    android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "dark_mode_pref") {
+                            themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        }
+                    }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    DriverProfileMainScreen(selectMode)
+                }
+            }
         }
     }
 }
@@ -118,7 +145,6 @@ fun DriverProfileScreenUI(
                 .padding(padding)
         ) {
 
-            // 👆 Swipe indicator (BusProfile style)
             Text(
                 text = "Swipe to view drivers (${pagerState.currentPage + 1}/${drivers.size})",
                 modifier = Modifier
@@ -197,7 +223,10 @@ fun SingleDriverProfile(
                     if (selectMode) Modifier.clickable {
                         val result = Intent()
                         result.putExtra("driverId", driver.schoolId)
-                        result.putExtra("driverName", "${driver.firstName} ${driver.lastName}")
+                        result.putExtra(
+                            "driverName",
+                            "${driver.firstName} ${driver.lastName}"
+                        )
                         (context as Activity).setResult(Activity.RESULT_OK, result)
                         context.finish()
                     } else Modifier
