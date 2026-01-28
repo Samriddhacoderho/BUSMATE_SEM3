@@ -227,7 +227,7 @@ fun SingleBusProfile(bus: BusModel) {
                     Brush.verticalGradient(
                         colors = listOf(
                             BusMateBlue,
-                            BusMateBlue.copy(alpha = 0.85f)
+                            BusMateBlue
                         )
                     )
                 ),
@@ -248,6 +248,7 @@ fun SingleBusProfile(bus: BusModel) {
                 )
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
 
         Card(
             modifier = Modifier
