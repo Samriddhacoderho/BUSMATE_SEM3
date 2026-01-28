@@ -1,6 +1,7 @@
 package com.example.busmate.model
 
 data class SupportModel(
+    val supportId: String = "",
     val uid: String ="",
     val name: String ="",
     val typeofUser: String? ="",
@@ -10,6 +11,8 @@ data class SupportModel(
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
+
+            "supportId" to supportId,
             "uid" to uid,
             "name" to name,
             "typeofUser" to typeofUser,

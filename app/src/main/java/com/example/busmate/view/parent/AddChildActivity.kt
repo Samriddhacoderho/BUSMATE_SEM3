@@ -9,35 +9,46 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.model.ChildModel
-import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.viewmodel.ChildViewModel
+
+/* ---------------- COLORS ---------------- */
+
+private val PrimaryBlue = Color(0xFF2567E8)
+private val SecondaryBlue = Color(0xFF1D4ED8)
+private val ScreenBg = Color(0xFFF6F8FC)
+private val CardBg = Color.White
+
+/* ---------------- ACTIVITY ---------------- */
 
 class AddChildActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         val prefilledStudentId = intent.getStringExtra("STUDENT_ID") ?: ""
         val prefilledParentId = intent.getStringExtra("PARENT_ID") ?: ""
@@ -56,6 +67,8 @@ class AddChildActivity : ComponentActivity() {
     }
 }
 
+/* ---------------- SCREEN ---------------- */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddChildScreen(
@@ -67,7 +80,7 @@ fun AddChildScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    // ---------------- FORM STATE ----------------
+    // ---------- FORM STATE ----------
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf(prefilledStudentId) }
@@ -84,7 +97,38 @@ fun AddChildScreen(
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // ---------------- MAP PICKERS (FIX) ----------------
+    // ---------- VALIDATION ----------
+    val isFormValid by remember(
+        firstName,
+        lastName,
+        studentId,
+        parentSchoolId,
+        busRouteId,
+        pickUpLocation,
+        dropOffLocation,
+        pLat,
+        pLng,
+        dLat,
+        dLng,
+        imageUri
+    ) {
+        mutableStateOf(
+            firstName.isNotBlank() &&
+                    lastName.isNotBlank() &&
+                    studentId.isNotBlank() &&
+                    parentSchoolId.isNotBlank() &&
+                    busRouteId.isNotBlank() &&
+                    pickUpLocation.isNotBlank() &&
+                    dropOffLocation.isNotBlank() &&
+                    pLat != 0.0 &&
+                    pLng != 0.0 &&
+                    dLat != 0.0 &&
+                    dLng != 0.0 &&
+                    imageUri != null
+        )
+    }
+
+    // ---------- LAUNCHERS ----------
     val pickUpLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -105,15 +149,14 @@ fun AddChildScreen(
         }
     }
 
-    // ---------------- IMAGE PICKER ----------------
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { imageUri = it }
 
-    // ---------------- OBSERVABLES ----------------
-    val message by viewModel.message.collectAsState()
+    // ---------- OBSERVERS ----------
     val isSuccess by viewModel.isSuccess.collectAsState()
     val routes by viewModel.availableRoutes.collectAsState()
+    val message by viewModel.message.collectAsState() // Add this line
 
     LaunchedEffect(Unit) {
         viewModel.fetchAvailableRoutes()
@@ -126,173 +169,297 @@ fun AddChildScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Admin: Add Child Details", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BusMateBlue)
-            )
-        }
-    ) { padding ->
+    Scaffold(containerColor = ScreenBg) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // ---------------- IMAGE PICKER UI ----------------
+            /* ---------- HEADER ---------- */
+
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray)
-                    .border(2.dp, BusMateBlue, CircleShape)
-                    .clickable { imagePicker.launch("image/*") },
-                contentAlignment = Alignment.Center
-            ) {
-                if (imageUri != null) {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(PrimaryBlue, SecondaryBlue)
+                        )
                     )
-                } else {
-                    Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray)
-                }
-            }
+                    .padding(horizontal = 24.dp, vertical = 28.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.15f)
+                    ) {
+                        Icon(
+                            Icons.Default.ChildCare,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .size(28.dp)
+                        )
+                    }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.width(16.dp))
 
-            // ---------------- PARENT ID ----------------
-            OutlinedTextField(
-                value = parentSchoolId,
-                onValueChange = { parentSchoolId = it },
-                label = { Text("Parent School ID") },
-                readOnly = prefilledParentId.isNotEmpty(),
-                leadingIcon = { Icon(Icons.Default.Badge, null, tint = BusMateBlue) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CustomTextField("First Name", firstName) { firstName = it }
-            CustomTextField("Last Name", lastName) { lastName = it }
-
-            OutlinedTextField(
-                value = studentId,
-                onValueChange = { studentId = it },
-                label = { Text("Student ID") },
-                readOnly = prefilledStudentId.isNotEmpty(),
-                leadingIcon = { Icon(Icons.Default.Numbers, null, tint = BusMateBlue) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // ---------------- ROUTE DROPDOWN ----------------
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {
-                OutlinedTextField(
-                    value = busRouteId,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Assign Bus Route") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(expanded, { expanded = false }) {
-                    routes.forEach {
-                        DropdownMenuItem(
-                            text = { Text(it) },
-                            onClick = {
-                                busRouteId = it
-                                expanded = false
-                            }
+                    Column {
+                        Text(
+                            "Admin Panel",
+                            color = Color.White.copy(0.85f),
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            "Add Child Details",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            // ---------------- MAP PICKERS (WORKING) ----------------
-            MapLocationField("Pickup Location", pickUpLocation) {
-                pickUpLauncher.launch(Intent(context, MapPickerActivity::class.java))
-            }
+            Spacer(Modifier.height(24.dp))
 
-            MapLocationField("Dropoff Location", dropOffLocation) {
-                dropOffLauncher.launch(Intent(context, MapPickerActivity::class.java))
-            }
+            /* ---------- FORM CARD ---------- */
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    val child = ChildModel(
-                        firstName = firstName,
-                        lastName = lastName,
-                        studentId = studentId,
-                        busRouteId = busRouteId,
-                        pickUpLocation = pickUpLocation,
-                        dropOffLocation = dropOffLocation,
-                        pickUpLat = pLat,
-                        pickUpLng = pLng,
-                        dropOffLat = dLat,
-                        dropOffLng = dLng
-                    )
-                    viewModel.adminAddChild(parentSchoolId, context, imageUri, child)
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(scrollState),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                Text("Confirm & Add Child", fontSize = 18.sp)
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    /* ---------- IMAGE PICKER ---------- */
+
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        Box(
+                            modifier = Modifier
+                                .size(130.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    3.dp,
+                                    if (imageUri == null) Color.Red else PrimaryBlue,
+                                    CircleShape
+                                )
+                                .background(Color(0xFFEAF0FF))
+                                .clickable { imagePicker.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (imageUri != null) {
+                                AsyncImage(
+                                    model = imageUri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = PrimaryBlue,
+                            shadowElevation = 6.dp,
+                            modifier = Modifier.offset((-6).dp, (-6).dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(28.dp))
+
+                    /* ---------- FORM FIELDS ---------- */
+
+                    AdminTextField(
+                        label = "Parent School ID",
+                        value = parentSchoolId,
+                        icon = Icons.Default.Badge,
+                        readOnly = prefilledParentId.isNotEmpty()
+                    ) { parentSchoolId = it }
+
+                    AdminTextField("First Name", firstName, Icons.Default.Person) { firstName = it }
+                    AdminTextField("Last Name", lastName, Icons.Default.Person) { lastName = it }
+
+                    AdminTextField(
+                        label = "Student ID",
+                        value = studentId,
+                        icon = Icons.Default.Numbers,
+                        readOnly = prefilledStudentId.isNotEmpty()
+                    ) { studentId = it }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    var expanded by remember { mutableStateOf(false) }
+
+                    ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {
+                        OutlinedTextField(
+                            value = busRouteId,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Assign Bus Route") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                            },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp)
+                        )
+                        ExposedDropdownMenu(expanded, { expanded = false }) {
+                            routes.forEach {
+                                DropdownMenuItem(
+                                    text = { Text(it) },
+                                    onClick = {
+                                        busRouteId = it
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    MapLocationField("Pickup Location", pickUpLocation) {
+                        pickUpLauncher.launch(Intent(context, MapPickerActivity::class.java))
+                    }
+
+                    MapLocationField("Dropoff Location", dropOffLocation) {
+                        dropOffLauncher.launch(Intent(context, MapPickerActivity::class.java))
+                    }
+
+                    Spacer(Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            val child = ChildModel(
+                                firstName,
+                                lastName,
+                                studentId,
+                                busRouteId,
+                                pickUpLocation,
+                                dropOffLocation,
+                                pLat,
+                                pLng,
+                                dLat,
+                                dLng
+                            )
+                            viewModel.adminAddChild(
+                                parentSchoolId,
+                                context,
+                                imageUri,
+                                child
+                            )
+                        },
+                        // DISABLE button if the message is "Processing..." or "Uploading data..."
+                        enabled = isFormValid && message != "Processing..." && message != "Uploading data...",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            disabledContainerColor = Color.Gray,
+                            disabledContentColor = Color.White
+                        )
+                    ) {
+                        // SHOW SPINNER if loading
+                        if (message == "Processing..." || message == "Uploading data...") {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text("Adding Child...")
+                        } else {
+                            Text(
+                                "Confirm & Add Child",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-// ---------------- REUSABLE COMPONENTS ----------------
+/* ---------------- REUSABLE COMPONENTS ---------------- */
 
 @Composable
-fun CustomTextField(label: String, value: String, onChange: (String) -> Unit) {
+fun AdminTextField(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    readOnly: Boolean = false,
+    onChange: (String) -> Unit
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
+        readOnly = readOnly,
         label = { Text(label) },
-        leadingIcon = { Icon(Icons.Default.Person, null, tint = BusMateBlue) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        leadingIcon = {
+            Icon(icon, null, tint = PrimaryBlue)
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = PrimaryBlue,
+            unfocusedBorderColor = PrimaryBlue.copy(alpha = 0.4f),
+            focusedLabelColor = PrimaryBlue,
+            disabledBorderColor = PrimaryBlue.copy(alpha = 0.2f)
+        )
     )
 }
 
 @Composable
-fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
+fun MapLocationField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
     OutlinedTextField(
         value = value,
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
         trailingIcon = {
-            IconButton(onClick = onClick) {
-                Icon(Icons.Default.Map, null, tint = BusMateBlue)
-            }
+            Icon(Icons.Default.Map, null, tint = PrimaryBlue)
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 8.dp)
             .clickable { onClick() },
-        enabled = false,
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color.Black,
-            disabledBorderColor = Color.Gray
-        )
+        shape = RoundedCornerShape(18.dp),
+        enabled = false
     )
 }

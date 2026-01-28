@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -44,8 +45,30 @@ class DriverProfileActivity : ComponentActivity() {
         val childViewModel = ChildViewModel(ChildRepositoryImpl())
 
         setContent {
-            BusMateTheme {
-                DriverProfileScreen(busViewModel, childViewModel)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    DriverProfileScreen(busViewModel, childViewModel)
+                }
             }
         }
     }
@@ -60,7 +83,7 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
     var busDetails by remember { mutableStateOf<BusModel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Load children on start
+    // --- LOGIC PRESERVED (NO CHANGES) ---
     LaunchedEffect(Unit) {
         FirebaseAuth.getInstance().currentUser?.uid?.let {
             childViewModel.observeChildren(it)
@@ -71,8 +94,6 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
             selectedChild = children.first()
         }
     }
-
-    // Load bus/driver when child selection changes
     LaunchedEffect(selectedChild) {
         selectedChild?.let { child ->
             isLoading = true
@@ -84,104 +105,129 @@ fun DriverProfileScreen(busViewModel: BusViewModel, childViewModel: ChildViewMod
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Driver Profile", fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        },
-        containerColor = Color(0xFFF7F7F7)
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            // --- 🔵 BLUE HEADER AREA (Matching BusProfile/Admin UI) ---
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp) // Height enough to hold title, child selector, and top of card
+                    .background(Color(0xFF2854D8)),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(40.dp))
 
-            Text(text = "View driver for child:", fontSize = 14.sp, color = Color.Gray)
-
-            LazyRow(modifier = Modifier.padding(vertical = 8.dp)) {
-                items(children) { child ->
-                    FilterChip(
-                        selected = selectedChild == child,
-                        onClick = { selectedChild = child },
-                        label = { Text("${child.firstName} ${child.lastName}") },
-                        modifier = Modifier.padding(end = 8.dp)
+                // Integrated Top Bar Content
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Text(
+                        text = "Driver Profile",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
                     )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(text = "Select Child", fontSize = 14.sp, color = Color.White.copy(0.8f),fontWeight = FontWeight.SemiBold)
+                LazyRow(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)) {
+                    items(children) { child ->
+                        FilterChip(
+                            modifier = Modifier.padding(end = 8.dp),
+                            selected = selectedChild == child,
+                            onClick = { selectedChild = child },
+                            label = { Text("${child.firstName} ${child.lastName}",fontWeight = FontWeight.SemiBold) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color(0xFF2854D8),
+                                labelColor = Color.White
+                            )
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            if (isLoading) {
-                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.Black)
-                }
-            } else if (busDetails?.driver != null) {
-                val driver = busDetails!!.driver!!
-
+            // --- 🔳 OVERLAPPING WHITE CARD ---
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-40).dp), // The Overlap
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // --- Driver Image ---
-                    Box(
-                        modifier = Modifier.size(110.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (!driver.profileImage.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = driver.profileImage,
-                                contentDescription = "Driver Photo",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                                    .border(2.dp, Color.LightGray, CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Default Driver Icon",
-                                modifier = Modifier.size(110.dp),
-                                tint = Color.LightGray
-                            )
+                    if (isLoading) {
+                        Box(Modifier.height(200.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF2854D8))
+                        }
+                    } else if (busDetails?.driver != null) {
+                        val driver = busDetails!!.driver!!
+
+                        // --- Driver Image Section ---
+                        Box(
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF1F3F5)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!driver.profileImage.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = driver.profileImage,
+                                    contentDescription = "Driver Photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = "Default Driver Icon",
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // --- Details List ---
+                        DetailText(label = "First Name", value = driver.firstName)
+                        DetailText(label = "Last Name", value = driver.lastName)
+                        DetailText(label = "Email Address", value = driver.email)
+                        DetailText(label = "Phone Number", value = driver.phone)
+                        DetailText(label = "School ID", value = driver.schoolId)
+                        DetailText(label = "Status", value = driver.typeofUser ?: "Active")
+
+                    } else {
+                        Box(Modifier.padding(40.dp), contentAlignment = Alignment.Center) {
+                            Text("No driver assigned yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // --- Driver Details Card ---
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            DetailText(label = "First Name", value = driver.firstName)
-                            DetailText(label = "Last Name", value = driver.lastName)
-                            DetailText(label = "Email Address", value = driver.email)
-                            DetailText(label = "Phone Number", value = driver.phone)
-                            DetailText(label = "School ID", value = driver.schoolId)
-                            DetailText(label = "Employment Status", value = driver.typeofUser ?: "Active")
-                        }
-                    }
-                }
-            } else {
-                Box(Modifier.fillMaxSize().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                    Text("No driver assigned yet.", color = Color.Gray)
                 }
             }
         }
     }
 }
-//testing driverprofileactivity

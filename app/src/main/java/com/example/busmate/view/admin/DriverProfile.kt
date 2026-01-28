@@ -7,15 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -24,20 +23,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-    import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.example.busmate.data.AdminActionsImpl
+import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.AdminActionsViewModel
-import coil3.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import com.example.busmate.data.UserRepositoryImpl
 
 class DriverProfileScreen : ComponentActivity() {
 
@@ -48,7 +48,33 @@ class DriverProfileScreen : ComponentActivity() {
         val selectMode = intent.getBooleanExtra("select_mode", false)
 
         setContent {
-            DriverProfileMainScreen(selectMode)
+            // 🌙 Dark mode observer (LOGIC ONLY)
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember {
+                mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0))
+            }
+
+            DisposableEffect(Unit) {
+                val listener =
+                    android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "dark_mode_pref") {
+                            themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        }
+                    }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    DriverProfileMainScreen(selectMode)
+                }
+            }
         }
     }
 }
@@ -56,7 +82,10 @@ class DriverProfileScreen : ComponentActivity() {
 @Composable
 fun DriverProfileMainScreen(selectMode: Boolean) {
 
-    val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
+    val viewModel = remember {
+        AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl())
+    }
+
     val drivers = remember { mutableStateListOf<UserModel>() }
 
     LaunchedEffect(Unit) {
@@ -68,31 +97,72 @@ fun DriverProfileMainScreen(selectMode: Boolean) {
     DriverProfileScreenUI(drivers, selectMode)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverProfileScreenUI(
     drivers: List<UserModel>,
     selectMode: Boolean
 ) {
+    val context = LocalContext.current
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Driver Profile", color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = { (context as Activity).finish() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BusMateBlue
+                )
+            )
+        }
+    ) { padding ->
 
         if (drivers.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Loading drivers...", fontSize = 20.sp)
+                CircularProgressIndicator(color = BusMateBlue)
             }
             return@Scaffold
         }
 
         val pagerState = rememberPagerState(pageCount = { drivers.size })
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize().padding(padding)
-        ) { page ->
-            SingleDriverProfile(driver = drivers[page], selectMode = selectMode)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+
+            Text(
+                text = "Swipe to view drivers (${pagerState.currentPage + 1}/${drivers.size})",
+                modifier = Modifier
+                    .padding(top = 8.dp, bottom = 4.dp)
+                    .align(Alignment.CenterHorizontally),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                SingleDriverProfile(
+                    driver = drivers[page],
+                    selectMode = selectMode
+                )
+            }
         }
     }
 }
@@ -108,99 +178,84 @@ fun SingleDriverProfile(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // 🔵 Blue top header
-        Column(
+        // 🔵 Gradient Header
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
-                .background(BusMateBlue)
-                .statusBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            // --- IMPROVED BACK BUTTON ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconButton(onClick = { (context as Activity).finish() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Standard back icon
-                        contentDescription = "Back",
-                        tint = Color.White
+                .height(180.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            BusMateBlue,
+                            BusMateBlue
+                        )
                     )
-                }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "${driver.firstName} ${driver.lastName}",
+                    color = Color.White,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "ID: ${driver.schoolId}",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 15.sp
+                )
             }
-
-            // Adjust spacing after back button
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${driver.firstName} ${driver.lastName}",
-                color = Color.White,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = "ID: ${driver.schoolId}",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp
-            )
         }
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔳 White Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .offset(y = (-130).dp)
+                .padding(horizontal = 20.dp)
+                .offset(y = (-60).dp)
                 .then(
                     if (selectMode) Modifier.clickable {
-                        // Set selected driver result
                         val result = Intent()
                         result.putExtra("driverId", driver.schoolId)
-                        result.putExtra("driverName", "${driver.firstName} ${driver.lastName}")
+                        result.putExtra(
+                            "driverName",
+                            "${driver.firstName} ${driver.lastName}"
+                        )
                         (context as Activity).setResult(Activity.RESULT_OK, result)
                         context.finish()
-                    }
-                    else Modifier
+                    } else Modifier
                 ),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(10.dp)
         ) {
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+                modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Profile image
                 Box(
                     modifier = Modifier
                         .size(130.dp)
-                        .shadow(8.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color(0xFFF5F5F5))
-                        .border(4.dp, Color.White, CircleShape),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!driver.profileImage.isNullOrEmpty()) {
                         AsyncImage(
                             model = driver.profileImage,
-                            contentDescription = "Driver Photo",
+                            contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        // FALLBACK: Show Name Initial if no image is uploaded
                         Text(
                             text = driver.firstName.take(1).uppercase(),
                             fontSize = 48.sp,
@@ -210,45 +265,62 @@ fun SingleDriverProfile(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = if (selectMode) "TAP TO SELECT THIS DRIVER" else "ABOUT DRIVER",
-                    color = BusMateBlue,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    text = if (selectMode) "TAP TO SELECT DRIVER" else "DRIVER DETAILS",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = BusMateBlue
                 )
 
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
                 DriverProfileItem(Icons.Default.Person, "Name: ${driver.firstName} ${driver.lastName}")
                 DriverProfileItem(Icons.Default.Email, "Email: ${driver.email}")
                 DriverProfileItem(Icons.Default.Phone, "Phone: ${driver.phone}")
                 DriverProfileItem(Icons.Default.Badge, "School ID: ${driver.schoolId}")
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
+        Spacer(Modifier.height(40.dp))
     }
 }
 
 @Composable
-fun DriverProfileItem(icon: ImageVector, text: String) {
+fun DriverProfileItem(
+    icon: ImageVector,
+    text: String
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.Gray,
-            modifier = Modifier.size(22.dp)
+
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(BusMateBlue.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = BusMateBlue,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(text, fontSize = 16.sp)
     }
 }
-//testing show image
-//admin see the driver image when click viewdriver"

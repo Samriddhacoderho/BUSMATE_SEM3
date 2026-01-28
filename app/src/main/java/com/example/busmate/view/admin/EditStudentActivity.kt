@@ -39,6 +39,7 @@ import coil3.compose.AsyncImage
 import com.example.busmate.data.ChildRepositoryImpl
 import com.example.busmate.model.ChildModel
 import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.view.parent.MapPickerActivity
 import com.example.busmate.viewmodel.ChildViewModel
 import com.google.firebase.database.FirebaseDatabase
@@ -47,23 +48,36 @@ import kotlinx.coroutines.launch
 class EditStudentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
-        // Get the student object passed from the Search screen
-        // Note: use 'getParcelableExtra' for your ChildModel
         val child = intent.getParcelableExtra<ChildModel>("student_data")
-
-        // 2. Initialize the ViewModel
         val viewModel = ChildViewModel(ChildRepositoryImpl())
+
         setContent {
-            BusMateTheme {
-                if (child != null) {
-                    EditStudentScreen(child, viewModel, onBack = { finish() })
-                } else {
-                    // Fallback if data is missing
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: Student data not found")
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeUpdateTrigger++
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+
+            key(themeUpdateTrigger) {
+                BusMateTheme(darkTheme = isDarkMode()) {
+                    if (child != null) {
+                        EditStudentScreen(child, viewModel, onBack = { finish() })
+                    } else {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Error: Student data not found")
+                        }
                     }
                 }
             }
@@ -74,6 +88,7 @@ class EditStudentActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -> Unit) {
+    // FORCE BLUE COLOR (Fixes the Purple issue)
     val busMateBlue = Color(0xFF2567E8)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -81,14 +96,12 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     var parentName by remember { mutableStateOf("Fetching...") }
     var parentPhone by remember { mutableStateOf("Fetching...") }
 
-    // Local state for editable fields
     var firstName by remember { mutableStateOf(child.firstName) }
     var lastName by remember { mutableStateOf(child.lastName) }
     var routeId by remember { mutableStateOf(child.busRouteId) }
     var pickUp by remember { mutableStateOf(child.pickUpLocation) }
     var dropOff by remember { mutableStateOf(child.dropOffLocation) }
 
-    // Lat/Lng state for storing coordinates from MapPicker
     var pickUpLat by remember { mutableStateOf(child.pickUpLat) }
     var pickUpLng by remember { mutableStateOf(child.pickUpLng) }
     var dropOffLat by remember { mutableStateOf(child.dropOffLat) }
@@ -97,10 +110,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
     val message by viewModel.message.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()
 
-    // MapPicker launchers (same pattern as AddChildActivity)
-    val pickUpLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    val pickUpLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             pickUpLat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
             pickUpLng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
@@ -108,31 +118,25 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
         }
     }
 
-    val dropOffLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    val dropOffLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             dropOffLat = result.data?.getDoubleExtra("lat", 0.0) ?: 0.0
             dropOffLng = result.data?.getDoubleExtra("lng", 0.0) ?: 0.0
             dropOff = result.data?.getStringExtra("address") ?: ""
         }
     }
+
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    val imagePicker =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            newImageUri = uri
-        }
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        newImageUri = uri
+    }
     var isSaving by remember { mutableStateOf(false) }
-
 
     LaunchedEffect(child.studentId) {
         val db = FirebaseDatabase.getInstance()
-        // Find parent UID from index
         db.getReference("studentIdIndex").child(child.studentId).get().addOnSuccessListener { index ->
             val parentUid = index.child("parentUid").getValue(String::class.java)
             if (parentUid != null) {
-                // Fetch parent details from users node
                 db.getReference("users").child(parentUid).get().addOnSuccessListener { user ->
                     val fName = user.child("firstName").value ?: ""
                     val lName = user.child("lastName").value ?: ""
@@ -146,7 +150,6 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
         }
     }
 
-    // Show toast and go back when update is successful
     LaunchedEffect(isSuccess) {
         if (isSuccess) {
             Toast.makeText(context, "Student Updated!", Toast.LENGTH_SHORT).show()
@@ -171,189 +174,104 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ✅ STUDENT IMAGE SECTION (CENTERED)
-            Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE9ECEF))
-                    .border(2.dp, busMateBlue, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(2.dp, busMateBlue, CircleShape) // Applied Blue border
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
-                when {
-                    newImageUri != null -> {
-                        AsyncImage(
-                            model = newImageUri,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-
-                    !child.profileImage.isNullOrEmpty() -> {
-                        AsyncImage(
-                            model = child.profileImage,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-
-                    else -> {
-                        Icon(
-                            Icons.Default.Person,
-                            null,
-                            modifier = Modifier.size(60.dp),
-                            tint = Color.LightGray
-                        )
-                    }
-                }
+                AsyncImage(
+                    model = newImageUri ?: child.profileImage,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
 
-            // ✅ END OF IMAGE SECTION
-            Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
+            Text("Updating ID: ${child.studentId}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Text Fields
             EditField("First Name", firstName) { firstName = it }
             EditField("Last Name", lastName) { lastName = it }
             EditField("Route ID", routeId) { routeId = it }
 
-            // Map Location Fields (same pattern as AddChildActivity)
-            MapLocationField(label = "Pick-up Point", value = pickUp) {
+            MapLocationField(label = "Pick-up Point", value = pickUp, blueColor = busMateBlue) {
                 pickUpLauncher.launch(Intent(context, MapPickerActivity::class.java))
             }
-            MapLocationField(label = "Drop-off Point", value = dropOff) {
+            MapLocationField(label = "Drop-off Point", value = dropOff, blueColor = busMateBlue) {
                 dropOffLauncher.launch(Intent(context, MapPickerActivity::class.java))
             }
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            if (message.isNotEmpty() && !isSuccess) {
-                Text(message, color = Color.Red, modifier = Modifier.padding(bottom = 10.dp))
-            }
-
             Button(
                 onClick = {
                     scope.launch {
-                        isSaving = true   // 🔥 disable button immediately
-
+                        isSaving = true
                         if (pickUpLat != 0.0 && pickUpLng != 0.0 && dropOffLat != 0.0 && dropOffLng != 0.0) {
-
                             if (newImageUri != null) {
                                 ChildRepositoryImpl().uploadChildImage(context, newImageUri!!) { imageUrl ->
                                     if (imageUrl != null) {
-                                        val updatedChild = child.copy(
-                                            firstName = firstName,
-                                            lastName = lastName,
-                                            busRouteId = routeId,
-                                            pickUpLocation = pickUp,
-                                            dropOffLocation = dropOff,
-                                            pickUpLat = pickUpLat,
-                                            pickUpLng = pickUpLng,
-                                            dropOffLat = dropOffLat,
-                                            dropOffLng = dropOffLng,
-                                            profileImage = imageUrl
-                                        )
-                                        viewModel.updateChild(updatedChild)
+                                        viewModel.updateChild(child.copy(
+                                            firstName = firstName, lastName = lastName, busRouteId = routeId,
+                                            pickUpLocation = pickUp, dropOffLocation = dropOff,
+                                            pickUpLat = pickUpLat, pickUpLng = pickUpLng,
+                                            dropOffLat = dropOffLat, dropOffLng = dropOffLng, profileImage = imageUrl
+                                        ))
                                     } else {
                                         Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
                                         isSaving = false
                                     }
                                 }
                             } else {
-                                val updatedChild = child.copy(
-                                    firstName = firstName,
-                                    lastName = lastName,
-                                    busRouteId = routeId,
-                                    pickUpLocation = pickUp,
-                                    dropOffLocation = dropOff,
-                                    pickUpLat = pickUpLat,
-                                    pickUpLng = pickUpLng,
-                                    dropOffLat = dropOffLat,
-                                    dropOffLng = dropOffLng
-                                )
-                                viewModel.updateChild(updatedChild)
+                                viewModel.updateChild(child.copy(
+                                    firstName = firstName, lastName = lastName, busRouteId = routeId,
+                                    pickUpLocation = pickUp, dropOffLocation = dropOff,
+                                    pickUpLat = pickUpLat, pickUpLng = pickUpLng,
+                                    dropOffLat = dropOffLat, dropOffLng = dropOffLng
+                                ))
                             }
-
                         } else {
-                            Toast.makeText(
-                                context,
-                                "Please select valid pickup and dropoff locations using the map",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "Please select valid locations", Toast.LENGTH_SHORT).show()
                             isSaving = false
                         }
                     }
                 },
-                enabled = !isSaving &&
-                        firstName.isNotBlank() &&
-                        pickUp.isNotBlank() &&
-                        dropOff.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
+                enabled = !isSaving && firstName.isNotBlank() && pickUp.isNotBlank() && dropOff.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
+                colors = ButtonDefaults.buttonColors(containerColor = busMateBlue) // Applied Blue color
             ) {
                 if (isSaving) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("SAVE CHANGES", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                 }
             }
 
+            // Driver/Parent Section
             Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
+            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                "Parent Contact Information",
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
+            Text("Parent Contact Information", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
             ReadOnlyField(label = "Parent Name", value = parentName, icon = Icons.Default.Person)
             ReadOnlyField(label = "Parent Phone", value = parentPhone, icon = Icons.Default.Phone)
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 20.dp),
-                thickness = 1.dp,
-                color = Color.LightGray
-            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         }
     }
-}
-
-@Composable
-fun ReadOnlyField(label: String, value: String, icon: ImageVector) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        label = { Text(label) },
-        readOnly = true,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        leadingIcon = { Icon(icon, null, tint = Color.Gray) },
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9ECEF),
-            unfocusedContainerColor = Color(0xFFE9ECEF),
-            disabledTextColor = Color.Black
-        )
-    )
 }
 
 @Composable
@@ -368,7 +286,7 @@ fun EditField(label: String, value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
+fun MapLocationField(label: String, value: String, blueColor: Color, onClick: () -> Unit) {
     OutlinedTextField(
         value = value,
         onValueChange = {},
@@ -376,18 +294,34 @@ fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
         label = { Text(label) },
         trailingIcon = {
             IconButton(onClick = onClick) {
-                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF1976D2))
+                Icon(Icons.Default.Map, contentDescription = null, tint = blueColor)
             }
         },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() },
         enabled = false,
         colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color.Black,
-            disabledBorderColor = Color.Gray,
-            disabledLabelColor = Color.DarkGray
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
+}
+@Composable
+fun ReadOnlyField(label: String, value: String, icon: ImageVector) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        leadingIcon = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }

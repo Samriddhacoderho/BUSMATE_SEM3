@@ -116,6 +116,9 @@ dependencies {
     //Biometric
     implementation("androidx.biometric:biometric:1.4.0-alpha02")
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.foundation)
+    implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.compose.ui.ui)
 
     // Testing
     testImplementation(libs.junit)
@@ -125,4 +128,17 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //Mockito Unit Testing
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    //Instumented Testing
+    androidTestImplementation("androidx.test:runner:1.2.0")
+    androidTestImplementation("androidx.test:rules:1.2.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
+
+
+    implementation("com.google.firebase:firebase-ai")
 }

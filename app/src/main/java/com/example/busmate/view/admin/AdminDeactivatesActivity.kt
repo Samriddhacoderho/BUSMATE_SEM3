@@ -1,6 +1,7 @@
 package com.example.busmate.view.admin
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,17 +26,38 @@ import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.UserModel
 import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.viewmodel.AdminActionsViewModel
-import com.example.busmate.utils.BiometricHelper // Ensure this import matches your package
+import com.example.busmate.utils.BiometricHelper
 import kotlinx.coroutines.launch
 
-// Changed from ComponentActivity to FragmentActivity for Biometric support
 class AdminDeactivatesActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AdminManageAccountScreen()
+            val context = LocalContext.current
+
+            // --- THEME OBSERVER (ONLY ADDITION) ---
+            val sharedPrefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeUpdateTrigger++
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+
+            key(themeUpdateTrigger) {
+                BusMateTheme(darkTheme = isDarkMode()) {
+                    AdminManageAccountScreen()
+                }
+            }
         }
     }
 }
@@ -43,12 +65,11 @@ class AdminDeactivatesActivity : FragmentActivity() {
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun AdminManageAccountScreen() {
-    // Repositories and ViewModels
+    // -------------------- YOUR ORIGINAL LOGIC --------------------
     val viewModel = remember { AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl()) }
     val context = LocalContext.current as FragmentActivity
     val biometricHelper = remember { BiometricHelper(context) }
 
-    // -------------------- State Variables --------------------
     var schoolId by remember { mutableStateOf("") }
     var schoolIdError by remember { mutableStateOf("") }
     var model by remember { mutableStateOf<UserModel?>(null) }
@@ -68,7 +89,6 @@ fun AdminManageAccountScreen() {
     var selectedReason by remember { mutableStateOf("") }
     var expandedReason by remember { mutableStateOf(false) }
 
-    // Password Verification States
     var showPasswordDialog by remember { mutableStateOf(false) }
     var adminPassword by remember { mutableStateOf("") }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -83,8 +103,6 @@ fun AdminManageAccountScreen() {
     } else {
         selectedAction.isNotBlank() && selectedReason.isNotBlank()
     }
-
-    // ---------------------- Functions ----------------------
 
     fun onclickSearchButton() {
         viewModel.getUserbyID(schoolId) { success, user ->
@@ -124,31 +142,22 @@ fun AdminManageAccountScreen() {
         selectedAction = ""; selectedReason = ""; showUserDetails = false
     }
 
-    // --- UPDATED: Helper to trigger Biometric check or Password fallback ---
     fun verifyAndExecute(action: () -> Unit) {
         pendingAction = action
-
         if (biometricHelper.isBiometricAvailable()) {
             biometricHelper.showBiometricPrompt(
-                onSuccess = {
-                    // Biometric success: run the action (deactivate or delete)
-                    action()
-                },
-                onError = { error ->
-                    // Fallback to password dialog if biometric fails or is cancelled
-                    showPasswordDialog = true
-                }
+                onSuccess = { action() },
+                onError = { showPasswordDialog = true }
             )
         } else {
-            // No biometric available on device: show password dialog directly
             showPasswordDialog = true
         }
     }
 
-    // ---------------------- UI ----------------------
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        // Keeping your custom background color logic
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
             SnackbarHost(snackbarHostState) {
                 Snackbar(
@@ -162,10 +171,7 @@ fun AdminManageAccountScreen() {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)) {
-            // Header
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -174,37 +180,17 @@ fun AdminManageAccountScreen() {
                     .statusBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp, start = 8.dp)) {
-                    IconButton(
-                        onClick = { context.finish() },
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, start = 8.dp)) {
+                    IconButton(onClick = { context.finish() }, modifier = Modifier.align(Alignment.CenterStart)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White, modifier = Modifier.size(28.dp))
                     }
                 }
                 Spacer(Modifier.height(40.dp))
-                Text(
-                    "Manage User Accounts",
-                    color = Color.White,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                Text("Manage User Accounts", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    "Enter School ID to find the parent/driver account",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp
-                )
+                Text("Enter School ID to find the parent/driver account", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
             }
 
-            // White Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -213,7 +199,7 @@ fun AdminManageAccountScreen() {
                     .offset(y = (-32).dp),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -225,18 +211,18 @@ fun AdminManageAccountScreen() {
                         label = { Text("Enter School ID") },
                         singleLine = true,
                         isError = schoolIdError.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
                     )
 
                     Spacer(Modifier.height(16.dp))
 
                     Button(
-                        onClick = {
-                            if (schoolId.isBlank()) schoolIdError = "School ID is required" else onclickSearchButton()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
+                        onClick = { if (schoolId.isBlank()) schoolIdError = "School ID is required" else onclickSearchButton() },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -245,79 +231,47 @@ fun AdminManageAccountScreen() {
 
                     if (showUserDetails) {
                         Spacer(Modifier.height(24.dp))
-                        HorizontalDivider()
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Spacer(Modifier.height(24.dp))
 
                         model?.let { u ->
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    "User Name: ${u.firstName} ${u.lastName}",
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text("Role: ${u.typeofUser}", color = Color.Gray)
-                                Text("Status: ${u.status}", color = Color.Gray)
+                            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("User Name: ${u.firstName} ${u.lastName}", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Role: ${u.typeofUser}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Status: ${u.status}", color = if(u.status == "active") Color(0xFF4CAF50) else Color.Red)
                             }
                         }
 
                         Spacer(Modifier.height(24.dp))
-                        Text("Select Action", fontWeight = FontWeight.SemiBold)
+                        Text("Select Action", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.height(8.dp))
 
                         Box {
-                            OutlinedButton(
-                                onClick = { expandedAction = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    if (selectedAction.isEmpty()) "Choose Action" else selectedAction,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Start
-                                )
+                            OutlinedButton(onClick = { expandedAction = true }, modifier = Modifier.fillMaxWidth()) {
+                                Text(if (selectedAction.isEmpty()) "Choose Action" else selectedAction, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                             }
-                            DropdownMenu(
-                                expanded = expandedAction,
-                                onDismissRequest = { expandedAction = false }) {
+                            DropdownMenu(expanded = expandedAction, onDismissRequest = { expandedAction = false }) {
                                 DropdownMenuItem(
                                     text = { Text(if (model?.status == "active") "Deactivate Account" else "Reactivate Account") },
-                                    onClick = {
-                                        selectedAction = if (model?.status == "active") "Deactivate Account" else "Reactivate Account"
-                                        selectedReason = ""; expandedAction = false
-                                    }
+                                    onClick = { selectedAction = if (model?.status == "active") "Deactivate Account" else "Reactivate Account"; selectedReason = ""; expandedAction = false }
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Delete Account") },
-                                    onClick = {
-                                        selectedAction = "Delete Account"; selectedReason = ""; expandedAction = false
-                                    })
+                                    onClick = { selectedAction = "Delete Account"; selectedReason = ""; expandedAction = false }
+                                )
                             }
                         }
 
                         if (selectedAction == "Deactivate Account" || selectedAction == "Delete Account") {
                             Spacer(Modifier.height(20.dp))
-                            Text("Select Reason", fontWeight = FontWeight.SemiBold)
+                            Text("Select Reason", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                             Box {
-                                OutlinedButton(
-                                    onClick = { expandedReason = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        if (selectedReason.isEmpty()) "Choose Reason" else selectedReason,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Start
-                                    )
+                                OutlinedButton(onClick = { expandedReason = true }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (selectedReason.isEmpty()) "Choose Reason" else selectedReason, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                                 }
-                                DropdownMenu(
-                                    expanded = expandedReason,
-                                    onDismissRequest = { expandedReason = false }) {
+                                DropdownMenu(expanded = expandedReason, onDismissRequest = { expandedReason = false }) {
                                     reasons.forEach { reason ->
-                                        DropdownMenuItem(
-                                            text = { Text(reason) },
-                                            onClick = {
-                                                selectedReason = reason; expandedReason = false
-                                            })
+                                        DropdownMenuItem(text = { Text(reason) }, onClick = { selectedReason = reason; expandedReason = false })
                                     }
                                 }
                             }
@@ -332,9 +286,7 @@ fun AdminManageAccountScreen() {
                                     "Deactivate Account", "Reactivate Account" -> verifyAndExecute { deactivateonClick() }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
                             enabled = isConfirmEnabled,
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
@@ -345,7 +297,6 @@ fun AdminManageAccountScreen() {
             }
         }
 
-        // --- Admin Password Dialog (Manual Fallback) ---
         if (showPasswordDialog) {
             AlertDialog(
                 onDismissRequest = { showPasswordDialog = false },
@@ -368,48 +319,27 @@ fun AdminManageAccountScreen() {
                     Button(onClick = {
                         if (adminPassword.isNotBlank()) {
                             viewModel.verifyAdminPassword(adminPassword) { success, _ ->
-                                if (success) {
-                                    showPasswordDialog = false
-                                    adminPassword = ""
-                                    pendingAction?.invoke() // Executes Deactivate or Delete
-                                } else {
-                                    showPasswordDialog = false
-                                    adminPassword = ""
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Incorrect Password. Action Denied.")
-                                    }
-                                }
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Password cannot be empty")
+                                if (success) { showPasswordDialog = false; adminPassword = ""; pendingAction?.invoke() }
+                                else { showPasswordDialog = false; adminPassword = ""; coroutineScope.launch { snackbarHostState.showSnackbar("Incorrect Password. Action Denied.") } }
                             }
                         }
                     }) { Text("Verify") }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showPasswordDialog = false }) { Text("Cancel") }
-                }
+                dismissButton = { TextButton(onClick = { showPasswordDialog = false }) { Text("Cancel") } }
             )
         }
 
-        // Delete Confirmation
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = { Text("Confirm Deletion", fontWeight = FontWeight.Bold) },
                 text = { Text("Are you sure you want to delete this account?\nThis action cannot be undone.") },
                 confirmButton = {
-                    Button(
-                        onClick = { showDeleteDialog = false; deleteonClick() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
+                    Button(onClick = { showDeleteDialog = false; deleteonClick() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
                         Text("Yes, Delete", color = Color.White)
                     }
                 },
-                dismissButton = {
-                    OutlinedButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
-                }
+                dismissButton = { OutlinedButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
             )
         }
     }

@@ -32,14 +32,36 @@ class ParentAttendanceActivity : ComponentActivity() {
         val parentUid = intent.getStringExtra("PARENT_UID") ?: ""
 
         setContent {
-            BusMateTheme {
-                if (parentUid.isEmpty()) {
-                    ErrorScreen("User ID not found. Please log in again.")
-                } else {
-                    ParentAttendanceScreen(
-                        parentUid = parentUid,
-                        onBackClick = { finish() }
-                    )
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    if (parentUid.isEmpty()) {
+                        ErrorScreen("User ID not found. Please log in again.")
+                    } else {
+                        ParentAttendanceScreen(
+                            parentUid = parentUid,
+                            onBackClick = { finish() }
+                        )
+                    }
                 }
             }
         }
@@ -212,6 +234,6 @@ fun AttendanceDatePicker(onDateSelected: (Long) -> Unit, onDismiss: () -> Unit) 
 @Composable
 fun ErrorScreen(message: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(message, color = Color.Red)
+        Text(message, color = MaterialTheme.colorScheme.error)
     }
 }

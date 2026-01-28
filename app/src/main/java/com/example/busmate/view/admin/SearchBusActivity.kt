@@ -1,16 +1,11 @@
 package com.example.busmate.view.admin
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +19,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.example.busmate.data.BusRepositoryImpl
 import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.viewmodel.BusViewModel
 
 class SearchBusActivity : ComponentActivity() {
@@ -39,31 +36,54 @@ class SearchBusActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val viewModel = BusViewModel(BusRepositoryImpl())
+
         setContent {
-            BusMateTheme {
-                SearchBusScreen(viewModel) { finish() }
+            val context = LocalContext.current
+
+            // --- THEME REFRESH LISTENER (MATCHES ADMIN SEARCH CHILD) ---
+            val sharedPrefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeUpdateTrigger++
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
+            key(themeUpdateTrigger) {
+                BusMateTheme(darkTheme = isDarkMode()) {
+                    SearchBusScreen(
+                        viewModel = viewModel,
+                        onBack = { finish() }
+                    )
+                }
+            }
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBusScreen(
     viewModel: BusViewModel,
     onBack: () -> Unit
 ) {
-    val busMateBlue = Color(0xFF2567E8)
+    val busMateBlue = Color(0xFF2567E8) // Exact Blue from AdminSearchChild
     val context = LocalContext.current
     val buses by viewModel.buses.collectAsState()
     var searchText by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit) {
         viewModel.observeAllBuses()
     }
 
     val filteredBuses = buses.filter {
-        it.busNumber.contains(searchText, true) ||
-                it.routeId.contains(searchText, true)
+        it.busNumber.contains(searchText, ignoreCase = true) ||
+                it.routeId.contains(searchText, ignoreCase = true)
     }
 
     Scaffold(
@@ -83,9 +103,9 @@ fun SearchBusScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.background) // Adaptive background
         ) {
-            // Blue header box matching Admin Search Student
+            // Header Box matching AdminSearchChild
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -96,7 +116,7 @@ fun SearchBusScreen(
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it },
-                    placeholder = { Text(text = "Search by Bus Number or Route ID") },
+                    placeholder = { Text(text = "Search by Bus Number or Route ID...") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 10.dp),
@@ -105,11 +125,13 @@ fun SearchBusScreen(
                         Icon(Icons.Default.Search, contentDescription = null, tint = busMateBlue)
                     },
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = busMateBlue
+                        cursorColor = busMateBlue,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                     ),
                     singleLine = true
                 )
@@ -117,21 +139,24 @@ fun SearchBusScreen(
 
             if (filteredBuses.isEmpty() && searchText.isNotEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No buses found matching '$searchText'", color = Color.Gray)
+                    Text(
+                        text = "No buses found matching '$searchText'",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .offset(y = (-30).dp) // Overlap effect
+                        .offset(y = (-30).dp) // Exact overlap effect
                         .padding(horizontal = 20.dp)
                 ) {
                     items(filteredBuses) { bus ->
                         BusItem(bus) {
-                            context.startActivity(
-                                Intent(context, EditBusActivity::class.java)
-                                    .putExtra("bus_data", bus)
-                            )
+                            val intent = Intent(context, EditBusActivity::class.java).apply {
+                                putExtra("bus_data", bus)
+                            }
+                            context.startActivity(intent)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -140,6 +165,7 @@ fun SearchBusScreen(
         }
     }
 }
+
 @Composable
 fun BusItem(bus: BusModel, onClick: () -> Unit) {
     val busMateBlue = Color(0xFF2567E8)
@@ -150,28 +176,26 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
             .padding(horizontal = 2.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), // Adaptive surface
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Text Content - Takes up the space since circle is removed
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Bus Number: ${bus.busNumber}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface // Adaptive text
                 )
                 Text(
                     text = "Route ID: ${bus.routeId}",
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant // Adaptive secondary text
                 )
             }
-            // Edit icon to indicate action
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Edit",
@@ -181,4 +205,3 @@ fun BusItem(bus: BusModel, onClick: () -> Unit) {
         }
     }
 }
-//testing edit
