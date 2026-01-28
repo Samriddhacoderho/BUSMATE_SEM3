@@ -1,6 +1,7 @@
 package com.example.busmate.view.admin
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.ChildRepositoryImpl
+import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.view.parent.AddChildActivity
 import com.example.busmate.viewmodel.ChildViewModel
 import kotlinx.coroutines.launch
@@ -39,15 +42,34 @@ class AdminAddChildActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val prefilledParentId = intent.getStringExtra("PARENT_ID") ?: ""
-
         val repo = ChildRepositoryImpl()
         val viewModel = ChildViewModel(repo)
 
         setContent {
-            AdminAddChildScreen(
-                viewModel = viewModel,
-                prefilledParentId = prefilledParentId
-            )
+            val context = LocalContext.current
+
+            // --- DARK MODE REFRESH LOGIC ---
+            val sharedPrefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeUpdateTrigger++
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+
+            key(themeUpdateTrigger) {
+                BusMateTheme(darkTheme = isDarkMode()) {
+                    AdminAddChildScreen(
+                        viewModel = viewModel,
+                        prefilledParentId = prefilledParentId
+                    )
+                }
+            }
         }
     }
 }
@@ -68,7 +90,7 @@ fun AdminAddChildScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // AUTOMATIC NAVIGATION LOGIC (UNCHANGED)
+    // NAVIGATION LOGIC (STRICTLY UNCHANGED)
     LaunchedEffect(message) {
         if (message.contains("successfully", ignoreCase = true)) {
             val intent = Intent(context, AddChildActivity::class.java).apply {
@@ -88,7 +110,8 @@ fun AdminAddChildScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFFF8F9FA)
+        // UPDATED: Adaptive background
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
 
         Column(
@@ -96,8 +119,7 @@ fun AdminAddChildScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-            // 🔵 ADMIN HEADER (MATCHED)
+            // HEADER (VISUALS MATCHED)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -157,14 +179,15 @@ fun AdminAddChildScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // 🧾 MAIN CARD
+            // MAIN CARD (UPDATED FOR DARK MODE)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .graphicsLayer { alpha = cardAlpha },
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                // UPDATED: Adaptive surface color
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
@@ -176,7 +199,8 @@ fun AdminAddChildScreen(
                         text = "Child Registration",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A)
+                        // UPDATED: Adaptive text color
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(Modifier.height(6.dp))
@@ -184,12 +208,13 @@ fun AdminAddChildScreen(
                     Text(
                         text = "Link a student to a parent account",
                         fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
+                        // UPDATED: Adaptive secondary text color
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(Modifier.height(24.dp))
 
-                    // 👨‍👩‍👧 PARENT ID
+                    // PARENT ID
                     if (isFromCreateAccount) {
                         Text(
                             text = "Linked Parent ID: $parentId",
@@ -213,14 +238,16 @@ fun AdminAddChildScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Color(0xFF2567E8),
-                                focusedLabelColor = Color(0xFF2567E8)
+                                focusedLabelColor = Color(0xFF2567E8),
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
 
                     Spacer(Modifier.height(16.dp))
 
-                    // 🆔 STUDENT ID
+                    // STUDENT ID
                     OutlinedTextField(
                         value = studentId,
                         onValueChange = { studentId = it },
@@ -236,13 +263,15 @@ fun AdminAddChildScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFF2567E8),
-                            focusedLabelColor = Color(0xFF2567E8)
+                            focusedLabelColor = Color(0xFF2567E8),
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
                     Spacer(Modifier.height(28.dp))
 
-                    // 🚀 ACTION BUTTON
+                    // ACTION BUTTON
                     Button(
                         onClick = {
                             if (parentId.isBlank()) return@Button
