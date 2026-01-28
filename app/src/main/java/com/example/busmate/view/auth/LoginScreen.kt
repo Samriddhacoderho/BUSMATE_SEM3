@@ -7,6 +7,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +21,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -90,7 +96,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val isUserIdNumeric = userId.isEmpty() || userId.all { it.isDigit() } // New numeric check
 
     val isValid = userId.isNotBlank() && password.isNotBlank() && isPasswordLengthValid && isUserIdNumeric
-    val isButtonEnabled = isValid && message != "Loading"
+    val isButtonEnabled = isValid && message != "Loading..."
 
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
@@ -102,18 +108,8 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     }
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty() && message != "Loading") {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                )
-            }
-
+        if (message.isNotEmpty() && message != "Loading...") {
             if (message == "Successful Login") {
-                //  Show snackbar
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(message = message)
-                }
                 // Save user to SharedPreferences
                 if (rememberMe==true){
                     val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
@@ -129,6 +125,12 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 intent.putExtra("model", user)
                 context.startActivity(intent)
                 activity.finish()
+            } else {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                    )
+                }
             }
 
         }
@@ -166,53 +168,69 @@ fun LoginScreenUI(viewModel: UserViewModel) {
         snackbarHost = {SnackbarHost(hostState = snackbarHostState){
             Snackbar(
                 snackbarData = it,
-                containerColor = if (message.isNotEmpty() && message == "Successful Login") Color.Green else Color.Red,
+                containerColor = Color.Red,
                 contentColor = Color.White
             )
         } }
     )
     {paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            // 1. Top Blue Background Section
-            Column(
+            // 1. Top Blue Background Section with transparent background image
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.60f)
-                    .background(BusMateBlue),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                    .background(BusMateBlue)
             ) {
-                Spacer(modifier = Modifier.height(24.dp)) // FIX: Reduced top padding to 24.dp
-
-                // Bus Logo
+                // Background image - REPLACE 'your_background_image' with your actual drawable resource name
+                // For example: R.drawable.login_background
+                // Uncomment the line below and replace with your image resource
                 Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = "Bus Mate Logo",
-                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                    modifier = Modifier.size(200.dp)
+                    painter = painterResource(id = R.drawable.loginscreenphoto),
+                    contentDescription = "Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.22f // Adjust transparency (0.1f to 1.0f)
                 )
 
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp)) // FIX: Reduced top padding to 24.dp
+
+                    // Bus Logo
+                    Image(
+                        painter = painterResource(R.drawable.logo),
+                        contentDescription = "Bus Mate Logo",
+                        colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                        modifier = Modifier.size(200.dp)
+                    )
 
 
-                // Log in title
-                Text(
-                    text = "Log in to your\nAccount",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 40.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
-                )
-                Spacer(modifier = Modifier.height(30.dp))
 
-                // Subtitle
-                Text(
-                    text = "Enter your ID and password to log in",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
+                    // Log in title
+                    Text(
+                        text = "Log in to your\nAccount",
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 40.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    // Subtitle
+                    Text(
+                        text = "Enter your ID and password to log in",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             // 2. White Login Card (Overlaps the blue section)
@@ -250,29 +268,41 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                                 userIdError = ""
                             }
                         },
-                        label = { Text("Enter ID here") },
+                        label = { Text("Enter ID here", fontWeight = FontWeight.Medium) },
                         singleLine = true,
                         isError = userIdError.isNotEmpty(),
+                        shape = RoundedCornerShape(12.dp),
                         // FIX: Set keyboard to numeric
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             focusedLabelColor = PrimaryBlue,
-                            errorBorderColor = Color.Red,
-                            errorLabelColor = Color.Red
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            errorBorderColor = Color(0xFFE57373),
+                            errorLabelColor = Color(0xFFE57373)
                         ),
                         modifier = Modifier.fillMaxWidth().testTag("schoolId"),
                     )
 
-                    if (userIdError.isNotEmpty()) {
+                    // Animated error message for User ID
+                    AnimatedVisibility(
+                        visible = userIdError.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
                         Text(
                             text = userIdError,
-                            color = Color.Red,
-                            fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.Start)
+                            color = Color(0xFFE57373),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 4.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     // Password Field
                     OutlinedTextField(
@@ -289,32 +319,45 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             }
                         },
                         interactionSource = passwordInteractionSource,
-                        label = { Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Password") },
+                        label = { Text("Password", fontWeight = FontWeight.Medium) },
+                        placeholder = { Text("********", color = Color(0xFF9E9E9E)) },
                         singleLine = true,
                         isError = passwordError.isNotEmpty(),
+                        shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
                             val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(imageVector = image, contentDescription = "Toggle password visibility")
+                                Icon(imageVector = image, contentDescription = "Toggle password visibility", tint = Color(0xFF757575))
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             focusedLabelColor = PrimaryBlue,
-                            errorBorderColor = Color.Red,
-                            errorLabelColor = Color.Red
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            errorBorderColor = Color(0xFFE57373),
+                            errorLabelColor = Color(0xFFE57373)
                         ),
                         modifier = Modifier.fillMaxWidth().testTag("password")
                     )
 
-                    if (passwordError.isNotEmpty()) {
+                    // Animated error message for Password
+                    AnimatedVisibility(
+                        visible = passwordError.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
                         Text(
                             text = passwordError,
-                            color = Color.Red,
-                            fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.Start)
+                            color = Color(0xFFE57373),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 4.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -356,32 +399,47 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     // Log In Button
                     Button(
                         onClick = { loginFunc()},
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
-                            disabledContainerColor = Color.Gray,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            disabledContainerColor = Color(0xFFBDBDBD),
                             disabledContentColor = Color.White,
-                            contentColor = Color.Black
+                            contentColor = Color.White
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp).testTag("loginButton"),
-                        shape = RoundedCornerShape(12.dp),
+                            .height(58.dp).testTag("loginButton"),
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        ),
                         enabled = isButtonEnabled
 
                     ) {
-                        Text(
-                            text = if (message!="Loading") "Log In" else "Logging In",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (message == "Loading...") {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(26.dp),
+                                color = Color.White,
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Log In",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Sign Up Link
                     Row {
                         Text(
                             text = "Don't have an account?",
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = Color(0xFF757575),
+                            fontWeight = FontWeight.Normal
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -392,7 +450,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             modifier = Modifier.clickable {clickSignup()}
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
