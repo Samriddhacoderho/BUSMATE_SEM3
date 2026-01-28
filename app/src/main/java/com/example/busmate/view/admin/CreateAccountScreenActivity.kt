@@ -6,17 +6,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
-import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.CreateAccountViewModel
 import kotlinx.coroutines.launch
 
@@ -38,28 +48,30 @@ class CreateAccountScreenActivity : ComponentActivity() {
         val viewModel = CreateAccountViewModel(repo)
 
         setContent {
-            // Observe SharedPreferences changes for dark mode
-            val context = androidx.compose.ui.platform.LocalContext.current
+            // 🌙 Dark mode observer
+            val context = LocalContext.current
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
             }
-            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+            var themeChanged by remember {
+                mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0))
+            }
 
-            androidx.compose.runtime.DisposableEffect(Unit) {
-                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == "dark_mode_pref") {
-                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+            DisposableEffect(Unit) {
+                val listener =
+                    android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "dark_mode_pref") {
+                            themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        }
                     }
-                }
                 sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
-
                 onDispose {
                     sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
                 }
             }
 
             key(themeChanged) {
-                com.example.busmate.ui.theme.BusMateTheme {
+                BusMateTheme {
                     CreateAccountScreen(viewModel = viewModel)
                 }
             }
@@ -70,6 +82,7 @@ class CreateAccountScreenActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
+
     var selectedRole by remember { mutableStateOf("Select Role") }
     var userId by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
@@ -80,113 +93,161 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
     val context = LocalContext.current
 
     val roles = listOf("Parent", "Driver")
+    val isRoleSelected = selectedRole != "Select Role"
+    val cardAlpha by animateFloatAsState(targetValue = 1f)
 
-    // AUTOMATIC NAVIGATION LOG
+    // 🚦 Navigation + snackbar logic
     LaunchedEffect(message) {
         if (message == "Created Account Successful") {
-
             if (selectedRole == "Parent") {
-                // Navigate ONLY for Parent
                 val intent = Intent(context, AdminAddChildActivity::class.java).apply {
                     putExtra("PARENT_ID", userId)
                 }
                 context.startActivity(intent)
                 (context as Activity).finish()
             } else {
-                // For Driver (or others), just show success and stay / finish
-                scope.launch {
-                    snackbarHostState.showSnackbar("Account created successfully")
-                }
+                snackbarHostState.showSnackbar("Account created successfully")
             }
-
         } else if (message.isNotEmpty() && message != "Loading...") {
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
+            snackbarHostState.showSnackbar(message)
         }
     }
 
-
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Create User ID", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BusMateBlue)
-            )
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.Center
         ) {
+
+            // 🔵 Gradient Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF2567E8), Color(0xFF1D4ED8))
+                        )
+                    )
+                    .shadow(6.dp)
+                    .padding(vertical = 28.dp, horizontal = 24.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { (context as Activity).finish() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB74D),
+                        modifier = Modifier.size(32.dp)
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = "Admin",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Create User ID",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // 🧾 Main Card
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .wrapContentHeight(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .graphicsLayer { alpha = cardAlpha },
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(6.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
                     Image(
-                        painter = painterResource(id = R.drawable.logo),
+                        painter = painterResource(R.drawable.logo),
                         contentDescription = "Logo",
-                        modifier = Modifier.size(80.dp),
-                        colorFilter = ColorFilter.tint(BusMateBlue)
+                        modifier = Modifier.size(100.dp),
+                        colorFilter = ColorFilter.tint(Color(0xFF2567E8))
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
                     Text(
-                        text = "Register Account ID",
+                        text = "Register Account",
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BusMateBlue
+                        fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
                     Text(
-                        text = "Assign a role and unique ID to the user",
+                        text = "Choose a role and assign an ID",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
 
-                    // ROLE SELECTION DROPDOWN
+                    // 🔽 Role Dropdown
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedRole,
+                            value = if (isRoleSelected) selectedRole else "",
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("User Role") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            placeholder = { Text("Select Role") },
+                            leadingIcon = {
+                                Icon(Icons.Default.AdminPanelSettings, null)
+                            },
+                            trailingIcon = {
+                                Icon(Icons.Default.KeyboardArrowDown, null)
+                            },
                             modifier = Modifier
                                 .menuAnchor()
                                 .fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BusMateBlue,
-                                focusedLabelColor = BusMateBlue
-                            )
+                            shape = RoundedCornerShape(14.dp)
                         )
+
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
                             roles.forEach { role ->
                                 DropdownMenuItem(
-                                    text = { Text(text = role) },
+                                    text = { Text(role) },
                                     onClick = {
                                         selectedRole = role
                                         expanded = false
@@ -196,29 +257,31 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    // USER ID INPUT
+                    // 🆔 User ID
                     OutlinedTextField(
                         value = userId,
                         onValueChange = { userId = it },
-                        label = { Text("Enter School/User ID") },
+                        label = { Text("School ID or User ID") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Badge, null)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BusMateBlue,
-                            focusedLabelColor = BusMateBlue
-                        )
+                        shape = RoundedCornerShape(14.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.height(28.dp))
 
-                    // CREATE ACCOUNT BUTTON
+                    // 🚀 Button
                     Button(
                         onClick = {
                             if (selectedRole == "Select Role" || userId.isBlank()) {
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("Please select a role and enter User ID")
+                                    snackbarHostState.showSnackbar(
+                                        "Please select a role and enter User ID"
+                                    )
                                 }
                             } else {
                                 viewModel.createAccountWithMinimalData(
@@ -231,14 +294,28 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue)
-                    ) {
-                        Text(
-                            text = if (message != "Loading...") "Create Account" else "Creating...",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2567E8)
                         )
+                    ) {
+                        if (message == "Loading...") {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Creating...")
+                        } else {
+                            Text(
+                                text = "Create Account",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
+
                 }
             }
         }
