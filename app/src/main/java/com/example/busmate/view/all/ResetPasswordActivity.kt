@@ -15,6 +15,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,6 +81,8 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
     val isLoading = uiState == "Loading"
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
 
     // 🔥 This is the correct place to show snackbar
     LaunchedEffect(uiState) {
@@ -99,102 +103,144 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
         ) {
 
             // ---------- TOP BLUE SECTION ----------
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.60f)
-                    .background(BusMateBlue),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxHeight(0.40f)
+                    .background(BusMateBlue)
             ) {
-
-                Spacer(modifier = Modifier.height(48.dp))
-
+                // Background image with transparency
                 Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = "Logo",
-                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                    modifier = Modifier.size(200.dp)
+                    painter = painterResource(id = R.drawable.loginscreenphoto),
+                    contentDescription = "Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    alpha = 0.22f
                 )
 
-                Text(
-                    text = "Reset\nPassword",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 40.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
-                )
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(30.dp))
+                    // Back arrow
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        IconButton(onClick = { activity?.finish() }) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
 
-                Text(
-                    text = "Enter your recovery Email ID to reset password",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Reset\nPassword",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 36.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Enter your recovery Email ID",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
-            // ---------- WHITE CARD ----------
+            // ---------- MODERN CARD ----------
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .align(Alignment.BottomCenter)
-                    .height(350.dp)
-                    .offset(y = (-100).dp),
+                    .offset(y = (-60).dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {
-
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White,
+                                    Color(0xFFF8F9FE)
+                                )
+                            )
+                        )
                 ) {
-
-                    OutlinedTextField(
-                        value = userId,
-                        onValueChange = { userId = it },
-                        label = { Text("Enter email") },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryBlue,
-                            focusedLabelColor = PrimaryBlue
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(30.dp))
-
-                    Button(
-                        onClick = {
-                            if (userId.isNotBlank()) {
-                                viewModel.resetPassword(userId.trim())
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        enabled = !isLoading
+                            .padding(28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White,
-                                strokeWidth = 3.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Send Reset Link to Email",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                        OutlinedTextField(
+                            value = userId,
+                            onValueChange = { userId = it },
+                            label = { Text("Email Address", fontWeight = FontWeight.Medium) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryBlue,
+                                focusedLabelColor = PrimaryBlue,
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(
+                            onClick = {
+                                if (userId.isNotBlank()) {
+                                    viewModel.resetPassword(userId.trim())
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isLoading,
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        ) {
+
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White,
+                                    strokeWidth = 3.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "Send Reset Link",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
