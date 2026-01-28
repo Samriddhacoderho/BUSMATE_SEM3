@@ -290,20 +290,32 @@ fun MapLocationField(label: String, value: String, blueColor: Color, onClick: ()
     OutlinedTextField(
         value = value,
         onValueChange = {},
-        readOnly = true,
+        readOnly = true, // Prevents manual typing
+        enabled = true,  // Fixes the "pinky" tint by using active state colors
         label = { Text(label) },
         trailingIcon = {
             IconButton(onClick = onClick) {
                 Icon(Icons.Default.Map, contentDescription = null, tint = blueColor)
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() },
-        enabled = false,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
         colors = OutlinedTextFieldDefaults.colors(
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-            disabledBorderColor = MaterialTheme.colorScheme.outline,
-            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            // Forces the background to be the standard Surface color (White in light mode)
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+
+            // Ensures text and labels are clearly visible
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            // Keeps the border consistent
+            focusedBorderColor = MaterialTheme.colorScheme.outline,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
         )
     )
 }

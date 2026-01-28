@@ -53,7 +53,6 @@ class BusProfileScreen : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            // 🌙 Dark mode observer (LOGIC ONLY)
             val context = LocalContext.current
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -86,11 +85,9 @@ class BusProfileScreen : ComponentActivity() {
 
 @Composable
 fun BusProfileMainScreen() {
-
     val viewModel = remember {
         AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl())
     }
-
     val buses = remember { mutableStateListOf<BusModel>() }
 
     LaunchedEffect(Unit) {
@@ -105,7 +102,6 @@ fun BusProfileMainScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusProfileScreenUI(buses: List<BusModel>) {
-
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -128,12 +124,9 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
             )
         }
     ) { padding ->
-
         if (buses.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = BusMateBlue)
@@ -143,25 +136,15 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
 
         val pagerState = rememberPagerState(pageCount = { buses.size })
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Text(
                 text = "Swipe to view buses (${pagerState.currentPage + 1}/${buses.size})",
-                modifier = Modifier
-                    .padding(top = 8.dp, bottom = 4.dp)
-                    .align(Alignment.CenterHorizontally),
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp).align(Alignment.CenterHorizontally),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 SingleBusProfile(bus = buses[page])
             }
         }
@@ -170,7 +153,6 @@ fun BusProfileScreenUI(buses: List<BusModel>) {
 
 @Composable
 fun SingleBusProfile(bus: BusModel) {
-
     val context = LocalContext.current
     val accelViewModel: AccelRecieverViewModel = viewModel()
     val liveReading by accelViewModel.firebaseReading.observeAsState()
@@ -184,9 +166,7 @@ fun SingleBusProfile(bus: BusModel) {
             bus.driver?.let {
                 val first = it.firstName.orEmpty()
                 val last = it.lastName.orEmpty()
-                if (first.isNotBlank() || last.isNotBlank())
-                    "$first $last"
-                else "Not Assigned"
+                if (first.isNotBlank() || last.isNotBlank()) "$first $last" else "Not Assigned"
             } ?: "Not Assigned"
         )
     }
@@ -202,9 +182,7 @@ fun SingleBusProfile(bus: BusModel) {
             val data = result.data ?: return@rememberLauncherForActivityResult
             val driverId = data.getStringExtra("driverId") ?: return@rememberLauncherForActivityResult
             val driverName = data.getStringExtra("driverName") ?: return@rememberLauncherForActivityResult
-
             currentDriver = driverName
-
             viewModel.assignBusToDriver(bus.uid, driverId) { _, message ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
@@ -218,59 +196,44 @@ fun SingleBusProfile(bus: BusModel) {
             .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
+        // 🔵 Header
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(170.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BusMateBlue,
-                            BusMateBlue
-                        )
-                    )
-                ),
+            modifier = Modifier.fillMaxWidth().height(180.dp).background(BusMateBlue),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Bus ${bus.busNumber}",
-                    color = Color.White,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = "Bus ${bus.busNumber}", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Route ${bus.routeId}",
-                    color = Color.White.copy(0.9f),
-                    fontSize = 15.sp
-                )
+                Text(text = "Route ${bus.routeId}", color = Color.White.copy(0.9f), fontSize = 15.sp)
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
+        // ⚪ White Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .offset(y = (-60).dp),
             shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(10.dp)
+            elevation = CardDefaults.cardElevation(10.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface // Clean white background
+            )
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
+                // 🚌 Bus Image Area
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(190.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (bus.busImage.isNotEmpty()) {
+                    if (!bus.busImage.isNullOrBlank()) {
                         AsyncImage(
                             model = bus.busImage,
                             contentDescription = "Bus Image",
@@ -278,27 +241,24 @@ fun SingleBusProfile(bus: BusModel) {
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.schoolbus),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(90.dp)
-                        )
+                        // Placeholder logic
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Image(
+                                painter = painterResource(id = R.drawable.schoolbus),
+                                contentDescription = null,
+                                modifier = Modifier.size(90.dp)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text("No Image Available", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
-
-                Text(
-                    "Bus Details",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    color = BusMateBlue
-                )
-
+                Text("Bus Details", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = BusMateBlue)
                 HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
+                // Items
                 BusProfileItem(Icons.Default.Badge, "Bus Number: ${bus.busNumber}")
                 BusProfileItem(Icons.Default.People, "Capacity: ${bus.capacity}")
 
@@ -306,33 +266,20 @@ fun SingleBusProfile(bus: BusModel) {
                     icon = Icons.Default.Person,
                     text = "Driver: $currentDriver",
                     clickable = true,
-                    trailing = {
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = Color.Gray
-                        )
-                    }
+                    trailing = { Icon(Icons.Default.ChevronRight, null, tint = Color.Gray) }
                 ) {
-                    launcher.launch(
-                        Intent(context, DriverProfileScreen::class.java)
-                            .putExtra("select_mode", true)
-                    )
+                    launcher.launch(Intent(context, DriverProfileScreen::class.java).putExtra("select_mode", true))
                 }
 
                 BusProfileItem(Icons.Default.Info, "Maintenance: ${bus.maintenanceStatus}")
                 BusProfileItem(Icons.Default.Route, "Route: ${bus.routeId}")
 
                 val displaySpeed = liveReading?.speedMps ?: bus.speed.toFloat()
-
                 BusProfileItem(
                     icon = Icons.Default.Speed,
                     text = "Speed",
                     trailing = {
-                        Surface(
-                            color = BusMateBlue.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
+                        Surface(color = BusMateBlue.copy(alpha = 0.15f), shape = RoundedCornerShape(20.dp)) {
                             Text(
                                 text = "${"%.1f".format(displaySpeed)} km/h",
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -345,7 +292,6 @@ fun SingleBusProfile(bus: BusModel) {
                 )
             }
         }
-
         Spacer(Modifier.height(40.dp))
     }
 }
@@ -366,20 +312,11 @@ fun BusProfileItem(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(BusMateBlue.copy(alpha = 0.12f)),
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(BusMateBlue.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = BusMateBlue,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(icon, null, tint = BusMateBlue, modifier = Modifier.size(20.dp))
         }
 
         Spacer(Modifier.width(12.dp))
