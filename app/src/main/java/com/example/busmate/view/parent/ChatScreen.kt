@@ -110,7 +110,7 @@ fun ChatScreen(
 }
 
 @Composable
-fun ChatBubble(message: com.example.busmate.data.ChatMessage) {
+fun ChatBubble(message: com.example.busmate.model.ChatMessageModel) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
