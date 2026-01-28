@@ -275,6 +275,9 @@ fun HomeScreen(
                     )
                 }
             }
+            item {
+                Spacer(Modifier.height(24.dp))
+            }
 
             // PARENT: SECTION HEADER
             if (model?.typeofUser == "Parent") {
