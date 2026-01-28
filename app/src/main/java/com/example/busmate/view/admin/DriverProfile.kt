@@ -192,7 +192,7 @@ fun SingleDriverProfile(
                     Brush.verticalGradient(
                         listOf(
                             BusMateBlue,
-                            BusMateBlue.copy(alpha = 0.85f)
+                            BusMateBlue
                         )
                     )
                 ),
@@ -213,6 +213,7 @@ fun SingleDriverProfile(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
 
         Card(
             modifier = Modifier
