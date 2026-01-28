@@ -2,7 +2,6 @@ package com.example.busmate.data
 
 import android.content.Context
 import android.location.Geocoder
-import android.util.Log
 import com.example.busmate.model.ChildModel
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
@@ -14,14 +13,14 @@ import java.util.Date
 import java.util.Locale
 
 // We need Context now to convert Coordinates -> Address
-class ChatRepository(private val context: Context) {
+class ChatRepositoryImpl(private val context: Context): ChatRepositoryInterface {
 
     private val model = Firebase.ai(backend = GenerativeBackend.googleAI())
         .generativeModel("gemini-2.5-flash") // Flash is faster for real-time chat
 
     private val db = FirebaseDatabase.getInstance()
 
-    suspend fun generateResponse(userQuestion: String, children: List<ChildModel>): String {
+    override suspend fun generateResponse(userQuestion: String, children: List<ChildModel>): String {
         try {
             // 1. Fetch Real-time Data (Context)
             val contextData = getParentContext(children)

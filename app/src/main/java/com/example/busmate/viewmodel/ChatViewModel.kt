@@ -3,7 +3,8 @@ package com.example.busmate.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.busmate.data.ChatRepository
+import com.example.busmate.data.ChatRepositoryImpl
+import com.example.busmate.data.ChatRepositoryInterface
 import com.example.busmate.model.ChatMessageModel
 import com.example.busmate.model.UserModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,7 @@ import kotlinx.coroutines.launch
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     // Pass context to repository
-    private val repository = ChatRepository(application.applicationContext)
+    private val repository = ChatRepositoryImpl(application.applicationContext)
 
     private val _messages = MutableStateFlow<List<ChatMessageModel>>(
         listOf(ChatMessageModel("Hello! Ask me about your child's attendance or the bus location.", false))
