@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.busmate.viewmodel.AttendanceViewModel
 import com.example.busmate.ui.theme.BusMateTheme
@@ -89,68 +92,109 @@ fun ParentAttendanceScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Child Attendance") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                    }
-                }
-            )
-        }
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Date Header
+            // Blue Header Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color(0xFF2854D8)),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(40.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Text(
+                        text = "Child Attendance",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Date Selection Button
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.2f),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Select Date", modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(selectedDate, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                }
+            }
+
+            // Main Content Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-40).dp),
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Text(
-                    text = "Showing attendance for: $selectedDate",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (attendanceRecords.isEmpty()) {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("No records found for this date.")
-                        Text(
-                            "Check if the date is correct.",
-                            style = MaterialTheme.typography.bodySmall
+                Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Color(0xFF2854D8)
                         )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Grouping by student name in case one child has multiple route entries
-                        val grouped = attendanceRecords.groupBy { it["childName"] as? String ?: "Unknown" }
+                    } else if (attendanceRecords.isEmpty()) {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "No records found for this date.",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.Gray
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Try selecting a different date.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Grouping by student name in case one child has multiple route entries
+                            val grouped = attendanceRecords.groupBy { it["childName"] as? String ?: "Unknown" }
 
-                        items(grouped.keys.toList()) { childName ->
-                            val recordsForChild = grouped[childName] ?: emptyList()
-                            ParentAttendanceCard(childName, recordsForChild)
+                            items(grouped.keys.toList()) { childName ->
+                                val recordsForChild = grouped[childName] ?: emptyList()
+                                ParentAttendanceCard(childName, recordsForChild)
+                            }
                         }
                     }
                 }
@@ -173,39 +217,72 @@ fun ParentAttendanceScreen(
 fun ParentAttendanceCard(childName: String, records: List<Map<String, Any?>>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = childName,
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
+                fontSize = 20.sp,
+                color = Color(0xFF2854D8)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             records.forEach { record ->
                 val route = record["busRouteId"] as? String ?: "N/A"
                 val status = record["status"] as? String ?: "No Record"
 
-                // ✅ Updated: Different colors for Present, Absent, and No Record
+                // Different colors for Present, Absent, and No Record
                 val statusColor = when (status) {
                     "Present" -> Color(0xFF2E7D32)  // Green
                     "Absent" -> Color(0xFFC62828)   // Red
                     else -> Color(0xFFFF9800)       // Orange for "No Record"
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Route: $route", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = status,
-                        color = statusColor,
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Route ID",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = route,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = statusColor.copy(alpha = 0.1f),
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Text(
+                                text = status,
+                                color = statusColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    if (records.indexOf(record) < records.size - 1) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 8.dp),
+                            thickness = 0.5.dp,
+                            color = Color.LightGray
+                        )
+                    }
                 }
             }
         }
