@@ -109,7 +109,8 @@ fun ParentDashboardScreen(
     val busViewModel = remember { BusViewModel(BusRepositoryImpl()) }
     val user by userViewModel.user.collectAsState()
     val children by childViewModel.children.collectAsState()
-    val chatViewModel = remember { ChatViewModel() }
+    // Pass the 'application' variable which you already defined earlier in the file
+    val chatViewModel = remember { ChatViewModel(application) }
 
     var showChatDialog by remember { mutableStateOf(false) }
 
