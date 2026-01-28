@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
 class LoginInstrumentedTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<LoginScreen>()
+    val composeRule = createAndroidComposeRule<LoginScreen>()
 
     @Before
     fun setup() {
@@ -32,30 +32,31 @@ class LoginInstrumentedTest {
     }
 
     @Test
-    fun successfulLogin_navigatesToDashboard() {
-        // Input school ID
-        composeTestRule.onNodeWithTag("schoolId")
-            .performTextInput("240453")
+    fun testSuccessfulLogin_navigatesToParentDashboard() {
+        // Wait for the screen to be fully loaded
+        composeRule.waitForIdle()
+        Thread.sleep(1000)
 
-        // Input password
-        composeTestRule.onNodeWithTag("password")
+
+        composeRule.onNodeWithTag("schoolId")
+            .performTextInput("240488")
+
+        composeRule.waitForIdle()
+
+
+        composeRule.onNodeWithTag("password")
             .performTextInput("Samkodata1@")
 
-        // Click login button
-        composeTestRule.onNodeWithTag("loginButton")
+        composeRule.waitForIdle()
+
+
+        composeRule.onNodeWithTag("loginButton")
             .performClick()
 
-        // Use waitUntil to check for the intent before activity finishes
-        // This gives time for async login and catches the intent before activity.finish()
-        composeTestRule.waitUntil(timeoutMillis = 10000) {
-            try {
-                // Try to verify intent was sent
-                Intents.intended(hasComponent(ParentDashboardActivity::class.java.name))
-                true // Intent was found, test passes
-            } catch (e: AssertionError) {
-                // Intent not found yet, keep waiting
-                false
-            }
-        }
+        // Wait for Firebase authentication and navigation
+        // Reduced to 2 seconds to catch navigation before permission dialog
+        Thread.sleep(2000)
+
+        Intents.intended(hasComponent(ParentDashboardActivity::class.java.name))
     }
 }
