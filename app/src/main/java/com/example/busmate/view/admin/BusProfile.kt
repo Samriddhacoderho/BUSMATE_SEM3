@@ -50,7 +50,31 @@ class BusProfileScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BusProfileMainScreen()
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    BusProfileMainScreen()
+                }
+            }
         }
     }
 }
@@ -196,7 +220,7 @@ fun SingleBusProfile(bus: BusModel) {
                         .fillMaxWidth(0.9f)
                         .height(180.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF1F3F5)),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     if (bus.busImage.isNotEmpty()) {
@@ -266,7 +290,7 @@ fun BusProfileItem(
         Icon(
             icon,
             contentDescription = null,
-            tint = if (clickable) BusMateBlue else Color.Gray,
+            tint = if (clickable) BusMateBlue else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(22.dp)
         )
 
@@ -275,7 +299,7 @@ fun BusProfileItem(
         Text(
             text,
             fontSize = 16.sp,
-            color = if (clickable) BusMateBlue else Color.Black,
+            color = if (clickable) BusMateBlue else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (clickable) FontWeight.Bold else FontWeight.Normal
         )
     }
