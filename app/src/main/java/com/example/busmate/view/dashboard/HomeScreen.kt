@@ -276,18 +276,18 @@ fun HomeScreen(
                 }
             }
             item {
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(1.dp))
             }
 
             // PARENT: SECTION HEADER
             if (model?.typeofUser == "Parent") {
                 item {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         "My Children",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -433,7 +433,7 @@ fun HomeScreen(
             // DRIVER: FEATURE GRID ABOVE "MY DUTIES"
             if (model?.typeofUser == "Driver") {
                 item {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(0.dp))
                     Text(
                         "Quick Actions",
                         fontSize = 18.sp,
@@ -469,16 +469,7 @@ fun HomeScreen(
                     )
                 }
 
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "My Duties",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+
             }
 
             // NOTIFICATIONS SECTION
@@ -766,25 +757,7 @@ fun ModernWelcomeCard(parentName: String?, model: UserModel?) {
                     fontSize = 28.sp
                 )
 
-                Spacer(Modifier.height(20.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatusChip(
-                        icon = Icons.Default.School,
-                        label = "School",
-                        isActive = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatusChip(
-                        icon = Icons.Default.MyLocation,
-                        label = "Live Tracking",
-                        isActive = false,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
             }
         }
     }
