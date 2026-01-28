@@ -47,7 +47,31 @@ class BusScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BusScreenUI(onBackClick = { finish() })
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    BusScreenUI(onBackClick = { finish() })
+                }
+            }
         }
     }
 }
@@ -93,7 +117,7 @@ fun BusScreenUI(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Box(
@@ -154,7 +178,7 @@ fun BusScreenUI(
                     .align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier
@@ -173,7 +197,7 @@ fun BusScreenUI(
                         modifier = Modifier
                             .size(120.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFF1F3F5))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
                             .clickable { launcher.launch("image/*") },
                         contentAlignment = Alignment.Center
