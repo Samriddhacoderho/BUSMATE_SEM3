@@ -109,7 +109,7 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

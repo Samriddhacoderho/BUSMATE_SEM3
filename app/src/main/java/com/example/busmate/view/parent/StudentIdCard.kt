@@ -104,7 +104,7 @@ fun StudentIdRoute(
     val message by userViewModel.message.collectAsState()
 
     val isLoading = message.contains("Loading") || userState == null
-    val busMateBlue = Color(0xFF2567E8) // Updated color
+    val busMateBlue = Color(0xFF2854D8) // Updated color
 
     Scaffold(
         topBar = {

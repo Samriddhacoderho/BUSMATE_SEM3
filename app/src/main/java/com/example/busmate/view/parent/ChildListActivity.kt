@@ -100,7 +100,7 @@ fun ChildListScreen(
 ) {
     // --- ORIGINAL LOGIC PRESERVED ---
     val children by viewModel.children.collectAsState()
-    val busMateBlue = Color(0xFF2567E8) // Color from AdminSearchChildActivity
+    val busMateBlue = Color(0xFF2854D8) // Color from AdminSearchChildActivity
 
     Scaffold(
         topBar = {
