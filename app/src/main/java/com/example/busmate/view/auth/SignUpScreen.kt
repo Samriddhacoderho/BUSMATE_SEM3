@@ -128,15 +128,18 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message!="Loading...") {
-            // If successful, close the activity
-            if (message == "Successful Registration") {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = message,
+                )
+            }
+            // If successful, close the activity after showing snackbar
+            // Check for success in multiple ways to be robust
+            if (message.contains("Success", ignoreCase = true) ||
+                message.contains("successful", ignoreCase = true) ||
+                message == "Successful Registration") {
+                kotlinx.coroutines.delay(1500) // Wait 1.5 seconds to show success message
                 activity.finish()
-            } else {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = message,
-                    )
-                }
             }
         }
     }
@@ -181,7 +184,9 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
             SnackbarHost(hostState = snackbarHostState) {
                 Snackbar(
                     snackbarData = it,
-                    containerColor = Color.Red,
+                    containerColor = if (message.contains("Success", ignoreCase = true) ||
+                        message.contains("successful", ignoreCase = true))
+                        Color(0xFF4CAF50) else Color.Red,
                     contentColor = Color.White
                 )
             }
