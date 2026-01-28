@@ -22,9 +22,6 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.GuideLineViewModel
 
-// ---- SAME PRIMARY COLOR AS LOGIN UI ----
-private val PrimaryBlue = Color(0xFF2567E8)
-
 class GuideLineActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,13 +31,35 @@ class GuideLineActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            BusMateTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                        when (typeOfUser) {
-                            "Admin" -> AdminGuidelineScreen()
-                            "Driver", "Parent" -> DriverGuidelineScreen()
-                            else -> ErrorScreen(typeOfUser)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                            when (typeOfUser) {
+                                "Admin" -> AdminGuidelineScreen()
+                                "Driver", "Parent" -> DriverGuidelineScreen()
+                                else -> ErrorScreen(typeOfUser)
+                            }
                         }
                     }
                 }
@@ -86,7 +105,7 @@ fun AdminGuidelineScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.35f)
-                .background(BusMateBlue),
+                .background(MaterialTheme.colorScheme.primary),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -113,7 +132,7 @@ fun AdminGuidelineScreen() {
                 .align(Alignment.BottomCenter)
                 .offset(y = (-32).dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
@@ -130,8 +149,8 @@ fun AdminGuidelineScreen() {
                         .height(250.dp),
                     minLines = 10,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        focusedLabelColor = PrimaryBlue
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -144,7 +163,7 @@ fun AdminGuidelineScreen() {
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryBlue,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White
                     )
                 ) {
@@ -185,7 +204,7 @@ fun DriverGuidelineScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.35f)
-                .background(BusMateBlue),
+                .background(MaterialTheme.colorScheme.primary),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -211,7 +230,7 @@ fun DriverGuidelineScreen() {
                 .align(Alignment.BottomCenter)
                 .offset(y = (-32).dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
