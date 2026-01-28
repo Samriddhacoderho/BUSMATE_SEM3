@@ -500,9 +500,7 @@ fun HomeScreen(
                 )
             }
 
-            if (notifications.isEmpty() &&
-                (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")
-            ) {
+            if (notifications.isEmpty()) {
                 item {
                     EmptyNotificationsCard()
                 }
