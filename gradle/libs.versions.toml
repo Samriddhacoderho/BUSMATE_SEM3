@@ -19,6 +19,8 @@ firebaseMessaging = "25.0.1"
 animation = "1.10.0"
 foundationLayout = "1.10.0"
 androidxFoundation = "1.10.1"
+animationCore = "1.10.1"
+androidxUi = "1.10.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +48,8 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "androidxFoundation" }
+androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
+androidx-compose-ui-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "androidxUi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

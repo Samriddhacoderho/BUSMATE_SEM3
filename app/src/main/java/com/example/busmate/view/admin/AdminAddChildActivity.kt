@@ -6,29 +6,38 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.ChildRepositoryImpl
-import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.view.parent.AddChildActivity
 import com.example.busmate.viewmodel.ChildViewModel
+import kotlinx.coroutines.launch
 
 class AdminAddChildActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // NEW: Get the Parent ID passed from CreateAccountScreenActivity
         val prefilledParentId = intent.getStringExtra("PARENT_ID") ?: ""
 
         val repo = ChildRepositoryImpl()
@@ -45,8 +54,10 @@ class AdminAddChildActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminAddChildScreen(viewModel: ChildViewModel, prefilledParentId: String) {
-    // If prefilledParentId is empty, we let the admin type it
+fun AdminAddChildScreen(
+    viewModel: ChildViewModel,
+    prefilledParentId: String
+) {
     var parentId by remember { mutableStateOf(prefilledParentId) }
     var studentId by remember { mutableStateOf("") }
 
@@ -54,125 +65,214 @@ fun AdminAddChildScreen(viewModel: ChildViewModel, prefilledParentId: String) {
     val context = LocalContext.current
     val isFromCreateAccount = prefilledParentId.isNotEmpty()
 
-    // AUTOMATIC NAVIGATION LOGIC
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // AUTOMATIC NAVIGATION LOGIC (UNCHANGED)
     LaunchedEffect(message) {
         if (message.contains("successfully", ignoreCase = true)) {
             val intent = Intent(context, AddChildActivity::class.java).apply {
                 putExtra("STUDENT_ID", studentId)
-                putExtra("PARENT_ID", parentId) // Use the state variable
+                putExtra("PARENT_ID", parentId)
             }
             context.startActivity(intent)
             (context as? Activity)?.finish()
+        } else if (message.isNotEmpty() && message != "Processing...") {
+            scope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
         }
     }
 
+    val cardAlpha by animateFloatAsState(targetValue = 1f)
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (isFromCreateAccount) "Step 2: Student ID" else "Add Child to Parent", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BusMateBlue)
-            )
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color(0xFFF8F9FA)
     ) { paddingValues ->
-        Box(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5F5F5)),
-            contentAlignment = Alignment.Center
         ) {
+
+            // 🔵 ADMIN HEADER (MATCHED)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF2567E8),
+                                Color(0xFF1D4ED8)
+                            )
+                        )
+                    )
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                    )
+                    .padding(vertical = 28.dp, horizontal = 24.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (!isFromCreateAccount) {
+                        IconButton(
+                            onClick = { (context as Activity).finish() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.ChildCare,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB74D),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Admin",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = if (isFromCreateAccount) "Step 2: Add Child" else "Add Child to Parent",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // 🧾 MAIN CARD
             Card(
-                modifier = Modifier.fillMaxWidth(0.9f).padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .graphicsLayer { alpha = cardAlpha },
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
                     Text(
                         text = "Child Registration",
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BusMateBlue
+                        color = Color(0xFF1A1A1A)
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.height(6.dp))
 
-                    // PARENT ID SECTION
+                    Text(
+                        text = "Link a student to a parent account",
+                        fontSize = 14.sp,
+                        color = Color(0xFF6B7280)
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // 👨‍👩‍👧 PARENT ID
                     if (isFromCreateAccount) {
-                        // Show read-only if coming from Account Creation
                         Text(
-                            text = "Linking to Parent: $parentId",
+                            text = "Linked Parent ID: $parentId",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF2E7D32)
+                            color = Color(0xFF2567E8)
                         )
                     } else {
-                        // Show Input if adding a second child or existing parent
                         OutlinedTextField(
                             value = parentId,
                             onValueChange = { parentId = it },
-                            label = { Text("Enter Parent School ID") },
+                            label = { Text("Parent School ID") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2567E8)
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BusMateBlue,
-                                focusedLabelColor = BusMateBlue
+                                focusedBorderColor = Color(0xFF2567E8),
+                                focusedLabelColor = Color(0xFF2567E8)
                             )
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    // STUDENT ID SECTION
+                    // 🆔 STUDENT ID
                     OutlinedTextField(
                         value = studentId,
                         onValueChange = { studentId = it },
-                        label = { Text("Enter New Student ID") },
+                        label = { Text("Student ID") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Badge,
+                                contentDescription = null,
+                                tint = Color(0xFF2567E8)
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BusMateBlue,
-                            focusedLabelColor = BusMateBlue
+                            focusedBorderColor = Color(0xFF2567E8),
+                            focusedLabelColor = Color(0xFF2567E8)
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(Modifier.height(28.dp))
 
-                    // Inside AdminAddChildScreen in AdminAddChildActivity.kt
+                    // 🚀 ACTION BUTTON
                     Button(
                         onClick = {
-                            if (parentId.isBlank()) {
-                                // Local check for empty field
-                                return@Button
-                            }
-                            if (studentId.isBlank()) {
-                                // Local check for empty field
-                                return@Button
-                            }
-
-                            // Call the new combined validation function
+                            if (parentId.isBlank()) return@Button
+                            if (studentId.isBlank()) return@Button
                             viewModel.validateAndPreRegister(parentId, studentId)
                         },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
-                        enabled = message != "Processing..."
+                        enabled = message != "Processing...",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2567E8)
+                        )
                     ) {
-                        Text(
-                            text = if (message == "Processing...") "Verifying..." else "Next: Child Details",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Error/Success Message
-                    if (message.isNotEmpty() && message != "Processing...") {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = message,
-                            color = if (message.contains("successfully", true)) Color(0xFF2E7D32) else Color.Red,
-                            fontSize = 14.sp
-                        )
+                        if (message == "Processing...") {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Verifying...")
+                        } else {
+                            Text(
+                                text = "Next: Child Details",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
