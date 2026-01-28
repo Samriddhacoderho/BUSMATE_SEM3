@@ -117,7 +117,7 @@ fun SupportScreen(
                 title = { Text("Help & Support", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { activity.finish() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = BusMateBlue)
                     }
                 }
             )
@@ -140,11 +140,10 @@ fun SupportScreen(
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Submit a Support Request", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text("Submit a Support Request", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = BusMateBlue)
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = titleText,
@@ -174,7 +173,7 @@ fun SupportScreen(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
                                 shape = RoundedCornerShape(12.dp)
                             ) { Text("SUBMIT", color = Color.White, fontWeight = FontWeight.Bold) }
                         }
@@ -217,7 +216,7 @@ fun AdminUserGroupCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("User: $userName ($userType)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
+            Text("User: $userName ($userType)", fontWeight = FontWeight.Bold, color = BusMateBlue, fontSize = 18.sp)
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
             // Loop through all messages from THIS specific user
@@ -225,8 +224,8 @@ fun AdminUserGroupCard(
                 var adminReply by remember { mutableStateOf("") }
 
                 Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                    Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Message: ${support.message}", modifier = Modifier.padding(bottom = 4.dp), color = MaterialTheme.colorScheme.onSurface)
+                    Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Message: ${support.message}", modifier = Modifier.padding(bottom = 4.dp))
 
                     if (support.reply.isNotEmpty()) {
                         Text("Current Reply: ${support.reply}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Medium, fontSize = 13.sp)
@@ -251,14 +250,14 @@ fun AdminUserGroupCard(
                             }
                         },
                         modifier = Modifier.align(Alignment.End),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 24.dp)
 
                     ) {
                         Text("REPLY", color = Color.White, fontSize = 12.sp)
                     }
-                    Divider(modifier = Modifier.padding(top = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    Divider(modifier = Modifier.padding(top = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
                 }
             }
         }
@@ -268,29 +267,17 @@ fun AdminUserGroupCard(
 @Composable
 fun UserSupportItem(support: com.example.busmate.model.SupportModel) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text(support.message, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("Title: ${support.title}", fontWeight = FontWeight.Bold)
+                Text(support.message)
             }
         }
         if (support.reply.isNotEmpty()) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-            ) {
+            Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4)), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Admin Reply:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Text(support.reply, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                    Text(support.reply)
                 }
             }
         }

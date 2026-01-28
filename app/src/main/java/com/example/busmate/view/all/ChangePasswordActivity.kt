@@ -145,7 +145,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.45f)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(BusMateBlue),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
@@ -205,12 +205,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                 ) {
 
                     // 🔹 OLD PASSWORD
-                    Text(
-                        "Old Password",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("Old Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
@@ -234,7 +229,14 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -242,12 +244,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                     Spacer(modifier = Modifier.height(20.dp))
 
                     // 🔹 NEW PASSWORD
-                    Text(
-                        "New Password",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
@@ -271,7 +268,14 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -284,12 +288,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                     Spacer(modifier = Modifier.height(25.dp))
 
                     // 🔹 CONFIRM PASSWORD
-                    Text(
-                        "Confirm New Password",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("Confirm New Password", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
@@ -313,7 +312,14 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -329,8 +335,8 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            containerColor = PrimaryBlue,
+                            disabledContainerColor = Color.Gray // Visually grey out the button
                         )
                     ) {
                         Text(
@@ -347,7 +353,7 @@ fun ChangePasswordScreen(viewModel: UserViewModel) {
                     // Forgot Password
                     Text(
                         text = "Forgot Your Password?",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = PrimaryBlue,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().clickable(onClick = {
                             val intent= Intent(context, ResetPasswordActivity::class.java)
@@ -372,14 +378,14 @@ fun Requirement(text: String, passed: Boolean) {
         Icon(
             painter = painterResource(R.drawable.baseline_check_circle_24),
             contentDescription = null,
-            tint = if (passed) MaterialTheme.colorScheme.primary else Color(0xFFE53935),
+            tint = if (passed) Color.Blue else Color.Red,
             modifier = Modifier
                 .padding(end = 8.dp)
                 .size(16.dp)
         )
         Text(
             text = text,
-            color = if (passed) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFE53935),
+            color = if (passed) Color.Gray else Color.Red,
             fontSize = 14.sp
         )
     }

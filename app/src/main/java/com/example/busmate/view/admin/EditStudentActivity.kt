@@ -57,13 +57,35 @@ class EditStudentActivity : ComponentActivity() {
         // 2. Initialize the ViewModel
         val viewModel = ChildViewModel(ChildRepositoryImpl())
         setContent {
-            BusMateTheme {
-                if (child != null) {
-                    EditStudentScreen(child, viewModel, onBack = { finish() })
-                } else {
-                    // Fallback if data is missing
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: Student data not found")
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    if (child != null) {
+                        EditStudentScreen(child, viewModel, onBack = { finish() })
+                    } else {
+                        // Fallback if data is missing
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Error: Student data not found")
+                        }
                     }
                 }
             }
@@ -74,7 +96,7 @@ class EditStudentActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -> Unit) {
-    val busMateBlue = Color(0xFF2567E8)
+    val busMateBlue = MaterialTheme.colorScheme.primary
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -163,7 +185,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                         Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
             )
         }
     ) { padding ->
@@ -171,20 +193,20 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ✅ STUDENT IMAGE SECTION (CENTERED)
-            Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Text("Student Profile Photo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE9ECEF))
-                    .border(2.dp, busMateBlue, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
@@ -219,7 +241,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             }
 
             // ✅ END OF IMAGE SECTION
-            Text("Updating ID: ${child.studentId}", color = Color.Gray, fontSize = 14.sp)
+            Text("Updating ID: ${child.studentId}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(20.dp))
 
             // Text Fields
@@ -302,7 +324,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
                     .fillMaxWidth()
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
@@ -316,12 +338,12 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
+            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 "Parent Contact Information",
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -332,7 +354,7 @@ fun EditStudentScreen(child: ChildModel, viewModel: ChildViewModel, onBack: () -
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 20.dp),
                 thickness = 1.dp,
-                color = Color.LightGray
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
             )
         }
     }
@@ -347,11 +369,14 @@ fun ReadOnlyField(label: String, value: String, icon: ImageVector) {
         readOnly = true,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
-        leadingIcon = { Icon(icon, null, tint = Color.Gray) },
+        leadingIcon = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9ECEF),
-            unfocusedContainerColor = Color(0xFFE9ECEF),
-            disabledTextColor = Color.Black
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }
@@ -376,7 +401,7 @@ fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
         label = { Text(label) },
         trailingIcon = {
             IconButton(onClick = onClick) {
-                Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF1976D2))
+                Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         },
         modifier = Modifier
@@ -385,9 +410,10 @@ fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
             .clickable { onClick() },
         enabled = false,
         colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color.Black,
-            disabledBorderColor = Color.Gray,
-            disabledLabelColor = Color.DarkGray
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }
