@@ -116,6 +116,7 @@ dependencies {
     //Biometric
     implementation("androidx.biometric:biometric:1.4.0-alpha02")
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.foundation)
 
     // Testing
     testImplementation(libs.junit)
