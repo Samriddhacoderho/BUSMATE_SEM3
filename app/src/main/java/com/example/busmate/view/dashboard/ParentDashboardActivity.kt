@@ -36,6 +36,7 @@ import com.example.busmate.R
 import com.example.busmate.data.*
 import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.PlaceholderBusColor
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -75,13 +76,31 @@ class ParentDashboardActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var isDarkModeEnabled by remember { mutableStateOf(false) }
+            // Observe SharedPreferences changes for dark mode
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableIntStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
 
-            BusMateTheme(darkTheme = isDarkModeEnabled) {
-                ParentDashboardScreen(
-                    isDarkModeEnabled = isDarkModeEnabled,
-                    onThemeChange = { isDarkModeEnabled = it }
-                )
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            // Force recomposition by using themeChanged in BusMateTheme
+            key(themeChanged) {
+                BusMateTheme {
+                    ParentDashboardScreen()
+                }
             }
         }
     }
@@ -90,10 +109,7 @@ class ParentDashboardActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
-fun ParentDashboardScreen(
-    isDarkModeEnabled: Boolean,
-    onThemeChange: (Boolean) -> Unit
-) {
+fun ParentDashboardScreen() {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid ?: ""
@@ -287,10 +303,9 @@ fun ParentDashboardScreen(
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = Color(0xFFF8F9FA),
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 ModernTopBar(
-                    isDarkModeEnabled = isDarkModeEnabled,
                     notificationCount = dynamicNotifications.size - lastSeenNotificationCount,
                     showNotificationOverlay = showNotificationOverlay,
                     onMenuClick = { scope.launch { drawerState.open() } },
@@ -426,7 +441,6 @@ fun ParentDashboardScreen(
 
 @Composable
 fun ModernTopBar(
-    isDarkModeEnabled: Boolean,
     notificationCount: Int,
     showNotificationOverlay: Boolean,
     onMenuClick: () -> Unit,
@@ -461,7 +475,7 @@ fun ModernTopBar(
                     painter = painterResource(R.drawable.logo),
                     contentDescription = "BusMate Logo",
                     contentScale = ContentScale.Fit,
-                    colorFilter = if (isDarkModeEnabled)
+                    colorFilter = if (isDarkMode())
                         ColorFilter.tint(PlaceholderBusColor)
                     else null,
                     modifier = Modifier
@@ -527,7 +541,7 @@ fun ModernBottomNavBar(
     ) {
         Surface(
             shape = RoundedCornerShape(32.dp),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = 12.dp,
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
@@ -573,7 +587,7 @@ fun BottomNavItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) Color(0xFF2567E8) else Color(0xFFB0B0B0),
+                tint = if (selected) Color(0xFF2567E8) else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(26.dp)
             )
 

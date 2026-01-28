@@ -45,24 +45,46 @@ class StudentIdCard : ComponentActivity() {
         enableEdgeToEdge()
         val studentId = intent.getStringExtra("STUDENT_ID")
         setContent {
-            BusMateTheme {
-                val userViewModel: UserViewModel = viewModel { UserViewModel(UserRepositoryImpl()) }
-                val childViewModel: ChildViewModel = viewModel { ChildViewModel(ChildRepositoryImpl()) }
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
 
-                LaunchedEffect(Unit) {
-                    FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                        userViewModel.loadUserProfile(uid)
-                        childViewModel.observeChildren(uid)
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
                     }
                 }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
 
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    StudentIdRoute(
-                        userViewModel = userViewModel,
-                        childViewModel = childViewModel,
-                        studentId = studentId,
-                        onBack = { finish() }
-                    )
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    val userViewModel: UserViewModel = viewModel { UserViewModel(UserRepositoryImpl()) }
+                    val childViewModel: ChildViewModel = viewModel { ChildViewModel(ChildRepositoryImpl()) }
+
+                    LaunchedEffect(Unit) {
+                        FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+                            userViewModel.loadUserProfile(uid)
+                            childViewModel.observeChildren(uid)
+                        }
+                    }
+
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        StudentIdRoute(
+                            userViewModel = userViewModel,
+                            childViewModel = childViewModel,
+                            studentId = studentId,
+                            onBack = { finish() }
+                        )
+                    }
                 }
             }
         }
@@ -119,7 +141,7 @@ fun StudentIdRoute(
                             text = "Swipe to view children (${pagerState.currentPage + 1}/${childrenList.size})",
                             modifier = Modifier.padding(12.dp).align(Alignment.CenterHorizontally),
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                             DigitalStudentIdContent(child = childrenList[page], parent = userState)
@@ -146,7 +168,7 @@ fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -165,7 +187,7 @@ fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
                 .padding(horizontal = 24.dp)
                 .offset(y = (-60).dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(6.dp)
         ) {
             Column(
@@ -177,7 +199,7 @@ fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
                     modifier = Modifier
                         .size(100.dp) // Slightly larger for ID card
                         .clip(CircleShape)
-                        .background(Color(0xFFE0E0E0))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .border(2.dp, busMateBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -241,6 +263,6 @@ fun DigitalStudentIdContent(child: ChildModel, parent: UserModel?) {
 fun IdInfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text("$label: ", fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(80.dp))
-        Text(value, fontSize = 13.sp, color = Color.DarkGray)
+        Text(value, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

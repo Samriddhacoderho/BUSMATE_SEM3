@@ -30,14 +30,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.view.ImageUtils
-import com.example.busmate.view.dashboard.ButtonGray
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class EditProfileActivity : ComponentActivity() {
     private lateinit var viewModel: UserViewModel
-    private lateinit var imageUtils: ImageUtils // Initialized here as per teacher's guide
+    private lateinit var imageUtils: ImageUtils
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,27 +46,26 @@ class EditProfileActivity : ComponentActivity() {
 
         val repository = UserRepositoryImpl()
         viewModel = UserViewModel(repository)
-
-        // 1. Initialize ImageUtils
         imageUtils = ImageUtils(this, this)
 
         setContent {
-            val context = LocalContext.current
+            // APPLY THE THEME Logic
+            BusMateTheme(darkTheme = isDarkMode()) {
+                val context = LocalContext.current
 
-            // 2. Register the launchers to handle the image result
-            LaunchedEffect(Unit) {
-                imageUtils.registerLaunchers { uri ->
-                    uri?.let {
-                        // 3. Trigger the Cloudinary upload in the ViewModel
-                        viewModel.uploadProfileImage(context, it)
+                LaunchedEffect(Unit) {
+                    imageUtils.registerLaunchers { uri ->
+                        uri?.let {
+                            viewModel.uploadProfileImage(context, it)
+                        }
                     }
                 }
-            }
 
-            EditProfileScreen(
-                viewModel = viewModel,
-                onPickImage = { imageUtils.launchImagePicker() } // Pass click action to UI
-            )
+                EditProfileScreen(
+                    viewModel = viewModel,
+                    onPickImage = { imageUtils.launchImagePicker() }
+                )
+            }
         }
     }
 }
@@ -108,13 +108,12 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                // This check determines if the background is Green or Red
                 val isSuccess = message.contains("successfully", ignoreCase = true) ||
                         message.contains("Updated", ignoreCase = true) ||
                         message.contains("Loaded", ignoreCase = true)
                 Snackbar(
                     snackbarData = data,
-                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFF4CAF50),
+                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336),
                     contentColor = Color.White,
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -122,16 +121,16 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
         },
         topBar = {
             TopAppBar(
-                title = { Text("Edit Profile", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Edit Profile", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
-        containerColor = Color(0xFFF7F7F7)
+        containerColor = MaterialTheme.colorScheme.background // Changed from F7F7F7
     ) { paddingValues ->
 
         Column(
@@ -143,7 +142,6 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Profile Image Section with Gallery Picker
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -152,10 +150,9 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                     modifier = Modifier
                         .size(110.dp)
                         .clip(CircleShape)
-                        .background(Color.LightGray)
-                        .clickable { onPickImage() } // 4. Click to open gallery via ImageUtils
+                        .background(MaterialTheme.colorScheme.surfaceVariant) // Adaptive background
+                        .clickable { onPickImage() }
                 ) {
-                    // 5. Use AsyncImage to display the Cloudinary URL
                     if (!user?.profileImage.isNullOrEmpty()) {
                         AsyncImage(
                             model = user?.profileImage,
@@ -169,24 +166,23 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                             contentDescription = "User Avatar",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(ButtonGray),
-                            tint = Color.LightGray
+                                .clip(CircleShape),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    // Camera Icon Badge
+
                     Box(
                         modifier = Modifier
                             .size(34.dp)
                             .align(Alignment.BottomEnd)
-                            .background(Color.White, CircleShape)
-                            .border(1.dp, Color.LightGray, CircleShape),
+                            .background(MaterialTheme.colorScheme.surface, CircleShape) // Adaptive badge
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.CameraAlt,
                             contentDescription = "Change Picture",
-                            tint = Color.Black,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -198,7 +194,7 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), // Changed from Color.White
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -208,7 +204,11 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         label = { Text("First Name") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     OutlinedTextField(
@@ -217,7 +217,11 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         label = { Text("Last Name") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     OutlinedTextField(
@@ -226,7 +230,11 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         label = { Text("Phone Number") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                 }
             }
@@ -246,5 +254,3 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
         }
     }
 }
-
-

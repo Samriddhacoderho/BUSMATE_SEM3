@@ -46,12 +46,36 @@ class AddChildActivity : ComponentActivity() {
         val viewModel = ChildViewModel(repository)
 
         setContent {
-            AddChildScreen(
-                viewModel = viewModel,
-                prefilledStudentId = prefilledStudentId,
-                prefilledParentId = prefilledParentId,
-                onBack = { finish() }
-            )
+            // Observe SharedPreferences changes for dark mode
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    AddChildScreen(
+                        viewModel = viewModel,
+                        prefilledStudentId = prefilledStudentId,
+                        prefilledParentId = prefilledParentId,
+                        onBack = { finish() }
+                    )
+                }
+            }
         }
     }
 }
@@ -157,7 +181,7 @@ fun AddChildScreen(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color.LightGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(2.dp, BusMateBlue, CircleShape)
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
@@ -170,7 +194,7 @@ fun AddChildScreen(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray)
+                    Icon(Icons.Default.AddAPhoto, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -291,8 +315,8 @@ fun MapLocationField(label: String, value: String, onClick: () -> Unit) {
             .clickable { onClick() },
         enabled = false,
         colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = Color.Black,
-            disabledBorderColor = Color.Gray
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline
         )
     )
 }

@@ -47,8 +47,30 @@ class BusDetailsActivity : ComponentActivity() {
         val childViewModel = ChildViewModel(childRepository)
 
         setContent {
-            BusMateTheme {
-                BusDetailsScreen(busViewModel, childViewModel)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    BusDetailsScreen(busViewModel, childViewModel)
+                }
             }
         }
     }
@@ -86,7 +108,7 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
     }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = Color(0xFFF7F7F7)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -153,7 +175,7 @@ fun BusDetailsScreen(busViewModel: BusViewModel, childViewModel: ChildViewModel)
                     .offset(y = (-40).dp), // Creates the overlapping effect
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(10.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -214,4 +236,3 @@ fun DetailText(label: String, value: String) {
         HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp, color = Color.LightGray)
     }
 }
-

@@ -55,10 +55,35 @@ class AttendanceActivity : ComponentActivity() {
         val driverUid = intent.getStringExtra("EXTRA_DRIVER_UID") ?: ""
 
         setContent {
-            AttendanceScreen(
-                driverUid = driverUid,
-                onBackClick = { finish() }
-            )
+            // Observe SharedPreferences changes for dark mode
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableIntStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            // Force recomposition by using themeChanged in BusMateTheme
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    AttendanceScreen(
+                        driverUid = driverUid,
+                        onBackClick = { finish() }
+                    )
+                }
+            }
         }
     }
 }
@@ -322,7 +347,7 @@ fun StudentAttendanceCard(
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text("${child.firstName} ${child.lastName}", fontWeight = FontWeight.Bold)
-                Text("ID: ${child.studentId}", fontSize = 12.sp, color = Color.Gray)
+                Text("ID: ${child.studentId}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             Checkbox(
