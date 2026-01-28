@@ -175,155 +175,293 @@ fun BusScreenUI(
                     .fillMaxWidth()
                     .fillMaxHeight(0.70f)
                     .padding(horizontal = 24.dp)
-                    .align(Alignment.BottomCenter),
+                    .align(Alignment.BottomCenter)
+                    .offset(y = (-16).dp),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                elevation = CardDefaults.cardElevation(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Bus Details",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    // --- IMAGE PICKER SECTION ---
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
-                            .clickable { launcher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (selectedImageUri != null) {
-                            AsyncImage(
-                                model = selectedImageUri,
-                                contentDescription = "Selected Bus Image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.AddAPhoto,
-                                    contentDescription = null,
-                                    tint = BusMateBlue
+                        .fillMaxSize()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White,
+                                    Color(0xFFF8F9FE)
                                 )
-                                Text("Add Photo", fontSize = 12.sp, color = BusMateBlue)
+                            )
+                        )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(28.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Bus Details",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF1E293B)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Fill in all required information",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = Color(0xFF64748B)
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        // --- IMAGE PICKER SECTION ---
+                        Box(
+                            modifier = Modifier
+                                .size(140.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFFF1F3F5))
+                                .border(
+                                    width = 2.dp,
+                                    color = if (selectedImageUri != null) Color(0xFF2567E8) else Color(0xFFE0E0E0),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable { launcher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (selectedImageUri != null) {
+                                AsyncImage(
+                                    model = selectedImageUri,
+                                    contentDescription = "Selected Bus Image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AddAPhoto,
+                                        contentDescription = null,
+                                        tint = Color(0xFF2567E8),
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Add Photo",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF2567E8),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                    OutlinedTextField(
-                        value = busNumber,
-                        onValueChange = { busNumber = it },
-                        label = { Text("Bus Number *") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                    OutlinedTextField(
-                        value = licensePlate,
-                        onValueChange = { licensePlate = it },
-                        label = { Text("License Plate *") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                    OutlinedTextField(
-                        value = routeId,
-                        onValueChange = { routeId = it },
-                        label = { Text("Route ID *") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                    OutlinedTextField(
-                        value = capacity,
-                        onValueChange = { capacity = it.filter { c -> c.isDigit() } },
-                        label = { Text("Capacity *") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        // Show this if the user hasn't picked an image
-                        if (selectedImageUri == null) {
-                            Text(
-                                text = "• Please upload a bus photo",
-                                color = Color.Red,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                        OutlinedTextField(
+                            value = busNumber,
+                            onValueChange = { busNumber = it },
+                            label = { Text("Bus Number", fontWeight = FontWeight.Medium) },
+                            placeholder = { Text("e.g., BUS-001", color = Color(0xFF9E9E9E)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF2567E8),
+                                focusedLabelColor = Color(0xFF2567E8),
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                errorBorderColor = Color(0xFFE57373),
+                                errorLabelColor = Color(0xFFE57373)
                             )
-                        }
-                        // Show this if any text field is empty
-                        if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacity.isBlank()) {
-                            Text(
-                                text = "• Please fill all required fields",
-                                color = Color.Red,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = licensePlate,
+                            onValueChange = { licensePlate = it },
+                            label = { Text("License Plate", fontWeight = FontWeight.Medium) },
+                            placeholder = { Text("e.g., BA-1-PA-1234", color = Color(0xFF9E9E9E)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF2567E8),
+                                focusedLabelColor = Color(0xFF2567E8),
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                errorBorderColor = Color(0xFFE57373),
+                                errorLabelColor = Color(0xFFE57373)
                             )
-                        }
-                    }
+                        )
 
-                    Button(
-                        onClick = {
-                            submitted = true
-                            if (isFormValid){
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                                val capacityInt = capacity.toIntOrNull()
-                                if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Please fill all bus details correctly.")
+                        OutlinedTextField(
+                            value = routeId,
+                            onValueChange = { routeId = it },
+                            label = { Text("Route ID", fontWeight = FontWeight.Medium) },
+                            placeholder = { Text("e.g., ROUTE-A1", color = Color(0xFF9E9E9E)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF2567E8),
+                                focusedLabelColor = Color(0xFF2567E8),
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                errorBorderColor = Color(0xFFE57373),
+                                errorLabelColor = Color(0xFFE57373)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = capacity,
+                            onValueChange = { capacity = it.filter { c -> c.isDigit() } },
+                            label = { Text("Capacity", fontWeight = FontWeight.Medium) },
+                            placeholder = { Text("e.g., 40", color = Color(0xFF9E9E9E)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF2567E8),
+                                focusedLabelColor = Color(0xFF2567E8),
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                errorBorderColor = Color(0xFFE57373),
+                                errorLabelColor = Color(0xFFE57373)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Validation Messages
+                        if (!isFormValid) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFE57373).copy(alpha = 0.1f)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    if (selectedImageUri == null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "•",
+                                                color = Color(0xFFE57373),
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(end = 8.dp)
+                                            )
+                                            Text(
+                                                text = "Please upload a bus photo",
+                                                color = Color(0xFFE57373),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
-                                } else {
-                                    // Check if an image is selected
-                                    // Inside BusScreen.kt Button onClick
-                                    if (selectedImageUri != null) {
-                                        userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
+                                    if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacity.isBlank()) {
+                                        if (selectedImageUri == null) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "•",
+                                                color = Color(0xFFE57373),
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(end = 8.dp)
+                                            )
+                                            Text(
+                                                text = "Please fill all required fields",
+                                                color = Color(0xFFE57373),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        Button(
+                            onClick = {
+                                submitted = true
+                                if (isFormValid){
+
+                                    val capacityInt = capacity.toIntOrNull()
+                                    if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Please fill all bus details correctly.")
+                                        }
+                                    } else {
+                                        // Check if an image is selected
+                                        // Inside BusScreen.kt Button onClick
+                                        if (selectedImageUri != null) {
+                                            userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
+                                                viewModel.registerBus(
+                                                    busNumber = busNumber,
+                                                    licensePlate = licensePlate,
+                                                    routeId = routeId,
+                                                    capacity = capacityInt,
+                                                    busImage = imageUrl ?: ""
+                                                )
+                                            }
+                                        } else {
                                             viewModel.registerBus(
                                                 busNumber = busNumber,
                                                 licensePlate = licensePlate,
                                                 routeId = routeId,
                                                 capacity = capacityInt,
-                                                busImage = imageUrl ?: "" // ✅ Now this works!
+                                                busImage = ""
                                             )
                                         }
-                                    } else {
-                                        viewModel.registerBus(
-                                            busNumber = busNumber,
-                                            licensePlate = licensePlate,
-                                            routeId = routeId,
-                                            capacity = capacityInt,
-                                            busImage = "" // ✅ Now this works!
-                                        )
                                     }
                                 }
+                            },
+                            enabled = isFormValid && !isLoading,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(58.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF2567E8),
+                                disabledContainerColor = Color(0xFFBDBDBD),
+                                disabledContentColor = Color.White
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 4.dp,
+                                pressedElevation = 8.dp
+                            )
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(26.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = Color.White
+                                )
+                                Spacer(Modifier.width(12.dp))
                             }
-                        },
-                        enabled = isFormValid && !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    ) {
-                        Text(text = if (!isLoading) "REGISTER NEW BUS" else "Registering...")
+                            Text(
+                                text = if (!isLoading) "REGISTER NEW BUS" else "Registering...",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
                 }
             }
