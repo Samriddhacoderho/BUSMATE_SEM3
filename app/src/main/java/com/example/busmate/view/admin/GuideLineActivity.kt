@@ -18,8 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.data.GuideLinesImpl
-import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateTheme
+import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.viewmodel.GuideLineViewModel
 
 class GuideLineActivity : ComponentActivity() {
@@ -31,28 +31,26 @@ class GuideLineActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            // Observe SharedPreferences changes for dark mode
             val context = androidx.compose.ui.platform.LocalContext.current
+
+            // Standardizing the theme refresh logic to match your other activities
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
             }
-            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+            var themeUpdateTrigger by remember { mutableIntStateOf(0) }
 
-            androidx.compose.runtime.DisposableEffect(Unit) {
+            DisposableEffect(Unit) {
                 val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                     if (key == "dark_mode_pref") {
-                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        themeUpdateTrigger++
                     }
                 }
                 sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
-
-                onDispose {
-                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
-                }
+                onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            key(themeChanged) {
-                BusMateTheme {
+            key(themeUpdateTrigger) {
+                BusMateTheme(darkTheme = isDarkMode()) {
                     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                             when (typeOfUser) {
@@ -83,10 +81,13 @@ private fun ErrorScreen(type: String?) {
 }
 
 /* ============================================================
-   ADMIN UI (THEMED LIKE LOGIN SCREEN)
+   ADMIN UI
    ============================================================ */
 @Composable
 fun AdminGuidelineScreen() {
+    // FORCE BLUE COLOR
+    val busMateBlue = Color(0xFF2567E8)
+
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
     val guidelines by viewModel.guidelines.collectAsState()
     val message by viewModel.message.collectAsState()
@@ -99,13 +100,12 @@ fun AdminGuidelineScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // ---- TOP BLUE HEADER ----
+        // TOP BLUE HEADER
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.35f)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(busMateBlue), // Applied Blue
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -124,7 +124,7 @@ fun AdminGuidelineScreen() {
             )
         }
 
-        // ---- WHITE CARD ----
+        // CARD SECTION
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -139,7 +139,6 @@ fun AdminGuidelineScreen() {
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 OutlinedTextField(
                     value = textState,
                     onValueChange = { textState = it },
@@ -148,9 +147,10 @@ fun AdminGuidelineScreen() {
                         .fillMaxWidth()
                         .height(250.dp),
                     minLines = 10,
+                    shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                        focusedBorderColor = busMateBlue,
+                        focusedLabelColor = busMateBlue
                     )
                 )
 
@@ -163,7 +163,7 @@ fun AdminGuidelineScreen() {
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = busMateBlue, // Applied Blue
                         contentColor = Color.White
                     )
                 ) {
@@ -188,23 +188,23 @@ fun AdminGuidelineScreen() {
 }
 
 /* ============================================================
-   DRIVER / PARENT UI (THEMED LIKE LOGIN SCREEN)
+   DRIVER / PARENT UI
    ============================================================ */
 @Composable
 fun DriverGuidelineScreen() {
+    val busMateBlue = Color(0xFF2567E8)
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
     val guidelines by viewModel.guidelines.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadGuidelines() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // ---- TOP BLUE HEADER ----
+        // TOP BLUE HEADER
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.35f)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(busMateBlue), // Applied Blue
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -222,7 +222,7 @@ fun DriverGuidelineScreen() {
             )
         }
 
-        // ---- WHITE CARD ----
+        // CONTENT CARD
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -239,7 +239,8 @@ fun DriverGuidelineScreen() {
                         "Waiting for admin to post guidelines..."
                     },
                     fontSize = 16.sp,
-                    lineHeight = 24.sp
+                    lineHeight = 24.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

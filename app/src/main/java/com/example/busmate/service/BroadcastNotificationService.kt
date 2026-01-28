@@ -252,6 +252,5 @@ class BroadcastNotificationService : Service() {
         removeOldListener()
         super.onDestroy()
     }
-
     override fun onBind(intent: Intent?): IBinder? = null
 }
