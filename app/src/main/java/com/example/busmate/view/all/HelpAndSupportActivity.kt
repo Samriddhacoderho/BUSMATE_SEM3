@@ -38,14 +38,36 @@ class HelpAndSupportActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
-            val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
 
-            BusMateTheme {
-                SupportScreen(
-                    viewModel = supportViewModel,
-                    userViewModel = userViewModel
-                )
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                val supportViewModel = remember { SupportViewModel(SupportRepositoryImpl()) }
+                val userViewModel = remember { UserViewModel(UserRepositoryImpl()) }
+
+                BusMateTheme {
+                    SupportScreen(
+                        viewModel = supportViewModel,
+                        userViewModel = userViewModel
+                    )
+                }
             }
         }
     }
@@ -75,10 +97,10 @@ fun SupportScreen(
     val customTextFieldColors = TextFieldDefaults.colors(
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
-        focusedContainerColor = LightGrayBackground,
-        unfocusedContainerColor = LightGrayBackground,
-        focusedTextColor = Color.Black,
-        unfocusedTextColor = Color.Black
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
     )
 
     LaunchedEffect(Unit) {
@@ -191,7 +213,7 @@ fun AdminUserGroupCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("User: $userName ($userType)", fontWeight = FontWeight.Bold, color = BusMateBlue, fontSize = 18.sp)
@@ -202,7 +224,7 @@ fun AdminUserGroupCard(
                 var adminReply by remember { mutableStateOf("") }
 
                 Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                    Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                    Text("Title: ${support.title}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Message: ${support.message}", modifier = Modifier.padding(bottom = 4.dp))
 
                     if (support.reply.isNotEmpty()) {

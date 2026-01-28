@@ -49,10 +49,33 @@ class ChangePasswordScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val repo = UserRepositoryImpl()
-            val viewModel = UserViewModel(repo)
-            ChangePasswordScreen(viewModel = viewModel)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
 
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    val repo = UserRepositoryImpl()
+                    val viewModel = UserViewModel(repo)
+                    ChangePasswordScreen(viewModel = viewModel)
+                }
+            }
         }
     }
 }

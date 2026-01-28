@@ -38,10 +38,33 @@ class ResetPasswordActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
 
-            val repo = UserRepositoryImpl()
-            val viewModel = UserViewModel(repo)
-            ResetPasswordUI(viewModel)
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    val repo = UserRepositoryImpl()
+                    val viewModel = UserViewModel(repo)
+                    ResetPasswordUI(viewModel)
+                }
+            }
         }
     }
 }
@@ -122,7 +145,7 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
                     .height(350.dp)
                     .offset(y = (-100).dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
 
                 Column(
@@ -179,7 +202,3 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
         }
     }
 }
-
-
-
-
