@@ -96,7 +96,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     val isUserIdNumeric = userId.isEmpty() || userId.all { it.isDigit() } // New numeric check
 
     val isValid = userId.isNotBlank() && password.isNotBlank() && isPasswordLengthValid && isUserIdNumeric
-    val isButtonEnabled = isValid && message != "Loading"
+    val isButtonEnabled = isValid && message != "Loading..."
 
     fun clickSignup(){
         val intent= Intent(context, SignUpScreen::class.java)
@@ -108,18 +108,8 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     }
 
     LaunchedEffect(message) {
-        if (message.isNotEmpty() && message != "Loading") {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                )
-            }
-
+        if (message.isNotEmpty() && message != "Loading...") {
             if (message == "Successful Login") {
-                //  Show snackbar
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(message = message)
-                }
                 // Save user to SharedPreferences
                 if (rememberMe==true){
                     val sharedPreferences = context.getSharedPreferences("User", Activity.MODE_PRIVATE)
@@ -135,6 +125,12 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 intent.putExtra("model", user)
                 context.startActivity(intent)
                 activity.finish()
+            } else {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                    )
+                }
             }
 
         }
@@ -172,7 +168,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
         snackbarHost = {SnackbarHost(hostState = snackbarHostState){
             Snackbar(
                 snackbarData = it,
-                containerColor = if (message.isNotEmpty() && message == "Successful Login") Color.Green else Color.Red,
+                containerColor = Color.Red,
                 contentColor = Color.White
             )
         } }
@@ -189,13 +185,13 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                 // Background image - REPLACE 'your_background_image' with your actual drawable resource name
                 // For example: R.drawable.login_background
                 // Uncomment the line below and replace with your image resource
-                 Image(
-                     painter = painterResource(id = R.drawable.loginscreenphoto),
-                     contentDescription = "Background",
-                     modifier = Modifier.fillMaxSize(),
-                     contentScale = ContentScale.Crop,
-                     alpha = 0.22f // Adjust transparency (0.1f to 1.0f)
-                 )
+                Image(
+                    painter = painterResource(id = R.drawable.loginscreenphoto),
+                    contentDescription = "Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.22f // Adjust transparency (0.1f to 1.0f)
+                )
 
                 Column(
                     modifier = Modifier
@@ -404,11 +400,19 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         enabled = isButtonEnabled
 
                     ) {
-                        Text(
-                            text = if (message!="Loading") "Log In" else "Logging In",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (message == "Loading...") {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Log In",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
 
