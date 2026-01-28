@@ -107,12 +107,15 @@ fun SupportScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Help & Support", fontWeight = FontWeight.Bold) },
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = { activity.finish() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = BusMateBlue)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = BusMateBlue // Top Bar is now BusMateBlue
+                )
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
