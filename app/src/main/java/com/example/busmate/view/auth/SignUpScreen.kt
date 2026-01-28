@@ -514,7 +514,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                             label = {
                                 Text("Set Password", fontWeight = FontWeight.Medium)
                             },
-                            placeholder = { Text("Sandip@69", color = Color(0xFF9E9E9E)) },
+                            placeholder = { Text("Set Password", color = Color(0xFF9E9E9E)) },
                             singleLine = true,
                             isError = passwordError.isNotEmpty(),
                             shape = RoundedCornerShape(12.dp),

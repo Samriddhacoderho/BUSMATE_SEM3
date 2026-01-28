@@ -268,16 +268,20 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                                 userIdError = ""
                             }
                         },
-                        label = { Text("Enter ID here") },
+                        label = { Text("Enter ID here", fontWeight = FontWeight.Medium) },
                         singleLine = true,
                         isError = userIdError.isNotEmpty(),
+                        shape = RoundedCornerShape(12.dp),
                         // FIX: Set keyboard to numeric
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             focusedLabelColor = PrimaryBlue,
-                            errorBorderColor = Color.Red,
-                            errorLabelColor = Color.Red
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            errorBorderColor = Color(0xFFE57373),
+                            errorLabelColor = Color(0xFFE57373)
                         ),
                         modifier = Modifier.fillMaxWidth().testTag("schoolId"),
                     )
@@ -290,14 +294,15 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     ) {
                         Text(
                             text = userIdError,
-                            color = Color.Red,
-                            fontSize = 12.sp,
+                            color = Color(0xFFE57373),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 16.dp, top = 4.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     // Password Field
                     OutlinedTextField(
@@ -314,22 +319,27 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             }
                         },
                         interactionSource = passwordInteractionSource,
-                        label = { Text(if (password.isEmpty() && !isPasswordFocused) "********" else "Password") },
+                        label = { Text("Password", fontWeight = FontWeight.Medium) },
+                        placeholder = { Text("********", color = Color(0xFF9E9E9E)) },
                         singleLine = true,
                         isError = passwordError.isNotEmpty(),
+                        shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
                             val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(imageVector = image, contentDescription = "Toggle password visibility")
+                                Icon(imageVector = image, contentDescription = "Toggle password visibility", tint = Color(0xFF757575))
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             focusedLabelColor = PrimaryBlue,
-                            errorBorderColor = Color.Red,
-                            errorLabelColor = Color.Red
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            errorBorderColor = Color(0xFFE57373),
+                            errorLabelColor = Color(0xFFE57373)
                         ),
                         modifier = Modifier.fillMaxWidth().testTag("password")
                     )
@@ -342,8 +352,9 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     ) {
                         Text(
                             text = passwordError,
-                            color = Color.Red,
-                            fontSize = 12.sp,
+                            color = Color(0xFFE57373),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 16.dp, top = 4.dp)
@@ -388,40 +399,47 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                     // Log In Button
                     Button(
                         onClick = { loginFunc()},
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
-                            disabledContainerColor = Color.Gray,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryBlue,
+                            disabledContainerColor = Color(0xFFBDBDBD),
                             disabledContentColor = Color.White,
                             contentColor = Color.White
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp).testTag("loginButton"),
-                        shape = RoundedCornerShape(12.dp),
+                            .height(58.dp).testTag("loginButton"),
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        ),
                         enabled = isButtonEnabled
 
                     ) {
                         if (message == "Loading...") {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(26.dp),
                                 color = Color.White,
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.5.dp
                             )
                         } else {
                             Text(
                                 text = "Log In",
                                 fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Sign Up Link
                     Row {
                         Text(
                             text = "Don't have an account?",
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = Color(0xFF757575),
+                            fontWeight = FontWeight.Normal
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -432,7 +450,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             modifier = Modifier.clickable {clickSignup()}
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
