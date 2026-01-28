@@ -12,7 +12,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.argThat
 
 
-class SignUpUnitTest {
+class SignupUnitTest {
 
     @Test
     fun register_success_test() {
