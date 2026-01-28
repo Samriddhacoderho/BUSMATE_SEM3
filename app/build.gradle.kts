@@ -118,6 +118,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.foundation)
     implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.compose.ui.ui)
 
     // Testing
     testImplementation(libs.junit)
