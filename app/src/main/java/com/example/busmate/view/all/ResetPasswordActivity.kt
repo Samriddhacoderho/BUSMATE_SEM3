@@ -33,6 +33,7 @@ import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PlaceholderBusColor
 import com.example.busmate.ui.theme.PrimaryBlue
 import com.example.busmate.viewmodel.UserViewModel
+import com.airbnb.lottie.compose.*
 
 class ResetPasswordActivity : ComponentActivity() {
     @SuppressLint("ViewModelConstructorInComposable")
@@ -194,6 +195,25 @@ fun ResetPasswordUI(viewModel: UserViewModel) {
                             .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Spacer(modifier = Modifier.height(42.dp))  //spacer top of lotte
+
+
+                        val composition by rememberLottieComposition(
+                            LottieCompositionSpec.RawRes(R.raw.password)
+                        )
+                        val progress by animateLottieCompositionAsState(
+                            composition = composition,
+                            iterations = LottieConstants.IterateForever
+                        )
+
+                        LottieAnimation(
+                            composition = composition,
+                            progress = { progress },
+                            modifier = Modifier
+                                .size(220.dp)
+                                .padding(bottom = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(42.dp)) //spacer bottom of lotte
 
                         OutlinedTextField(
                             value = userId,
