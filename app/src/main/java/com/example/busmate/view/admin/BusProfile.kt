@@ -43,6 +43,7 @@ import com.example.busmate.data.AdminActionsImpl
 import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.model.BusModel
 import com.example.busmate.ui.theme.BusMateBlue
+import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.AccelRecieverViewModel
 import com.example.busmate.viewmodel.AdminActionsViewModel
 
@@ -50,8 +51,35 @@ class BusProfileScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
-            BusProfileMainScreen()
+            // 🌙 Dark mode observer (LOGIC ONLY)
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember {
+                mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0))
+            }
+
+            DisposableEffect(Unit) {
+                val listener =
+                    android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "dark_mode_pref") {
+                            themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        }
+                    }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    BusProfileMainScreen()
+                }
+            }
         }
     }
 }
