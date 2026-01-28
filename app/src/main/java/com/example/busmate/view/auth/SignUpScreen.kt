@@ -45,6 +45,7 @@ import com.example.busmate.ui.theme.PrimaryBlue
 import com.example.busmate.ui.theme.SignUpTitleColor
 import com.example.busmate.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.testTag
 
 fun isValidEmail(email: String): Boolean {
     return Patterns.EMAIL_ADDRESS.matcher(email).matches()
@@ -227,7 +228,8 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(56.dp)
+                        .testTag("signUpButton"),
                     shape = RoundedCornerShape(12.dp),
                     enabled = message != "Loading" && isFormValid
 
@@ -369,6 +371,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                                     focusedBorderColor = BusMateBlue,
                                     focusedLabelColor = BusMateBlue
                                 ),
+                                modifier = Modifier.testTag("firstName")
                             )
                             if (firstNameError != null) {
                                 Text(firstNameError!!, color = Color.Red, fontSize = 12.sp)
@@ -395,6 +398,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                                     focusedBorderColor = BusMateBlue,
                                     focusedLabelColor = BusMateBlue
                                 ),
+                                modifier = Modifier.testTag("lastName")
                             )
                             if (lastNameError != null) {
                                 Text(lastNameError!!, color = Color.Red, fontSize = 12.sp)
@@ -420,7 +424,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("email")
                     )
                     if (emailError != null) {
                         Text(
@@ -442,7 +446,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         placeholder = { Text("ATX6647") },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("schoolId")
                     )
                     if (schoolIdError != null) {
                         Text(
@@ -470,7 +474,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("phone")
                     )
                     if (phoneError != null) {
                         Text(
@@ -513,7 +517,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                             focusedBorderColor = BusMateBlue,
                             focusedLabelColor = BusMateBlue
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("password")
                     )
 
                     if (passwordError != null) {
@@ -551,7 +555,7 @@ fun SignUpScreenUI(viewModel: UserViewModel) {
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BusMateBlue, focusedLabelColor = BusMateBlue),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("confirmPassword")
                     )
                     if (confirmPasswordError != null) {
                         Text(

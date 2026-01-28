@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import com.example.busmate.R
 import com.example.busmate.view.all.ResetPasswordActivity
 import com.google.gson.Gson
+import androidx.compose.ui.platform.testTag
 
 // --- Custom Colors ---
 private val PrimaryBlue = Color(0xFF2567E8)
@@ -260,7 +261,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             errorBorderColor = Color.Red,
                             errorLabelColor = Color.Red
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("schoolId"),
                     )
 
                     if (userIdError.isNotEmpty()) {
@@ -305,7 +306,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                             errorBorderColor = Color.Red,
                             errorLabelColor = Color.Red
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("password")
                     )
 
                     if (passwordError.isNotEmpty()) {
@@ -362,7 +363,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(56.dp).testTag("loginButton"),
                         shape = RoundedCornerShape(12.dp),
                         enabled = isButtonEnabled
 
