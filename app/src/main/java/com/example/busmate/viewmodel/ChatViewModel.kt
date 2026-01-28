@@ -1,22 +1,25 @@
 package com.example.busmate.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.busmate.data.ChatRepository
-import com.example.busmate.data.ChatMessage
+import com.example.busmate.model.ChatMessageModel
 import com.example.busmate.model.UserModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ChatViewModel : ViewModel() {
+// Changed to AndroidViewModel to access Application Context
+class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ChatRepository()
+    // Pass context to repository
+    private val repository = ChatRepository(application.applicationContext)
 
-    private val _messages = MutableStateFlow<List<ChatMessage>>(
-        listOf(ChatMessage("Hello! Ask me about your child's attendance or bus status.", false))
+    private val _messages = MutableStateFlow<List<ChatMessageModel>>(
+        listOf(ChatMessageModel("Hello! Ask me about your child's attendance or the bus location.", false))
     )
-    val messages: StateFlow<List<ChatMessage>> = _messages
+    val messages: StateFlow<List<ChatMessageModel>> = _messages
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -24,22 +27,17 @@ class ChatViewModel : ViewModel() {
     fun sendMessage(question: String, user: UserModel?) {
         if (question.isBlank() || user == null) return
 
-        // 1. Show User Message
         val currentList = _messages.value.toMutableList()
-        currentList.add(ChatMessage(question, true))
+        currentList.add(ChatMessageModel(question, true))
         _messages.value = currentList
         _isLoading.value = true
 
         viewModelScope.launch {
-            // 2. Get Children from User Model
             val children = user.children.values.toList()
-
-            // 3. Call Repo
             val responseText = repository.generateResponse(question, children)
 
-            // 4. Show AI Response
             val updatedList = _messages.value.toMutableList()
-            updatedList.add(ChatMessage(responseText, false))
+            updatedList.add(ChatMessageModel(responseText, false))
             _messages.value = updatedList
             _isLoading.value = false
         }
