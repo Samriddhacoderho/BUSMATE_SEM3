@@ -59,17 +59,41 @@ class MapPickerActivity : ComponentActivity() {
         }
 
         setContent {
-            MapPickerScreen(
-                onLocationSelected = { lat, lng, address ->
-                    val resultIntent = Intent().apply {
-                        putExtra("lat", lat)
-                        putExtra("lng", lng)
-                        putExtra("address", address)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
                     }
-                    setResult(RESULT_OK, resultIntent)
-                    finish()
                 }
-            )
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                com.example.busmate.ui.theme.BusMateTheme {
+                    MapPickerScreen(
+                        onLocationSelected = { lat, lng, address ->
+                            val resultIntent = Intent().apply {
+                                putExtra("lat", lat)
+                                putExtra("lng", lng)
+                                putExtra("address", address)
+                            }
+                            setResult(RESULT_OK, resultIntent)
+                            finish()
+                        }
+                    )
+                }
+            }
         }
     }
 
@@ -151,7 +175,7 @@ fun MapPickerScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray)
+                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = currentAddress,

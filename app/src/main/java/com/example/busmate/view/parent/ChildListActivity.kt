@@ -20,6 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,24 +47,46 @@ class ChildListActivity : ComponentActivity() {
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
 
         setContent {
-            BusMateTheme {
-                // Use LaunchedEffect to start observing data when the screen opens
-                LaunchedEffect(Unit) {
-                    currentUid?.let { uid ->
-                        viewModel.observeChildren(uid)
+            // Observe SharedPreferences changes for dark mode
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember { mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0)) }
+
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "dark_mode_pref") {
+                        themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
                     }
                 }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
 
-                ChildListScreen(
-                    viewModel = viewModel,
-                    onBackClick = { finish() },
-                    onChildClick = { selectedChild ->
-                        val intent = Intent(this, EditChildActivity::class.java).apply {
-                            putExtra("CHILD_DATA", selectedChild)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    // Use LaunchedEffect to start observing data when the screen opens
+                    LaunchedEffect(Unit) {
+                        currentUid?.let { uid ->
+                            viewModel.observeChildren(uid)
                         }
-                        startActivity(intent)
                     }
-                )
+
+                    ChildListScreen(
+                        viewModel = viewModel,
+                        onBackClick = { finish() },
+                        onChildClick = { selectedChild ->
+                            val intent = Intent(this, EditChildActivity::class.java).apply {
+                                putExtra("CHILD_DATA", selectedChild)
+                            }
+                            startActivity(intent)
+                        }
+                    )
+                }
             }
         }
     }
@@ -93,7 +119,7 @@ fun ChildListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5)) // Background color from Admin UI
+                .background(MaterialTheme.colorScheme.background) // Background color from Admin UI
         ) {
             // --- BLUE HEADER AREA (Matches Admin UI shape but NO Search Bar) ---
             Box(
@@ -137,7 +163,7 @@ fun ChildCard(child: ChildModel, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp), // Radius updated to match Admin UI
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
@@ -149,12 +175,12 @@ fun ChildCard(child: ChildModel, onClick: () -> Unit) {
                     text = "${child.firstName} ${child.lastName}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "ID: ${child.studentId}",
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
