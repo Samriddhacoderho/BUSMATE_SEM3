@@ -107,7 +107,12 @@ fun SupportScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { },
+                title = { Text(
+                    "Help & Support",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(end = 40.dp),// White text for blue background
+                )},
                 navigationIcon = {
                     IconButton(onClick = { activity.finish() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
