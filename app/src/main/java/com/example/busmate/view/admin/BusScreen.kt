@@ -154,12 +154,7 @@ fun BusScreenUI(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "BusMate Logo",
-                        colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                        modifier = Modifier.size(100.dp)
-                    )
+
                     Text(
                         text = "New Bus Registration",
                         color = Color.White,
