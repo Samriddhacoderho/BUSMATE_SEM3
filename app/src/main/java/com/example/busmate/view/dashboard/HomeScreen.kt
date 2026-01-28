@@ -275,6 +275,9 @@ fun HomeScreen(
                     )
                 }
             }
+            item {
+                Spacer(Modifier.height(24.dp))
+            }
 
             // PARENT: SECTION HEADER
             if (model?.typeofUser == "Parent") {
@@ -299,12 +302,52 @@ fun HomeScreen(
                     }
                 } else {
                     items(childrenList) { child ->
+                        // ✅ Real-time Dynamic Bus Status
+                        var busStatus by remember { mutableStateOf<Pair<String, Color>>("Checking..." to Color.Gray) }
+
+                        // Real-time listener for bus changes
+                        DisposableEffect(child.busRouteId) {
+                            val busRef = com.google.firebase.database.FirebaseDatabase
+                                .getInstance()
+                                .getReference("buses")
+
+                            val listener = object : com.google.firebase.database.ValueEventListener {
+                                override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                                    var found = false
+                                    for (busSnap in snapshot.children) {
+                                        val bus = busSnap.getValue(com.example.busmate.model.BusModel::class.java)
+                                        if (bus?.routeId == child.busRouteId) {
+                                            busStatus = when {
+                                                bus.isTripRunning -> "On Route" to BusMateGreen
+                                                else -> "Scheduled" to BusMateOrange
+                                            }
+                                            found = true
+                                            break
+                                        }
+                                    }
+                                    if (!found) {
+                                        busStatus = "No Bus Assigned" to Color.Gray
+                                    }
+                                }
+
+                                override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
+                                    busStatus = "Error" to Color.Red
+                                }
+                            }
+
+                            busRef.addValueEventListener(listener)
+
+                            onDispose {
+                                busRef.removeEventListener(listener)
+                            }
+                        }
+
                         ModernChildCard(
                             childName = "${child.firstName} ${child.lastName}",
-                            statusText = "On Route",
+                            statusText = busStatus.first,
                             studentId = child.studentId,
                             routeId = child.busRouteId,
-                            statusColor = BusMateGreen,
+                            statusColor = busStatus.second,
                             imageUrl = child.profileImage,
                             onClick = {
                                 busViewModel.getBusByRouteId(child.busRouteId) { bus ->
@@ -460,9 +503,7 @@ fun HomeScreen(
                 )
             }
 
-            if (notifications.isEmpty() &&
-                (model?.typeofUser == "Parent" || model?.typeofUser == "Driver")
-            ) {
+            if (notifications.isEmpty()) {
                 item {
                     EmptyNotificationsCard()
                 }
