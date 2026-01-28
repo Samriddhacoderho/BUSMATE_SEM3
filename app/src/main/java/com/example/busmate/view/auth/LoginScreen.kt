@@ -7,6 +7,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +21,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -173,46 +179,62 @@ fun LoginScreenUI(viewModel: UserViewModel) {
     )
     {paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            // 1. Top Blue Background Section
-            Column(
+            // 1. Top Blue Background Section with transparent background image
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.60f)
-                    .background(BusMateBlue),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                    .background(BusMateBlue)
             ) {
-                Spacer(modifier = Modifier.height(24.dp)) // FIX: Reduced top padding to 24.dp
+                // Background image - REPLACE 'your_background_image' with your actual drawable resource name
+                // For example: R.drawable.login_background
+                // Uncomment the line below and replace with your image resource
+                 Image(
+                     painter = painterResource(id = R.drawable.loginscreenphoto),
+                     contentDescription = "Background",
+                     modifier = Modifier.fillMaxSize(),
+                     contentScale = ContentScale.Crop,
+                     alpha = 0.22f // Adjust transparency (0.1f to 1.0f)
+                 )
 
-                // Bus Logo
-                Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = "Bus Mate Logo",
-                    colorFilter = ColorFilter.tint(PlaceholderBusColor),
-                    modifier = Modifier.size(200.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp)) // FIX: Reduced top padding to 24.dp
+
+                    // Bus Logo
+                    Image(
+                        painter = painterResource(R.drawable.logo),
+                        contentDescription = "Bus Mate Logo",
+                        colorFilter = ColorFilter.tint(PlaceholderBusColor),
+                        modifier = Modifier.size(200.dp)
+                    )
 
 
 
-                // Log in title
-                Text(
-                    text = "Log in to your\nAccount",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 40.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
-                )
-                Spacer(modifier = Modifier.height(30.dp))
+                    // Log in title
+                    Text(
+                        text = "Log in to your\nAccount",
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 40.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(30.dp))
 
-                // Subtitle
-                Text(
-                    text = "Enter your ID and password to log in",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
+                    // Subtitle
+                    Text(
+                        text = "Enter your ID and password to log in",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             // 2. White Login Card (Overlaps the blue section)
@@ -264,12 +286,19 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         modifier = Modifier.fillMaxWidth().testTag("schoolId"),
                     )
 
-                    if (userIdError.isNotEmpty()) {
+                    // Animated error message for User ID
+                    AnimatedVisibility(
+                        visible = userIdError.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
                         Text(
                             text = userIdError,
                             color = Color.Red,
                             fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.Start)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 4.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -309,12 +338,19 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         modifier = Modifier.fillMaxWidth().testTag("password")
                     )
 
-                    if (passwordError.isNotEmpty()) {
+                    // Animated error message for Password
+                    AnimatedVisibility(
+                        visible = passwordError.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
                         Text(
                             text = passwordError,
                             color = Color.Red,
                             fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.Start)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 4.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -359,7 +395,7 @@ fun LoginScreenUI(viewModel: UserViewModel) {
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue,
                             disabledContainerColor = Color.Gray,
                             disabledContentColor = Color.White,
-                            contentColor = Color.Black
+                            contentColor = Color.White
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
