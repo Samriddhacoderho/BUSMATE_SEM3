@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.busmate.R
 import com.example.busmate.data.UserRepositoryImpl
+import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.viewmodel.CreateAccountViewModel
 import kotlinx.coroutines.launch
 
@@ -48,7 +48,33 @@ class CreateAccountScreenActivity : ComponentActivity() {
         val viewModel = CreateAccountViewModel(repo)
 
         setContent {
-            CreateAccountScreen(viewModel = viewModel)
+            // 🌙 Dark mode observer
+            val context = LocalContext.current
+            val sharedPrefs = remember {
+                context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            }
+            var themeChanged by remember {
+                mutableStateOf(sharedPrefs.getInt("dark_mode_pref", 0))
+            }
+
+            DisposableEffect(Unit) {
+                val listener =
+                    android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "dark_mode_pref") {
+                            themeChanged = sharedPrefs.getInt("dark_mode_pref", 0)
+                        }
+                    }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            key(themeChanged) {
+                BusMateTheme {
+                    CreateAccountScreen(viewModel = viewModel)
+                }
+            }
         }
     }
 }
@@ -68,8 +94,9 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
 
     val roles = listOf("Parent", "Driver")
     val isRoleSelected = selectedRole != "Select Role"
+    val cardAlpha by animateFloatAsState(targetValue = 1f)
 
-    // AUTOMATIC NAVIGATION LOG (UNCHANGED)
+    // 🚦 Navigation + snackbar logic
     LaunchedEffect(message) {
         if (message == "Created Account Successful") {
             if (selectedRole == "Parent") {
@@ -79,22 +106,16 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                 context.startActivity(intent)
                 (context as Activity).finish()
             } else {
-                scope.launch {
-                    snackbarHostState.showSnackbar("Account created successfully")
-                }
+                snackbarHostState.showSnackbar("Account created successfully")
             }
         } else if (message.isNotEmpty() && message != "Loading...") {
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
+            snackbarHostState.showSnackbar(message)
         }
     }
 
-    val cardAlpha by animateFloatAsState(targetValue = 1f)
-
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color(0xFFF8F9FA)
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
 
         Column(
@@ -103,7 +124,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                 .padding(paddingValues)
         ) {
 
-            // 🔵 HEADER
+            // 🔵 Gradient Header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -111,22 +132,14 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF2567E8),
-                                Color(0xFF1D4ED8)
-                            )
+                            listOf(Color(0xFF2567E8), Color(0xFF1D4ED8))
                         )
                     )
-                    .shadow(
-                        elevation = 6.dp,
-                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
-                    )
+                    .shadow(6.dp)
                     .padding(vertical = 28.dp, horizontal = 24.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { (context as Activity).finish() }
-                    ) {
+                    IconButton(onClick = { (context as Activity).finish() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -135,13 +148,16 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     }
 
                     Spacer(Modifier.width(8.dp))
+
                     Icon(
                         imageVector = Icons.Default.AdminPanelSettings,
                         contentDescription = null,
                         tint = Color(0xFFFFB74D),
                         modifier = Modifier.size(32.dp)
                     )
+
                     Spacer(Modifier.width(12.dp))
+
                     Column {
                         Text(
                             text = "Admin",
@@ -160,15 +176,17 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
 
             Spacer(Modifier.height(32.dp))
 
-            // 🧾 MAIN CARD
+            // 🧾 Main Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .graphicsLayer { alpha = cardAlpha },
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(6.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -176,7 +194,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                 ) {
 
                     Image(
-                        painter = painterResource(id = R.drawable.logo),
+                        painter = painterResource(R.drawable.logo),
                         contentDescription = "Logo",
                         modifier = Modifier.size(100.dp),
                         colorFilter = ColorFilter.tint(Color(0xFF2567E8))
@@ -187,8 +205,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     Text(
                         text = "Register Account",
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A)
+                        fontWeight = FontWeight.Bold
                     )
 
                     Spacer(Modifier.height(6.dp))
@@ -196,12 +213,12 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     Text(
                         text = "Choose a role and assign an ID",
                         fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(Modifier.height(24.dp))
 
-                    // 🔽 ROLE DROPDOWN
+                    // 🔽 Role Dropdown
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded }
@@ -213,26 +230,15 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                             label = { Text("User Role") },
                             placeholder = { Text("Select Role") },
                             leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.AdminPanelSettings,
-                                    contentDescription = null,
-                                    tint = Color(0xFF2567E8)
-                                )
+                                Icon(Icons.Default.AdminPanelSettings, null)
                             },
                             trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null
-                                )
+                                Icon(Icons.Default.KeyboardArrowDown, null)
                             },
                             modifier = Modifier
                                 .menuAnchor()
                                 .fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2567E8),
-                                focusedLabelColor = Color(0xFF2567E8)
-                            )
+                            shape = RoundedCornerShape(14.dp)
                         )
 
                         ExposedDropdownMenu(
@@ -253,30 +259,22 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
 
                     Spacer(Modifier.height(16.dp))
 
-                    // 🆔 USER ID INPUT
+                    // 🆔 User ID
                     OutlinedTextField(
                         value = userId,
                         onValueChange = { userId = it },
                         label = { Text("School ID or User ID") },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Badge,
-                                contentDescription = null,
-                                tint = Color(0xFF2567E8)
-                            )
+                            Icon(Icons.Default.Badge, null)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF2567E8),
-                            focusedLabelColor = Color(0xFF2567E8)
-                        )
+                        shape = RoundedCornerShape(14.dp)
                     )
 
                     Spacer(Modifier.height(28.dp))
 
-                    // 🚀 ACTION BUTTON
+                    // 🚀 Button
                     Button(
                         onClick = {
                             if (selectedRole == "Select Role" || userId.isBlank()) {
@@ -317,6 +315,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                             )
                         }
                     }
+
                 }
             }
         }
