@@ -17,8 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.BusMateTheme
 
 // Constants for SharedPreferences
@@ -102,25 +104,26 @@ fun DarkModeTopBar() {
     TopAppBar(
         title = {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Dark Mode",
+                Text(text = "Dark Mode",
                     fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(end = 40.dp)
+                    color = Color.White,
+                    modifier = Modifier.padding(end = 40.dp),
+                    fontWeight = FontWeight.Bold,
                 )
             }
         },
+
         navigationIcon = {
             IconButton(onClick = { (context as Activity).finish() }) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint =Color.White
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = BusMateBlue // Applied BusMate Blue
         )
     )
 }
