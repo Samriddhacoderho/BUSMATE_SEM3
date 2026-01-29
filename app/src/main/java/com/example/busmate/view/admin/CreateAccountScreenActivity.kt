@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -123,7 +124,10 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
             TopAppBar(
                 title = { Text("Create User Account", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.testTag("backButton") //  TEST TAG
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
                     }
                 },
@@ -137,20 +141,31 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(24.dp)
+                .testTag("createAccountScreen"), // TEST TAG for screen
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(16.dp))
 
-            Text("Register New User", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Assign a role and unique school ID", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "Register New User",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag("registerAccountTitle") // TEST TAG
+            )
+            Text(
+                "Assign a role and unique school ID",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Spacer(Modifier.height(32.dp))
 
             // ROLE SELECTOR
             ExposedDropdownMenuBox(
                 expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.testTag("roleDropdownBox") //  TEST TAG
             ) {
                 OutlinedTextField(
                     value = if (isRoleSelected) selectedRole else "",
@@ -160,18 +175,27 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                     placeholder = { Text("Select Role") },
                     leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null, tint = busMateBlue) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .testTag("roleDropdown"), //  TEST TAG for the text field
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                ExposedDropdownMenu(expanded, { expanded = false }) {
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.testTag("roleDropdownMenu") //  TEST TAG
+                ) {
                     roles.forEach { role ->
                         DropdownMenuItem(
                             text = { Text(role) },
                             onClick = {
                                 selectedRole = role
                                 expanded = false
-                            }
+                            },
+                            modifier = Modifier.testTag("roleOption_$role") //  TEST TAG
                         )
                     }
                 }
@@ -183,7 +207,10 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                 onValueChange = { userId = it },
                 label = { Text("School ID or User ID") },
                 leadingIcon = { Icon(Icons.Default.Badge, null, tint = busMateBlue) },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .testTag("userIdField"), //  TEST TAG
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -195,12 +222,21 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                     viewModel.createAccountWithMinimalData(selectedRole, userId)
                 },
                 enabled = isButtonEnabled,
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp)
+                    .testTag("createAccountButton"), //  TEST TAG
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
             ) {
                 if (message == "Loading...") {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .testTag("loadingIndicator"), //  TEST TAG
+                        strokeWidth = 2.dp
+                    )
                 } else {
                     Text("CREATE ACCOUNT", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
