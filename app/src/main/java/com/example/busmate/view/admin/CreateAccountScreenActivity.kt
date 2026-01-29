@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -99,7 +98,19 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                // Check if message is a success message
+                val isSuccess = data.visuals.message == "Created Account Successful" ||
+                        data.visuals.message == "Account created successfully"
+
+                Snackbar(
+                    containerColor = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                    contentColor = Color.White,
+                    snackbarData = data
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Create User Account", color = Color.White, fontWeight = FontWeight.Bold) },
