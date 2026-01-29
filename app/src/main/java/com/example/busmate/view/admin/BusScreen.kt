@@ -47,7 +47,6 @@ class BusScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Observe SharedPreferences changes for dark mode
             val context = androidx.compose.ui.platform.LocalContext.current
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -88,7 +87,7 @@ fun BusScreenUI(
     var capacity by remember { mutableStateOf("") }
     var submitted by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    val userRepo = UserRepositoryImpl() // To use uploadImage
+    val userRepo = UserRepositoryImpl()
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
@@ -102,21 +101,34 @@ fun BusScreenUI(
 
     val isFormValid = busNumber.isNotBlank() &&
             licensePlate.isNotBlank() &&
-            routeId.isNotBlank() && // Removed the duplicate routeId check
+            routeId.isNotBlank() &&
             capacity.isNotBlank() &&
-            selectedImageUri != null // Added this to ensure button grays out if no photo
+            selectedImageUri != null
 
     LaunchedEffect(message) {
         if (message.isNotEmpty() && message != "Loading") {
             scope.launch { snackbarHostState.showSnackbar(message) }
             if (message.contains("success", ignoreCase = true)) {
-                busNumber = ""; licensePlate = ""; routeId = ""; capacity = "";
+                busNumber = ""
+                licensePlate = ""
+                routeId = ""
+                capacity = ""
+                selectedImageUri = null
             }
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                val isError = !data.visuals.message.contains("success", ignoreCase = true)
+                Snackbar(
+                    containerColor = if (isError) Color(0xFFE53935) else Color(0xFF43A047),
+                    contentColor = Color.White,
+                    snackbarData = data
+                )
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
@@ -125,21 +137,18 @@ fun BusScreenUI(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            //  --- FIXED TOP LOGO SECTION ---
-            // We use a Box here so we can use .align(Alignment.TopStart)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.35f)
                     .background(BusMateBlue)
             ) {
-                // 1. BACK BUTTON
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(start = 8.dp, top = 8.dp)
-                        .align(Alignment.TopStart) // Now this works inside the Box!
+                        .align(Alignment.TopStart)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -148,13 +157,11 @@ fun BusScreenUI(
                     )
                 }
 
-                // 2. LOGO AND TITLE (Centered in the Box)
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-
                     Text(
                         text = "New Bus Registration",
                         color = Color.White,
@@ -164,7 +171,6 @@ fun BusScreenUI(
                 }
             }
 
-            //  --- CARD SECTION ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,10 +187,7 @@ fun BusScreenUI(
                         .fillMaxSize()
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.White,
-                                    Color(0xFFF8F9FE)
-                                )
+                                colors = listOf(Color.White, Color(0xFFF8F9FE))
                             )
                         )
                 ) {
@@ -212,7 +215,7 @@ fun BusScreenUI(
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
-                        // --- IMAGE PICKER SECTION ---
+
                         Box(
                             modifier = Modifier
                                 .size(140.dp)
@@ -269,9 +272,7 @@ fun BusScreenUI(
                                 focusedLabelColor = Color(0xFF2567E8),
                                 unfocusedBorderColor = Color(0xFFE0E0E0),
                                 unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                errorBorderColor = Color(0xFFE57373),
-                                errorLabelColor = Color(0xFFE57373)
+                                focusedContainerColor = Color.White
                             )
                         )
 
@@ -289,9 +290,7 @@ fun BusScreenUI(
                                 focusedLabelColor = Color(0xFF2567E8),
                                 unfocusedBorderColor = Color(0xFFE0E0E0),
                                 unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                errorBorderColor = Color(0xFFE57373),
-                                errorLabelColor = Color(0xFFE57373)
+                                focusedContainerColor = Color.White
                             )
                         )
 
@@ -309,9 +308,7 @@ fun BusScreenUI(
                                 focusedLabelColor = Color(0xFF2567E8),
                                 unfocusedBorderColor = Color(0xFFE0E0E0),
                                 unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                errorBorderColor = Color(0xFFE57373),
-                                errorLabelColor = Color(0xFFE57373)
+                                focusedContainerColor = Color.White
                             )
                         )
 
@@ -330,15 +327,12 @@ fun BusScreenUI(
                                 focusedLabelColor = Color(0xFF2567E8),
                                 unfocusedBorderColor = Color(0xFFE0E0E0),
                                 unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                errorBorderColor = Color(0xFFE57373),
-                                errorLabelColor = Color(0xFFE57373)
+                                focusedContainerColor = Color.White
                             )
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Validation Messages
                         if (!isFormValid) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -347,44 +341,18 @@ fun BusScreenUI(
                                     containerColor = Color(0xFFE57373).copy(alpha = 0.1f)
                                 )
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     if (selectedImageUri == null) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "•",
-                                                color = Color(0xFFE57373),
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            Text(
-                                                text = "Please upload a bus photo",
-                                                color = Color(0xFFE57373),
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                                            Text("•", color = Color(0xFFE57373), fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp))
+                                            Text("Please upload a bus photo", color = Color(0xFFE57373), fontSize = 13.sp)
                                         }
                                     }
                                     if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacity.isBlank()) {
-                                        if (selectedImageUri == null) {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                        }
+                                        if (selectedImageUri == null) Spacer(modifier = Modifier.height(4.dp))
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "•",
-                                                color = Color(0xFFE57373),
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            Text(
-                                                text = "Please fill all required fields",
-                                                color = Color(0xFFE57373),
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                                            Text("•", color = Color(0xFFE57373), fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp))
+                                            Text("Please fill all required fields", color = Color(0xFFE57373), fontSize = 13.sp)
                                         }
                                     }
                                 }
@@ -396,32 +364,17 @@ fun BusScreenUI(
                             onClick = {
                                 submitted = true
                                 if (isFormValid){
-
                                     val capacityInt = capacity.toIntOrNull()
-                                    if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || routeId.isBlank()  || capacityInt == null || capacityInt <= 0) {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Please fill all bus details correctly.")
-                                        }
+                                    if (busNumber.isBlank() || licensePlate.isBlank() || routeId.isBlank() || capacityInt == null || capacityInt <= 0) {
+                                        scope.launch { snackbarHostState.showSnackbar("Please fill all bus details correctly.") }
                                     } else {
-                                        // Check if an image is selected
-                                        // Inside BusScreen.kt Button onClick
-                                        if (selectedImageUri != null) {
-                                            userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
-                                                viewModel.registerBus(
-                                                    busNumber = busNumber,
-                                                    licensePlate = licensePlate,
-                                                    routeId = routeId,
-                                                    capacity = capacityInt,
-                                                    busImage = imageUrl ?: ""
-                                                )
-                                            }
-                                        } else {
+                                        userRepo.uploadImage(context, selectedImageUri!!) { imageUrl ->
                                             viewModel.registerBus(
                                                 busNumber = busNumber,
                                                 licensePlate = licensePlate,
                                                 routeId = routeId,
                                                 capacity = capacityInt,
-                                                busImage = ""
+                                                busImage = imageUrl ?: ""
                                             )
                                         }
                                     }
@@ -434,27 +387,18 @@ fun BusScreenUI(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF2567E8),
-                                disabledContainerColor = Color(0xFFBDBDBD),
-                                disabledContentColor = Color.White
+                                disabledContainerColor = Color(0xFFBDBDBD)
                             ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 4.dp,
-                                pressedElevation = 8.dp
-                            )
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(26.dp),
-                                    strokeWidth = 2.5.dp,
-                                    color = Color.White
-                                )
+                                CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 2.5.dp, color = Color.White)
                                 Spacer(Modifier.width(12.dp))
                             }
                             Text(
                                 text = if (!isLoading) "REGISTER NEW BUS" else "Registering...",
                                 fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -463,4 +407,3 @@ fun BusScreenUI(
         }
     }
 }
-// testing add bus image
