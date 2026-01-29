@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -122,6 +123,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .testTag("createAccountScreen") //  TEST TAG for screen
         ) {
 
             // 🔵 Gradient Header
@@ -139,7 +141,10 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     .padding(vertical = 28.dp, horizontal = 24.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { (context as Activity).finish() }) {
+                    IconButton(
+                        onClick = { (context as Activity).finish() },
+                        modifier = Modifier.testTag("backButton") //  TEST TAG
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -181,7 +186,8 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .graphicsLayer { alpha = cardAlpha },
+                    .graphicsLayer { alpha = cardAlpha }
+                    .testTag("createAccountCard"), //  TEST TAG
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -205,7 +211,8 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     Text(
                         text = "Register Account",
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.testTag("registerAccountTitle") //  TEST TAG
                     )
 
                     Spacer(Modifier.height(6.dp))
@@ -218,10 +225,11 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
 
                     Spacer(Modifier.height(24.dp))
 
-                    // 🔽 Role Dropdown
+                    // 📽 Role Dropdown
                     ExposedDropdownMenuBox(
                         expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier.testTag("roleDropdownBox") //  TEST TAG
                     ) {
                         OutlinedTextField(
                             value = if (isRoleSelected) selectedRole else "",
@@ -237,13 +245,15 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                             },
                             modifier = Modifier
                                 .menuAnchor()
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .testTag("roleDropdown"), //  TEST TAG for the text field
                             shape = RoundedCornerShape(14.dp)
                         )
 
                         ExposedDropdownMenu(
                             expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.testTag("roleDropdownMenu") //  TEST TAG
                         ) {
                             roles.forEach { role ->
                                 DropdownMenuItem(
@@ -251,7 +261,8 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                                     onClick = {
                                         selectedRole = role
                                         expanded = false
-                                    }
+                                    },
+                                    modifier = Modifier.testTag("roleOption_$role") //  TEST TAG
                                 )
                             }
                         }
@@ -267,7 +278,9 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                         leadingIcon = {
                             Icon(Icons.Default.Badge, null)
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("userIdField"), // ️ TEST TAG
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         shape = RoundedCornerShape(14.dp)
                     )
@@ -293,7 +306,8 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                         enabled = message != "Loading...",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(56.dp)
+                            .testTag("createAccountButton"), // ️ TEST TAG
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF2567E8)
@@ -301,7 +315,9 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel) {
                     ) {
                         if (message == "Loading...") {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .testTag("loadingIndicator"), //  TEST TAG
                                 strokeWidth = 2.dp,
                                 color = Color.White
                             )
