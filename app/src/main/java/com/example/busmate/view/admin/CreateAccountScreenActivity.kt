@@ -81,6 +81,15 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
     val roles = listOf("Parent", "Driver")
     val isRoleSelected = selectedRole != "Select Role"
 
+    // Logic to ensure both fields are filled and not currently loading
+    val isButtonEnabled = isRoleSelected && userId.isNotBlank() && message != "Loading..."
+
+    // Automatically generate 6-digit random number on screen load
+    LaunchedEffect(Unit) {
+        val randomId = (100000..999999).random().toString()
+        userId = randomId
+    }
+
     LaunchedEffect(message) {
         if (message == "Created Account Successful") {
             if (selectedRole == "Parent") {
@@ -100,7 +109,6 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
-                // Check if message is a success message
                 val isSuccess = data.visuals.message == "Created Account Successful" ||
                         data.visuals.message == "Account created successfully"
 
@@ -132,13 +140,6 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.drawable.logo),
-                contentDescription = "Logo",
-                modifier = Modifier.size(100.dp),
-                colorFilter = ColorFilter.tint(busMateBlue)
-            )
-
             Spacer(Modifier.height(16.dp))
 
             Text("Register New User", fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -176,7 +177,7 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
                 }
             }
 
-            // USER ID FIELD
+            // USER ID FIELD (Autofilled with random number, still editable)
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
@@ -191,13 +192,9 @@ fun CreateAccountScreen(viewModel: CreateAccountViewModel, onBack: () -> Unit) {
 
             Button(
                 onClick = {
-                    if (selectedRole == "Select Role" || userId.isBlank()) {
-                        scope.launch { snackbarHostState.showSnackbar("Please select a role and enter User ID") }
-                    } else {
-                        viewModel.createAccountWithMinimalData(selectedRole, userId)
-                    }
+                    viewModel.createAccountWithMinimalData(selectedRole, userId)
                 },
-                enabled = message != "Loading...",
+                enabled = isButtonEnabled,
                 modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
