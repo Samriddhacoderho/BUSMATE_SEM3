@@ -39,6 +39,7 @@ import com.example.busmate.data.UserRepositoryImpl
 import com.example.busmate.ui.theme.BusMateBlue
 import com.example.busmate.ui.theme.PrimaryBlue
 import com.example.busmate.viewmodel.UserViewModel
+import kotlinx.coroutines.delay
 
 class ChangePasswordScreen : ComponentActivity() {
     @SuppressLint("ViewModelConstructorInComposable")
@@ -104,6 +105,9 @@ fun ChangePasswordUI(viewModel: UserViewModel) {
     LaunchedEffect(message) {
         if (message.isNotBlank() && message != "Loading...") {
             snackbarHostState.showSnackbar(message)
+            if (message == "Password successfully changed!") {
+                activity?.finish()
+            }
             viewModel.clearMessage()
         }
     }
