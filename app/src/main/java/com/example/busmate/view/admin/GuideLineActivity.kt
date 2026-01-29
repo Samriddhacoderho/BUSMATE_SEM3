@@ -7,14 +7,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -71,16 +72,16 @@ class GuideLineActivity : ComponentActivity() {
 }
 
 /* ============================================================
-   ADMIN SCREEN
+   ADMIN SCREEN (BusProfile-aligned UI)
    ============================================================ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminGuidelineScreen(
-    onBackClick: () -> Unit
-) {
+fun AdminGuidelineScreen(onBackClick: () -> Unit) {
+
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
     val guidelines by viewModel.guidelines.collectAsState()
     val message by viewModel.message.collectAsState()
+
     var textState by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) { viewModel.loadGuidelines() }
@@ -97,14 +98,12 @@ fun AdminGuidelineScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = "Back",
                             tint = Color.White
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BusMateBlue
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BusMateBlue)
             )
         }
     ) { padding ->
@@ -113,21 +112,17 @@ fun AdminGuidelineScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.background),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            /* HEADER */
+            /* 🔵 HEADER (same as BusProfile) */
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(170.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                BusMateBlue,
-                                BusMateBlue.copy(alpha = 0.85f)
-                            )
-                        )
-                    ),
+                    .height(180.dp)
+                    .background(BusMateBlue),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -141,78 +136,86 @@ fun AdminGuidelineScreen(
                     Text(
                         text = "Create & manage instructions",
                         color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 14.sp
+                        fontSize = 15.sp
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
+
+            /* ⚪ CENTER CARD (bigger + centered) */
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .offset(y = (-60).dp),
+                    .offset(y = (-70).dp),
                 shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(10.dp)
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(24.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
                     Text(
                         text = "Edit Guidelines",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
                         color = BusMateBlue
                     )
+
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
                     OutlinedTextField(
                         value = textState,
                         onValueChange = { textState = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
-                        placeholder = {
-                            Text("Enter safety guidelines here…")
-                        },
-                        minLines = 8,
-                        shape = RoundedCornerShape(16.dp),
+                            .heightIn(min = 280.dp),
+                        placeholder = { Text("Enter safety guidelines here…") },
+                        shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = BusMateBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
                             cursorColor = BusMateBlue
                         )
                     )
+
+                    Spacer(Modifier.height(24.dp))
 
                     Button(
                         onClick = { viewModel.postGuidelines(textState) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
+                            .height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = BusMateBlue
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = BusMateBlue)
                     ) {
                         Text(
                             text = if (message == "Posting...") "Saving…" else "Save Guidelines",
-                            fontSize = 15.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
                     if (message.isNotEmpty() && message != "Posting...") {
+                        Spacer(Modifier.height(12.dp))
                         Text(
                             text = message,
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
             }
+
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
@@ -222,9 +225,8 @@ fun AdminGuidelineScreen(
    ============================================================ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DriverGuidelineScreen(
-    onBackClick: () -> Unit
-) {
+fun DriverGuidelineScreen(onBackClick: () -> Unit) {
+
     val viewModel = remember { GuideLineViewModel(GuideLinesImpl()) }
     val guidelines by viewModel.guidelines.collectAsState()
 
@@ -243,9 +245,7 @@ fun DriverGuidelineScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BusMateBlue
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BusMateBlue)
             )
         }
     ) { padding ->
@@ -254,59 +254,68 @@ fun DriverGuidelineScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.background),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                BusMateBlue,
-                                BusMateBlue.copy(alpha = 0.85f)
-                            )
-                        )
-                    ),
+                    .height(180.dp)
+                    .background(BusMateBlue),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Please Follow These Rules",
+                    text = "Please Follow Rules",
                     color = Color.White,
-                    fontSize = 22.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .offset(y = (-50).dp),
+                    .offset(y = (-70).dp),
                 shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(10.dp)
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
+                    Text(
+                        text = "Official Rules",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = BusMateBlue
+                    )
+
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
                     Text(
                         text = guidelines.ifEmpty {
                             "Guidelines will appear once the admin publishes them."
                         },
                         fontSize = 15.sp,
-                        lineHeight = 22.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        lineHeight = 24.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
+
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
-/* ============================================================
-   ERROR
-   ============================================================ */
 @Composable
 private fun ErrorScreen(type: String?) {
     Box(
