@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +49,6 @@ class DriverProfileScreen : ComponentActivity() {
         val selectMode = intent.getBooleanExtra("select_mode", false)
 
         setContent {
-            // 🌙 Dark mode observer (LOGIC ONLY)
             val context = LocalContext.current
             val sharedPrefs = remember {
                 context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -81,11 +81,9 @@ class DriverProfileScreen : ComponentActivity() {
 
 @Composable
 fun DriverProfileMainScreen(selectMode: Boolean) {
-
     val viewModel = remember {
         AdminActionsViewModel(AdminActionsImpl(), UserRepositoryImpl())
     }
-
     val drivers = remember { mutableStateListOf<UserModel>() }
 
     LaunchedEffect(Unit) {
@@ -144,7 +142,6 @@ fun DriverProfileScreenUI(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
             Text(
                 text = "Swipe to view drivers (${pagerState.currentPage + 1}/${drivers.size})",
                 modifier = Modifier
@@ -172,7 +169,6 @@ fun SingleDriverProfile(
     driver: UserModel,
     selectMode: Boolean
 ) {
-
     val context = LocalContext.current
 
     Column(
@@ -182,20 +178,12 @@ fun SingleDriverProfile(
             .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // 🔵 Gradient Header
+        // 🔵 Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            BusMateBlue,
-                            BusMateBlue
-                        )
-                    )
-                ),
+                .background(BusMateBlue),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -213,8 +201,8 @@ fun SingleDriverProfile(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
+        // ⚪ White Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -224,28 +212,28 @@ fun SingleDriverProfile(
                     if (selectMode) Modifier.clickable {
                         val result = Intent()
                         result.putExtra("driverId", driver.schoolId)
-                        result.putExtra(
-                            "driverName",
-                            "${driver.firstName} ${driver.lastName}"
-                        )
+                        result.putExtra("driverName", "${driver.firstName} ${driver.lastName}")
                         (context as Activity).setResult(Activity.RESULT_OK, result)
                         context.finish()
                     } else Modifier
                 ),
             shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(10.dp)
+            elevation = CardDefaults.cardElevation(10.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface // Forces the card to be white
+            )
         ) {
-
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
+                // 👤 Fixed Circle Avatar Placeholder
                 Box(
                     modifier = Modifier
                         .size(130.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!driver.profileImage.isNullOrEmpty()) {
@@ -256,12 +244,18 @@ fun SingleDriverProfile(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        Text(
-                            text = driver.firstName.take(1).uppercase(),
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = BusMateBlue
-                        )
+                        // Placeholder Background
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(BusMateBlue.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = driver.firstName.take(1).uppercase(),
+                                fontSize = 48.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BusMateBlue
+                            )
+                        }
                     }
                 }
 
@@ -282,24 +276,18 @@ fun SingleDriverProfile(
                 DriverProfileItem(Icons.Default.Badge, "School ID: ${driver.schoolId}")
             }
         }
-
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
-fun DriverProfileItem(
-    icon: ImageVector,
-    text: String
-) {
+fun DriverProfileItem(icon: ImageVector, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 4.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -307,12 +295,7 @@ fun DriverProfileItem(
                 .background(BusMateBlue.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = BusMateBlue,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(icon, contentDescription = null, tint = BusMateBlue, modifier = Modifier.size(20.dp))
         }
 
         Spacer(Modifier.width(12.dp))
