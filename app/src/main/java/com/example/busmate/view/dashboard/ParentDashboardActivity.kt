@@ -575,7 +575,7 @@ fun ModernBottomNavBar(
                         icon = item.icon,
                         selected = selectedItem == index,
                         onClick = { onItemClick(index) },
-                        isProfileTab = index == 3  // ← ADD THIS (adjust index if needed)
+                        isProfileTab = (index == 2)  // ← ADD THIS LINE (Profile is at index 2)
                     )
                 }
             }
@@ -598,7 +598,7 @@ fun BottomNavItem(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
             )
             .padding(8.dp)
-            .then(  // ← ADD THIS
+            .then(
                 if (isProfileTab) Modifier.testTag("bottomNavProfile")
                 else Modifier
             ),
