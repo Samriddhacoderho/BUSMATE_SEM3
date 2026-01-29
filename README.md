@@ -1,4 +1,4 @@
-# BUSMATE_SEM3
+# BUSMATE - School Bus Tracker
 
 ## Overview
 
