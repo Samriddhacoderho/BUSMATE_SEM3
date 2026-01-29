@@ -30,6 +30,7 @@ import com.example.busmate.ui.theme.BusMateTheme
 import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.view.parent.AddChildActivity
 import com.example.busmate.viewmodel.ChildViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class AdminAddChildActivity : ComponentActivity() {
@@ -75,6 +76,7 @@ fun AdminAddChildScreen(
     onBack: () -> Unit
 ) {
     val busMateBlue = Color(0xFF2854D8)
+
     var parentId by remember { mutableStateOf(prefilledParentId) }
     var studentId by remember { mutableStateOf("") }
 
@@ -85,8 +87,17 @@ fun AdminAddChildScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val isFormValid = parentId.isNotBlank() && studentId.isNotBlank() && message != "Processing..."
+
+    LaunchedEffect(Unit) {
+        val randomId = (100000..999999).random().toString()
+        studentId = randomId
+    }
+
     LaunchedEffect(message) {
         if (message.contains("successfully", ignoreCase = true)) {
+            // No Snackbar here, just immediate navigation
+            delay(500) // Small delay for better UX flow
             val intent = Intent(context, AddChildActivity::class.java).apply {
                 putExtra("STUDENT_ID", studentId)
                 putExtra("PARENT_ID", parentId)
@@ -94,12 +105,22 @@ fun AdminAddChildScreen(
             context.startActivity(intent)
             (context as? Activity)?.finish()
         } else if (message.isNotEmpty() && message != "Processing...") {
+            // Show red snackbar for errors/other messages
             scope.launch { snackbarHostState.showSnackbar(message) }
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(12.dp),
+                    snackbarData = data
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -143,7 +164,6 @@ fun AdminAddChildScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // PARENT ID FIELD
             OutlinedTextField(
                 value = parentId,
                 onValueChange = { if (!isFromCreateAccount) parentId = it },
@@ -154,7 +174,6 @@ fun AdminAddChildScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            // STUDENT ID FIELD
             OutlinedTextField(
                 value = studentId,
                 onValueChange = { studentId = it },
@@ -168,11 +187,9 @@ fun AdminAddChildScreen(
 
             Button(
                 onClick = {
-                    if (parentId.isNotBlank() && studentId.isNotBlank()) {
-                        viewModel.validateAndPreRegister(parentId, studentId)
-                    }
+                    viewModel.validateAndPreRegister(parentId, studentId)
                 },
-                enabled = message != "Processing...",
+                enabled = isFormValid,
                 modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
