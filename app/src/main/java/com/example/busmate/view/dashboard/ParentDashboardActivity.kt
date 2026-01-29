@@ -285,14 +285,12 @@ fun ParentDashboardScreen() {
     )
 
     // Minimal drawer items
-    val drawerItems = when (user?.typeofUser?.lowercase()) {
-        "admin" -> emptyList() // Admin has everything in grid
-        "driver" -> listOf(
-            NavItem("My Trips", Icons.Default.Route)
-        )
-        else -> listOf(
-            NavItem("About Us", Icons.Default.Info)
-        )
+    // Explicitly define the type as <NavItem> to resolve the compilation error
+    val drawerItems: List<NavItem> = when (user?.typeofUser?.lowercase()) {
+        "admin" -> emptyList()
+        "driver" -> emptyList()
+        "parent" -> emptyList()
+        else -> emptyList()
     }
 
     ModalNavigationDrawer(
