@@ -66,6 +66,7 @@ import com.example.busmate.view.parent.MapPickerActivity
 import com.example.busmate.view.parent.ChatScreen
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.busmate.service.BroadcastNotificationService
 
 
 data class NavItem(val label: String, val icon: ImageVector)
@@ -215,7 +216,23 @@ fun ParentDashboardScreen() {
             Log.d("ParentDashboard", "ETA Monitoring Service started")
         }
     }
-
+    when (user?.typeofUser) {
+        "Parent", "Driver" -> {
+            val broadcastServiceIntent = Intent(context, BroadcastNotificationService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(broadcastServiceIntent)
+            } else {
+                context.startService(broadcastServiceIntent)
+            }
+            Log.d("ParentDashboard", "✅ Broadcast Notification Service started for ${user?.typeofUser}")
+        }
+        "Admin" -> {
+            Log.d("ParentDashboard", "🚫 Skipping Broadcast Service for Admin")
+        }
+        else -> {
+            Log.d("ParentDashboard", "⚠️ Unknown user type: ${user?.typeofUser}")
+        }
+    }
     DisposableEffect(user?.typeofUser) {
         onDispose {
             if (user?.typeofUser == "Parent") {
