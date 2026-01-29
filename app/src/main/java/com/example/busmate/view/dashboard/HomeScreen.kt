@@ -68,6 +68,7 @@ import com.example.busmate.view.parent.ParentAttendanceActivity
 import com.example.busmate.view.parent.StudentIdCard
 import com.example.busmate.view.parent.ChildListActivity
 import com.example.busmate.view.parent.MapPickerActivity
+import androidx.compose.ui.platform.testTag
 
 
 @Composable
@@ -541,7 +542,8 @@ data class FeatureItem(
     val label: String,
     val icon: ImageVector,
     val gradientColors: List<Color>,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
+    val testTag: String? = null
 )
 
 @Composable
@@ -559,17 +561,17 @@ fun AdminFeatureGrid(
     onSetLocationClick: () -> Unit
 ) {
     val features = listOf(
-        FeatureItem("Create User", Icons.Default.PersonAdd, listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)), onCreateUserClick),
-        FeatureItem("Add Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onAddBusClick),
-        FeatureItem("View Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF0EA5E9), Color(0xFF0284C7)), onViewBusClick),
-        FeatureItem("View Driver", Icons.Default.Badge, listOf(Color(0xFF10B981), Color(0xFF059669)), onViewDriverClick),
-        FeatureItem("Manage Users", Icons.Default.PersonOff, listOf(Color(0xFFEF4444), Color(0xFFDC2626)), onManageAccountClick),
-        FeatureItem("Search Child", Icons.Default.Search, listOf(Color(0xFFF59E0B), Color(0xFFD97706)), onSearchChildClick),
-        FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFFEC4899), Color(0xFFDB2777)), onViewAttendanceClick),
-        FeatureItem("Guidelines", Icons.Default.RuleFolder, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onGuidelinesClick),
-        FeatureItem("Search Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF06B6D4), Color(0xFF0891B2)), onSearchBusClick),
-        FeatureItem("Create Child", Icons.Default.ManageAccounts, listOf(Color(0xFF14B8A6), Color(0xFF0D9488)), onCreateChildClick),
-        FeatureItem("Set Location", Icons.Default.LocationOn, listOf(Color(0xFFF97316), Color(0xFFEA580C)), onSetLocationClick)
+        FeatureItem("Create User", Icons.Default.PersonAdd, listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)), onCreateUserClick, testTag = "createUserButton"),
+        FeatureItem("Add Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF2567E8), Color(0xFF1D4ED8)), onAddBusClick, testTag = "addBusButton"),
+        FeatureItem("View Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF0EA5E9), Color(0xFF0284C7)), onViewBusClick, testTag = "viewBusButton"),
+        FeatureItem("View Driver", Icons.Default.Badge, listOf(Color(0xFF10B981), Color(0xFF059669)), onViewDriverClick, testTag = "viewDriverButton"),
+        FeatureItem("Manage Users", Icons.Default.PersonOff, listOf(Color(0xFFEF4444), Color(0xFFDC2626)), onManageAccountClick, testTag = "manageUsersButton"),
+        FeatureItem("Search Child", Icons.Default.Search, listOf(Color(0xFFF59E0B), Color(0xFFD97706)), onSearchChildClick, testTag = "searchChildButton"),
+        FeatureItem("Attendance", Icons.Default.ChildCare, listOf(Color(0xFFEC4899), Color(0xFFDB2777)), onViewAttendanceClick, testTag = "attendanceButton"),
+        FeatureItem("Guidelines", Icons.Default.RuleFolder, listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)), onGuidelinesClick, testTag = "guidelinesButton"),
+        FeatureItem("Search Bus", Icons.Default.DirectionsBus, listOf(Color(0xFF06B6D4), Color(0xFF0891B2)), onSearchBusClick, testTag = "searchBusButton"),
+        FeatureItem("Create Child", Icons.Default.ManageAccounts, listOf(Color(0xFF14B8A6), Color(0xFF0D9488)), onCreateChildClick, testTag = "createChildButton"),
+        FeatureItem("Set Location", Icons.Default.LocationOn, listOf(Color(0xFFF97316), Color(0xFFEA580C)), onSetLocationClick, testTag = "setLocationButton")
     )
 
     LazyVerticalGrid(
@@ -587,7 +589,8 @@ fun AdminFeatureGrid(
                 label = feature.label,
                 icon = feature.icon,
                 gradientColors = feature.gradientColors,
-                onClick = feature.onClick
+                onClick = feature.onClick,
+                testTag = feature.testTag
             )
         }
     }
@@ -667,12 +670,20 @@ fun FeatureGridItem(
     icon: ImageVector,
     gradientColors: List<Color>,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    testTag: String? = null
 ) {
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .then(
+                if(testTag != null){
+                    Modifier.testTag(testTag)
+                } else{
+                    Modifier
+                }
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Colorful gradient icon background

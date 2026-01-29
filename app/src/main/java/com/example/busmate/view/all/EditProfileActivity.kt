@@ -35,6 +35,7 @@ import com.example.busmate.ui.theme.isDarkMode
 import com.example.busmate.view.ImageUtils
 import com.example.busmate.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.platform.testTag
 
 class EditProfileActivity : ComponentActivity() {
     private lateinit var viewModel: UserViewModel
@@ -123,7 +124,7 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
             TopAppBar(
                 title = { Text("Edit Profile", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
-                    IconButton(onClick = { (context as? Activity)?.onBackPressed() }) {
+                    IconButton(onClick = { (context as? Activity)?.onBackPressed() },modifier = Modifier.testTag("backButton")) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
@@ -152,6 +153,7 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant) // Adaptive background
                         .clickable { onPickImage() }
+                        .testTag("profileImageContainer")
                 ) {
                     if (!user?.profileImage.isNullOrEmpty()) {
                         AsyncImage(
@@ -202,7 +204,8 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         value = firstName,
                         onValueChange = { firstName = it },
                         label = { Text("First Name") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .testTag("firstNameField"),
                         shape = RoundedCornerShape(10.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -215,7 +218,8 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         value = lastName,
                         onValueChange = { lastName = it },
                         label = { Text("Last Name") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .testTag("lastNameField"),
                         shape = RoundedCornerShape(10.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -228,7 +232,8 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
                         value = phone,
                         onValueChange = { phone = it },
                         label = { Text("Phone Number") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .testTag("phoneField"),
                         shape = RoundedCornerShape(10.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -243,7 +248,7 @@ fun EditProfileScreen(viewModel: UserViewModel, onPickImage: () -> Unit) {
 
             Button(
                 onClick = { viewModel.updateUserProfile(firstName, lastName, phone) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp).testTag("saveButton"),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2854D8))
             ) {
