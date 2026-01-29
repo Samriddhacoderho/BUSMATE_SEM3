@@ -7,11 +7,11 @@ BUSMATE_SEM3 is a smart bus management and tracking system designed for schools.
 The system provides robust features for admins, drivers, and parents, and offers real-time data integration, user-friendly interfaces, and secure communication. 
 
 ## Developed By: SSK Tech
-**Keshab Bhattarai**
+**Keshab Bhattarai - Developer**
 
-**Sandip Bhandari**
+**Sandip Bhandari - Developer**
 
-**Samriddha Raj Satyal**
+**Samriddha Raj Satyal - Scrum Master + Developer**
 
 ## Features
 
