@@ -91,8 +91,27 @@ class AccelerometerRepositoryImpl(private val context: Context) : AccelerometerR
     }
 
     override fun stopListening() {
+        // 1. Stop GPS updates
         fusedLocationClient.removeLocationUpdates(locationCallback)
+
+        // 2. Reset speed in Firebase and locally
         sendDataToFirebase(0f, isFinal = true)
+
+        // 3. Update currentLocation to "Depot" before clearing the activeBusUid
+        activeBusUid?.let { busId ->
+            database.getReference("buses")
+                .child(busId)
+                .child("currentLocation")
+                .setValue("Depot")
+                .addOnSuccessListener {
+                    Log.d("AccelerometerRepo", "Bus $busId location reset to Depot")
+                }
+                .addOnFailureListener { e ->
+                    Log.e("AccelerometerRepo", "Failed to reset location: ${e.message}")
+                }
+        }
+
+        // 4. Clear local state
         activeBusUid = null
         _currentSpeedMps.postValue(0f)
     }
