@@ -72,7 +72,7 @@ fun SearchBusScreen(
     viewModel: BusViewModel,
     onBack: () -> Unit
 ) {
-    val busMateBlue = Color(0xFF2567E8) // Exact Blue from AdminSearchChild
+    val busMateBlue = Color(0xFF2854D8) // Exact Blue from AdminSearchChild
     val context = LocalContext.current
     val buses by viewModel.buses.collectAsState()
     var searchText by remember { mutableStateOf("") }
