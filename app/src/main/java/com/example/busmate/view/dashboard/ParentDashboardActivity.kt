@@ -67,6 +67,7 @@ import com.example.busmate.view.parent.ChatScreen
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.busmate.service.BroadcastNotificationService
+import androidx.compose.ui.platform.testTag
 
 
 data class NavItem(val label: String, val icon: ImageVector)
@@ -573,7 +574,8 @@ fun ModernBottomNavBar(
                     BottomNavItem(
                         icon = item.icon,
                         selected = selectedItem == index,
-                        onClick = { onItemClick(index) }
+                        onClick = { onItemClick(index) },
+                        isProfileTab = index == 3  // ← ADD THIS (adjust index if needed)
                     )
                 }
             }
@@ -585,7 +587,8 @@ fun ModernBottomNavBar(
 fun BottomNavItem(
     icon: ImageVector,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isProfileTab: Boolean = false  // ← ADD THIS PARAMETER
 ) {
     Box(
         modifier = Modifier
@@ -594,7 +597,11 @@ fun BottomNavItem(
                 indication = null,
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
             )
-            .padding(8.dp),
+            .padding(8.dp)
+            .then(  // ← ADD THIS
+                if (isProfileTab) Modifier.testTag("bottomNavProfile")
+                else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
