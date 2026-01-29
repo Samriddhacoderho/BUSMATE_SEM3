@@ -7,24 +7,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,16 +43,12 @@ class AdminAddChildActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
-
-            // --- DARK MODE REFRESH LOGIC ---
             val sharedPrefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
             var themeUpdateTrigger by remember { mutableIntStateOf(0) }
 
             DisposableEffect(Unit) {
                 val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == "dark_mode_pref") {
-                        themeUpdateTrigger++
-                    }
+                    if (key == "dark_mode_pref") { themeUpdateTrigger++ }
                 }
                 sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
                 onDispose { sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
@@ -66,7 +58,8 @@ class AdminAddChildActivity : ComponentActivity() {
                 BusMateTheme(darkTheme = isDarkMode()) {
                     AdminAddChildScreen(
                         viewModel = viewModel,
-                        prefilledParentId = prefilledParentId
+                        prefilledParentId = prefilledParentId,
+                        onBack = { finish() }
                     )
                 }
             }
@@ -78,8 +71,10 @@ class AdminAddChildActivity : ComponentActivity() {
 @Composable
 fun AdminAddChildScreen(
     viewModel: ChildViewModel,
-    prefilledParentId: String
+    prefilledParentId: String,
+    onBack: () -> Unit
 ) {
+    val busMateBlue = Color(0xFF2854D8)
     var parentId by remember { mutableStateOf(prefilledParentId) }
     var studentId by remember { mutableStateOf("") }
 
@@ -90,7 +85,6 @@ fun AdminAddChildScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // NAVIGATION LOGIC (STRICTLY UNCHANGED)
     LaunchedEffect(message) {
         if (message.contains("successfully", ignoreCase = true)) {
             val intent = Intent(context, AddChildActivity::class.java).apply {
@@ -100,209 +94,93 @@ fun AdminAddChildScreen(
             context.startActivity(intent)
             (context as? Activity)?.finish()
         } else if (message.isNotEmpty() && message != "Processing...") {
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
+            scope.launch { snackbarHostState.showSnackbar(message) }
         }
     }
 
-    val cardAlpha by animateFloatAsState(targetValue = 1f)
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        // UPDATED: Adaptive background
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (isFromCreateAccount) "Step 2: Add Child" else "Link Child",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    if (!isFromCreateAccount) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = busMateBlue)
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // HEADER (VISUALS MATCHED)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF2567E8),
-                                Color(0xFF1D4ED8)
-                            )
-                        )
-                    )
-                    .shadow(
-                        elevation = 6.dp,
-                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
-                    )
-                    .padding(vertical = 28.dp, horizontal = 24.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!isFromCreateAccount) {
-                        IconButton(
-                            onClick = { (context as Activity).finish() }
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
-                        }
-                        Spacer(Modifier.width(8.dp))
-                    }
-
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.ChildCare,
-                        contentDescription = null,
-                        tint = Color(0xFFFFB74D),
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Admin",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = if (isFromCreateAccount) "Step 2: Add Child" else "Add Child to Parent",
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+            Text(
+                text = "Child Registration",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Enter IDs to link the student account",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Spacer(Modifier.height(32.dp))
 
-            // MAIN CARD (UPDATED FOR DARK MODE)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .graphicsLayer { alpha = cardAlpha },
-                shape = RoundedCornerShape(28.dp),
-                // UPDATED: Adaptive surface color
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            // PARENT ID FIELD
+            OutlinedTextField(
+                value = parentId,
+                onValueChange = { if (!isFromCreateAccount) parentId = it },
+                readOnly = isFromCreateAccount,
+                label = { Text("Parent School ID") },
+                leadingIcon = { Icon(Icons.Default.Person, null, tint = busMateBlue) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            // STUDENT ID FIELD
+            OutlinedTextField(
+                value = studentId,
+                onValueChange = { studentId = it },
+                label = { Text("Student School ID") },
+                leadingIcon = { Icon(Icons.Default.Badge, null, tint = busMateBlue) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    if (parentId.isNotBlank() && studentId.isNotBlank()) {
+                        viewModel.validateAndPreRegister(parentId, studentId)
+                    }
+                },
+                enabled = message != "Processing...",
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = busMateBlue)
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    Text(
-                        text = "Child Registration",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        // UPDATED: Adaptive text color
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    Text(
-                        text = "Link a student to a parent account",
-                        fontSize = 14.sp,
-                        // UPDATED: Adaptive secondary text color
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // PARENT ID
-                    if (isFromCreateAccount) {
-                        Text(
-                            text = "Linked Parent ID: $parentId",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF2567E8)
-                        )
-                    } else {
-                        OutlinedTextField(
-                            value = parentId,
-                            onValueChange = { parentId = it },
-                            label = { Text("Parent School ID") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = Color(0xFF2567E8)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2567E8),
-                                focusedLabelColor = Color(0xFF2567E8),
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // STUDENT ID
-                    OutlinedTextField(
-                        value = studentId,
-                        onValueChange = { studentId = it },
-                        label = { Text("Student ID") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Badge,
-                                contentDescription = null,
-                                tint = Color(0xFF2567E8)
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF2567E8),
-                            focusedLabelColor = Color(0xFF2567E8),
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-
-                    Spacer(Modifier.height(28.dp))
-
-                    // ACTION BUTTON
-                    Button(
-                        onClick = {
-                            if (parentId.isBlank()) return@Button
-                            if (studentId.isBlank()) return@Button
-                            viewModel.validateAndPreRegister(parentId, studentId)
-                        },
-                        enabled = message != "Processing...",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2567E8)
-                        )
-                    ) {
-                        if (message == "Processing...") {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Verifying...")
-                        } else {
-                            Text(
-                                text = "Next: Child Details",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                if (message == "Processing...") {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("NEXT: CHILD DETAILS", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }

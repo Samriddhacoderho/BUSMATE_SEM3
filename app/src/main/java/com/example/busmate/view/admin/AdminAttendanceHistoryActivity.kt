@@ -72,7 +72,7 @@ class AdminAttendanceHistoryActivity : ComponentActivity() {
 @Composable
 fun AdminAttendanceHistoryScreen() {
     val activity = LocalContext.current as Activity
-    val busMateBlue = Color(0xFF2567E8) // Hardcoded Blue to match app theme
+    val busMateBlue = Color(0xFF2854D8) // Hardcoded Blue to match app theme
 
     val viewModel = remember {
         AttendanceViewModel(BusRepositoryImpl(), AttendanceRepositoryImpl())
