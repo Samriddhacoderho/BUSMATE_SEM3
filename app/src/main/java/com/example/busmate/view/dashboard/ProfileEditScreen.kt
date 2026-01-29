@@ -65,6 +65,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.example.busmate.view.all.DarkMoodSettingActivity
 import coil3.compose.AsyncImage
 import com.example.busmate.view.all.HelpAndSupportActivity
+import androidx.compose.ui.platform.testTag
 
 
 @Composable
@@ -334,6 +335,7 @@ fun ProfileInfoCard(
             modifier = Modifier
                 .fillMaxWidth(0.6f)
                 .height(40.dp)
+                .testTag("editProfileButton"),
         ) {
             Text("Edit Profile", fontSize = 14.sp,fontWeight = FontWeight.SemiBold)
         }
