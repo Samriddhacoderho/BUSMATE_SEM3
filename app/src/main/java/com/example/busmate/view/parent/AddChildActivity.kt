@@ -69,7 +69,7 @@ fun AddChildScreen(
     prefilledParentId: String,
     onBack: () -> Unit
 ) {
-    val busMateBlue = Color(0xFF2567E8)
+    val busMateBlue = Color(0xFF2854D8)
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
