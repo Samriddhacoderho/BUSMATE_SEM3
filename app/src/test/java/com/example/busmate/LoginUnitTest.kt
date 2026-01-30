@@ -18,7 +18,6 @@ class LoginUnitTest {
         val repo = mock<UserRepositoryInterface>()
         val viewModel = UserViewModel(repo)
 
-        // Scripting the fake response for your 3-parameter callback
         doAnswer { invocation ->
             // callback has (Boolean, String, UserModel?)
             val callback = invocation.getArgument<(Boolean, String, UserModel?) -> Unit>(2)
