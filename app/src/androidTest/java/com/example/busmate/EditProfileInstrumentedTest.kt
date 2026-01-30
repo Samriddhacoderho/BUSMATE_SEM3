@@ -62,7 +62,7 @@ class EditProfileInstrumentedTest {
             .performTextClearance()
 
         composeRule.onNodeWithTag("firstNameField")
-            .performTextInput("Mr. Sam")
+            .performTextInput("Mr. Keshab")
 
         composeRule.waitForIdle()
 
@@ -71,7 +71,7 @@ class EditProfileInstrumentedTest {
             .performTextClearance()
 
         composeRule.onNodeWithTag("lastNameField")
-            .performTextInput("Raj")
+            .performTextInput("Bhattarai")
 
         composeRule.waitForIdle()
 
@@ -106,7 +106,7 @@ class EditProfileInstrumentedTest {
         Thread.sleep(1000)
 
         composeRule.onNodeWithTag("schoolId")
-            .performTextInput("240488")
+            .performTextInput("240453")
 
         composeRule.waitForIdle()
 
